@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-feature android:name="android.hardware.bluetooth" android:required="true" />
+
+    <!-- Needed for Google Sign-In (Credential Manager) and the external Service Cost Estimate link. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Classic Bluetooth (ELM327 SPP) permissions, API 30 and below -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30" />
+
+    <!-- API 31+ runtime Bluetooth permissions -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
+
+    <!-- Only needed on API 26-28 (this app's minSdk floor) to save the PDF report into the
+         public Downloads folder; API 29+ uses scoped-storage MediaStore instead, no permission. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+
+    <!-- Local consultation-booking alerts (reservation-expiry warning, cancellation confirmation)
+         — required at runtime on API 33+; requested from BookingScreen when the user starts a
+         reservation, not at app launch. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.EngineSense"
+        android:supportsRtl="true">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.EngineSense">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Lets the generated PDF report be shared to WhatsApp/Gmail/etc. via a content:// URI
+             instead of a raw file:// path, which is blocked across apps since Android 7. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+</manifest>
