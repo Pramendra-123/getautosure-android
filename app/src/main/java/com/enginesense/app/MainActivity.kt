@@ -349,8 +349,14 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
             composable("warranty") { WarrantyScreen() }
             composable("marketplace") { MarketplaceScreen() }
             composable("pro") { ProScreen() }
-            composable("dealer") { DealerScreen(onSetUpDealerProfile = { navController.navigate("dealerProfile") }) }
+            composable("dealer") {
+                DealerScreen(
+                    onSetUpDealerProfile = { navController.navigate("dealerProfile") },
+                    onOpenPricingCalculator = { navController.navigate("dealerPricing") }
+                )
+            }
             composable("dealerProfile") { DealerProfileScreen(onSaved = { navController.popBackStack() }) }
+            composable("dealerPricing") { DealerPricingScreen() }
 
             // "Ask a Real Expert" — Phase 2 (preview/mock data, see ConsultationViewModel's doc).
             composable("expertList") {
