@@ -23,12 +23,15 @@ Two codebases:
   `RemoteAiMechanicChatService.DEFAULT_TIMEOUT_MILLIS = 32_000` client-side (server must always
   stay under client, with margin — see that constant's doc comment for the real observed
   latency numbers that drove these values).
-- **Deploying the Edge Function**: the Supabase CLI never worked from this machine (a real,
-  never-root-caused "Transport error" specific to the Go-compiled CLI binary on this Windows
-  machine — WARP, GODEBUG, firewall, AppLocker, MOTW, proxy were all ruled out). Workaround:
-  paste the full `index.ts` content into the Supabase Dashboard's Code editor for `ai-mechanic`
-  and click Deploy. Manual line-edits there have drifted out of sync with the local file before
-  — always paste the WHOLE file, never a partial edit, to avoid drift.
+- **Deploying Edge Functions**: the Supabase CLI works on the new laptop (2026-10-27; it never
+  worked on the old one — an unexplained "Transport error" in the CLI binary there). Deploy from
+  the repo root with `supabase functions deploy <name> --no-verify-jwt --use-api --project-ref
+  xofkkvhkkbtcayibjaul`. `--no-verify-jwt` is required, not optional: every function here checks
+  Google ID tokens itself, and `reports`' `get_report` must stay public — Supabase's own JWT check
+  would reject all of those. Migrations: `supabase db push --linked` (history was repaired on
+  2026-10-27 to mark the three hand-pasted migrations as applied). If ever back on Dashboard
+  paste-and-deploy, always paste the WHOLE file — partial edits there caused drift before (the
+  live `reports` was found still exposing an unauthenticated Gemini action, fixed 2026-10-27).
 - Google Cloud project: `carbide-ward-511910-g8` — holds the Gemini API key and billing. Had to
   be moved onto the paid tier (not just "billing enabled") before Gemini calls worked at all —
   a ₹0 Cloud Prepay balance was the real root cause of a long 503/timeout debugging loop early on.
@@ -84,7 +87,7 @@ handling. Always keep the "tentative, not a real quote" framing visible wherever
   `DealerProfileScreen.kt` (name/tagline/phone/location/logo), wired into
   `VehicleReportPdfGenerator.kt` — null `dealerProfile` means the exact same unbranded report
   every free user gets; only diverges once a dealer profile is actually saved.
-- **Backend written, not deployed**: RC (registration certificate) lookup via Surepass RC V2 —
+- **Backend deployed 2026-10-27 (Surepass SANDBOX token)**: RC (registration certificate) lookup via Surepass RC V2 —
   `supabase/functions/vehicle-lookup/` + `migrations/20261027000000_vehicle_lookups.sql`. One
   function for both callers: `mode: "customer"` (onboarding prefill + insurance/PUC/fitness/tax
   dates; never owner identity, loan or chassis) and `mode: "dealer"` (adds those; only for rows
@@ -128,5 +131,4 @@ handling. Always keep the "tentative, not a real quote" framing visible wherever
   (`github.com/Pramendra-123/getautosure-report.git`) — a real misconfiguration, not
   intentional. Mid-fix as of this handoff: user created a new repo for the Android app but
   hadn't yet supplied its URL. Check `git remote -v` in this repo before pushing anything.
-- Supabase CLI still doesn't work from this machine (see above) — dashboard paste-and-deploy is
-  the working method until/unless that's ever root-caused.
+- Supabase CLI works on the new laptop — see "Deploying Edge Functions" above.
