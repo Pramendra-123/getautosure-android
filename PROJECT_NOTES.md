@@ -84,9 +84,21 @@ handling. Always keep the "tentative, not a real quote" framing visible wherever
   `DealerProfileScreen.kt` (name/tagline/phone/location/logo), wired into
   `VehicleReportPdfGenerator.kt` — null `dealerProfile` means the exact same unbranded report
   every free user gets; only diverges once a dealer profile is actually saved.
-- **Planned, not built**: RC (registration certificate) lookup via Surepass API — needs the
-  user to set up a real paid Surepass account first, then a backend proxy (same pattern as
-  `GEMINI_API_KEY` — never in the APK). Mockup already reviewed and approved: a
+- **Backend written, not deployed**: RC (registration certificate) lookup via Surepass RC V2 —
+  `supabase/functions/vehicle-lookup/` + `migrations/20261027000000_vehicle_lookups.sql`. One
+  function for both callers: `mode: "customer"` (onboarding prefill + insurance/PUC/fitness/tax
+  dates; never owner identity, loan or chassis) and `mode: "dealer"` (adds those; only for rows
+  where `dealers.rc_full_access` was set by hand in the Dashboard — publishing a report creates a
+  dealers row for anyone, so that can't be the gate). Father's name/addresses/mobile are never
+  returned in either mode. 30-day per-plate cache (paid per call), per-user limits that count
+  cache hits too, and every lookup is logged in `vehicle_lookup_requests`. Field names come from a
+  real sandbox response (2026-10-27) — Surepass doesn't publish its schema; the account has
+  `rc-v2` only (`rc-full`/`rc-lite` return 401). The sandbox returns real-looking VAHAN records,
+  personal data included, so treat sandbox responses as personal data too. Unit tests pass
+  (`deno test` in that folder). Not built yet: the Android side (customer onboarding prefill —
+  plate first, confirm, manual fallback; Dealer Sathi report section), and a make-name mapping
+  ("BAJAJ AUTO LTD" -> the app's "Bajaj"). `vehicle.category` should be checked client-side —
+  OBD2 is cars-only and RTO records include two-wheelers. Mockup already reviewed and approved: a
   "Registration & Ownership Details" page, official-RTO-data framing, with **owner name kept
   dealer-only** (left off the buyer-facing PDF) and **financier/loan status shown to the buyer**
   (a loan against the car is something a buyer should know before purchasing) — that split was
