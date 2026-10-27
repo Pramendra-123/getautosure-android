@@ -278,7 +278,25 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 val issueId = entry.arguments?.getString("issueId") ?: ""
                 IssueDetailScreen(viewModel, issueId)
             }
-            composable("aiReport") { AiReportScreen(viewModel) }
+            composable("aiReport") { AiReportScreen(viewModel, onPublishReport = { navController.navigate("publishReport") }) }
+            composable("publishReport") {
+                val latestResult by viewModel.latestResult.collectAsState()
+                val vehicleBrand by viewModel.vehicleBrand.collectAsState()
+                val vehicleNickname by viewModel.vehicleNickname.collectAsState()
+                val vehicleModel by viewModel.vehicleModel.collectAsState()
+                val vehicleYear by viewModel.vehicleYear.collectAsState()
+                val vehicleFuelType by viewModel.vehicleFuelType.collectAsState()
+                val vehicleOdometerKm by viewModel.vehicleOdometerKm.collectAsState()
+                val vehiclePlate by viewModel.vehiclePlate.collectAsState()
+                PublishReportScreen(
+                    scanResult = latestResult,
+                    vehicleInfo = com.enginesense.app.report.VehicleReportInfo(
+                        brand = vehicleBrand, nickname = vehicleNickname, model = vehicleModel,
+                        year = vehicleYear, fuelType = vehicleFuelType,
+                        odometerKm = vehicleOdometerKm, plate = vehiclePlate
+                    )
+                )
+            }
             composable("vehicleDetails") { VehicleDetailsScreen(viewModel) }
             composable(
                 "categoryDetail/{category}",
@@ -352,7 +370,8 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
             composable("dealer") {
                 DealerScreen(
                     onSetUpDealerProfile = { navController.navigate("dealerProfile") },
-                    onOpenPricingCalculator = { navController.navigate("dealerPricing") }
+                    onOpenPricingCalculator = { navController.navigate("dealerPricing") },
+                    onPublishWebReport = { navController.navigate("publishReport") }
                 )
             }
             composable("dealerProfile") { DealerProfileScreen(onSaved = { navController.popBackStack() }) }

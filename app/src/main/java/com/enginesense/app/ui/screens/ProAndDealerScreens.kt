@@ -140,7 +140,11 @@ private val DEALER_AI = listOf(
 
 /** Pure visual teaser for the dealer-facing plan, with an honest feasibility note per feature — answers "which is possible". */
 @Composable
-fun DealerScreen(onSetUpDealerProfile: () -> Unit = {}, onOpenPricingCalculator: () -> Unit = {}) {
+fun DealerScreen(
+    onSetUpDealerProfile: () -> Unit = {},
+    onOpenPricingCalculator: () -> Unit = {},
+    onPublishWebReport: () -> Unit = {}
+) {
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
         Text("GetAutoSure Dealer", style = GetAutoSureType.ScreenTitle)
         Spacer(Modifier.height(8.dp))
@@ -164,6 +168,16 @@ fun DealerScreen(onSetUpDealerProfile: () -> Unit = {}, onOpenPricingCalculator:
         androidx.compose.material3.OutlinedButton(onClick = onOpenPricingCalculator, modifier = Modifier.fillMaxWidth()) {
             Text("Max Buy Price Calculator (preview)")
         }
+        Spacer(Modifier.height(10.dp))
+
+        androidx.compose.material3.OutlinedButton(onClick = onPublishWebReport, modifier = Modifier.fillMaxWidth()) {
+            Text("Publish Web Report")
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "Create a shareable listing — works with or without a scan already run for this car.",
+            style = GetAutoSureType.Caption
+        )
         Spacer(Modifier.height(4.dp))
         Text(
             "Phase 1 foundation — works today with comparables you enter by hand; a real data source isn't wired in yet.",

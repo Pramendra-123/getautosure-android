@@ -82,6 +82,11 @@ dependencies {
     // delay, and needs no special alarm permission on API 31+ unlike AlarmManager's exact alarms.
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 
+    // QR code rendering for the "Publish Web Report" flow (encodes the shareable report URL) —
+    // zxing-core only, no Android-specific scanning/camera layer needed since this app only
+    // generates codes, never scans them.
+    implementation("com.google.zxing:core:3.5.3")
+
     // Only HTTP client in this project — used by RemoteAiMechanicChatService to call the
     // ai-mechanic backend, and now also as Coil's network engine below (one HTTP stack, not two).
     implementation("com.squareup.okhttp3:okhttp:4.12.0")

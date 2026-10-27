@@ -221,7 +221,7 @@ private fun DetailSection(heading: String, body: String) {
 }
 
 @Composable
-fun AiReportScreen(viewModel: GetAutoSureViewModel) {
+fun AiReportScreen(viewModel: GetAutoSureViewModel, onPublishReport: () -> Unit = {}) {
     val latestResult by viewModel.latestResult.collectAsState()
     val result = latestResult
     val report = result?.aiReport
@@ -286,6 +286,11 @@ fun AiReportScreen(viewModel: GetAutoSureViewModel) {
                 odometerKm = vehicleOdometerKm, plate = vehiclePlate
             )
         )
+
+        Spacer(Modifier.height(10.dp))
+        OutlinedButton(onClick = onPublishReport, modifier = Modifier.fillMaxWidth()) {
+            Text("Publish Web Report (Dealer Sathi)")
+        }
 
         RawLogSection(viewModel)
     }
