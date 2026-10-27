@@ -57,6 +57,12 @@ object RepairCostReference {
     /** Matches free text (e.g. a direct question like "how much for a clutch job?") against a known cost category. */
     fun findByQuestion(question: String): RepairCostEntry? = findByText(question)
 
+    /** Every category the text mentions — e.g. a fault whose causes name both the O2 sensor and the catalytic converter gets both, since either could be the actual repair. */
+    fun findAllByText(text: String): List<RepairCostEntry> {
+        val q = text.lowercase()
+        return entries.filter { entry -> entry.keywords.any { matchesKeyword(q, it) } }
+    }
+
     private fun findByText(text: String): RepairCostEntry? {
         val q = text.lowercase()
         return entries.firstOrNull { entry -> entry.keywords.any { matchesKeyword(q, it) } }
