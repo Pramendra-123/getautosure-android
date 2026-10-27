@@ -140,6 +140,27 @@ Deno.test("dealer mode adds ownership, compliance and identifiers", () => {
   assertEquals(shaped.identifiers.chassisNumber, "TESTCHASSIS0001");
 });
 
+Deno.test("dealer mode is a superset of customer mode", () => {
+  const customer = shapeRcData(FIXTURE, "customer");
+  // deno-lint-ignore no-explicit-any
+  const dealer = shapeRcData(FIXTURE, "dealer") as any;
+  assertEquals(dealer.vehicle, customer.vehicle);
+  assertEquals(dealer.validity, customer.validity);
+});
+
+Deno.test("dealer mode carries the technical, registration and permit extras", () => {
+  // deno-lint-ignore no-explicit-any
+  const dealer = shapeRcData(
+    { ...FIXTURE, seat_capacity: "5", unladen_weight: "1050", vehicle_gross_weight: "0", permit_type: "TEST PERMIT" },
+    "dealer",
+  ) as any;
+  assertEquals(dealer.technical.seatCapacity, 5);
+  assertEquals(dealer.technical.unladenWeightKg, 1050);
+  assertEquals(dealer.technical.grossWeightKg, null); // Surepass's 0 means "not recorded"
+  assertEquals(dealer.technical.emissionNorms, null); // "Not Available"
+  assertEquals(dealer.permit.type, "TEST PERMIT");
+});
+
 Deno.test("father's name, addresses, mobile and policy number never leave the server in any mode", () => {
   const serialized = JSON.stringify(shapeRcData(FIXTURE, "dealer"));
   for (const value of ["TEST FATHER", "TEST ADDRESS 1", "TEST ADDRESS 2", "POLICY000"]) {

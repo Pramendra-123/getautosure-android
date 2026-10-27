@@ -194,6 +194,39 @@ export function shapeRcData(data: any, mode: LookupMode) {
       chassisNumber: text(data?.vehicle_chasi_number),
       engineNumber: text(data?.vehicle_engine_number),
     },
+    // Everything else non-personal Surepass returns — dealers asked for whatever's available.
+    technical: {
+      categoryCode: text(data?.vehicle_category),
+      emissionNorms: text(data?.norms_type),
+      cubicCapacity: text(data?.cubic_capacity),
+      cylinders: int(data?.no_cylinders),
+      seatCapacity: int(data?.seat_capacity),
+      sleeperCapacity: int(data?.sleeper_capacity),
+      standingCapacity: int(data?.standing_capacity),
+      // Surepass sends 0 for "not recorded" here (seen in sandbox), so 0 is treated as unknown.
+      grossWeightKg: int(data?.vehicle_gross_weight) || null,
+      unladenWeightKg: int(data?.unladen_weight) || null,
+      wheelbase: text(data?.wheelbase),
+    },
+    registration: {
+      rtoCode: text(data?.rto_code),
+      taxPaidUpto: text(data?.tax_paid_upto),
+      puccNumber: text(data?.pucc_number),
+      nonUseFrom: text(data?.non_use_from),
+      nonUseTo: text(data?.non_use_to),
+      // When the RTO record itself was last refreshed on Surepass's side, not when we fetched it.
+      recordUpdatedOn: text(data?.latest_by),
+    },
+    permit: {
+      number: text(data?.permit_number),
+      type: text(data?.permit_type),
+      issueDate: text(data?.permit_issue_date),
+      validFrom: text(data?.permit_valid_from),
+      validUpto: text(data?.permit_valid_upto),
+      nationalPermitNumber: text(data?.national_permit_number),
+      nationalPermitUpto: text(data?.national_permit_upto),
+      nationalPermitIssuedBy: text(data?.national_permit_issued_by),
+    },
   };
 }
 
