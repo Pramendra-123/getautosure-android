@@ -25,6 +25,8 @@ import com.enginesense.app.vehicle.FuelCombustionInsight
 import com.enginesense.app.vehicle.FuelSample
 import com.enginesense.app.vehicle.HealthScoreCalculator
 import com.enginesense.app.vehicle.HealthScoreResult
+import com.enginesense.app.vehicle.LiveDerived
+import com.enginesense.app.vehicle.LiveDerivedCalculator
 import com.enginesense.app.vehicle.MileageAnalyzer
 import com.enginesense.app.vehicle.MileageTrendAnalyzer
 import com.enginesense.app.vehicle.MileageTrendResult
@@ -245,6 +247,14 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
     private val _vehiclePlate = MutableStateFlow<String?>(null)
     val vehiclePlate: StateFlow<String?> = _vehiclePlate.asStateFlow()
 
+    /** Engine size — from the RTO lookup or typed in. Needed to estimate fuel use on cars without a MAF sensor (see [AirFlowEstimator]). */
+    private val _vehicleEngineCc = MutableStateFlow<Int?>(null)
+    val vehicleEngineCc: StateFlow<Int?> = _vehicleEngineCc.asStateFlow()
+
+    fun setVehicleEngineCc(cc: Int?) {
+        _vehicleEngineCc.value = cc
+    }
+
     /** User-entered only — this app has no vehicle spec catalog, so the manufacturer-claimed (ARAI) figure is never looked up, only typed in. Shown on the Trip Mileage screen as a labeled lab-test reference, never used to judge a "drop". */
     private val _vehicleClaimedMileageKmPerLitre = MutableStateFlow<Double?>(null)
     val vehicleClaimedMileageKmPerLitre: StateFlow<Double?> = _vehicleClaimedMileageKmPerLitre.asStateFlow()
@@ -271,6 +281,9 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
     private val _liveReadings = MutableStateFlow<Map<PidId, PidReading>>(emptyMap())
     val liveReadings: StateFlow<Map<PidId, PidReading>> = _liveReadings.asStateFlow()
 
+    private val _liveDerived = MutableStateFlow(LiveDerived())
+    val liveDerived: StateFlow<LiveDerived> = _liveDerived.asStateFlow()
+
     private var liveJob: Job? = null
 
     private val _performanceState = MutableStateFlow<PerformanceState>(PerformanceState.Idle)
@@ -296,11 +309,12 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         _vehicleModel.value = model
     }
 
-    fun setVehicleDetails(year: Int?, fuelType: String?, odometerKm: Int?, plate: String? = null) {
+    fun setVehicleDetails(year: Int?, fuelType: String?, odometerKm: Int?, plate: String? = null, engineCc: Int? = null) {
         _vehicleYear.value = year
         _vehicleFuelType.value = fuelType
         _vehicleOdometerKm.value = odometerKm
         _vehiclePlate.value = plate
+        _vehicleEngineCc.value = engineCc
     }
 
     init {
@@ -514,12 +528,14 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     /**
-     * Continuously re-reads a small set of PIDs for as long as the Live Data screen is open —
-     * the gap called out directly: a one-shot scan can't show RPM climbing as you accelerate,
-     * only a repeated-read loop can. Deliberately a short, fixed list (not all 31 PIDs): each
-     * loop iteration is a real round-trip over Bluetooth, and polling everything would make
-     * the refresh rate too slow to feel "live". [PidReader] already caches which PIDs are
-     * supported per instance, so only the first iteration pays for the discovery queries.
+     * Continuously re-reads PIDs for as long as the Live Data screen is open — a one-shot scan
+     * can't show RPM climbing as you accelerate, only a repeated-read loop can. Every PID is a
+     * real Bluetooth round-trip, so to stay "live" with a longer list:
+     * - [LIVE_FAST_PIDS] (what moves with the pedal) are read every cycle; everything else only
+     *   every [LIVE_SLOW_EVERY]th cycle — temperatures and fuel level don't change in 200ms.
+     * - A PID the car reports as unsupported is never asked for again this session (and gets no
+     *   tile), instead of costing a round-trip every cycle forever.
+     * Mileage, trip average and boost are worked out from these readings — see [LiveDerivedCalculator].
      */
     fun startLiveData(makeTransport: () -> ObdTransport) {
         stopLiveData()
@@ -537,13 +553,39 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
                 val reader = PidReader(t)
                 _liveState.update { LiveDataState.Running }
 
+                val unsupported = mutableSetOf<PidId>()
+                val latest = mutableMapOf<PidId, PidReading>()
+                val tripSamples = mutableListOf<FuelSample>()
+                val startNanos = System.nanoTime()
+                var turboSeen = false
+                var cycle = 0
+
                 while (isActive) {
-                    val readings = withContext(Dispatchers.IO) {
-                        LIVE_DATA_PIDS.associateWith { reader.read(it) }
+                    val toRead = LIVE_DATA_PIDS.filter { pid ->
+                        pid !in unsupported && (pid in LIVE_FAST_PIDS || cycle % LIVE_SLOW_EVERY == 0)
                     }
-                    _liveReadings.update { readings }
-                    delay(600)
+                    val fresh = withContext(Dispatchers.IO) { toRead.associateWith { reader.read(it) } }
+                    fresh.forEach { (pid, reading) ->
+                        if (reading.status == PidStatus.UNSUPPORTED) unsupported += pid
+                        latest[pid] = reading
+                    }
+
+                    val air = LiveDerivedCalculator.airFlow(latest, _vehicleEngineCc.value)
+                    val speed = LiveDerivedCalculator.value(latest, PidId.SPEED_KMH)
+                    if (air != null && speed != null) {
+                        tripSamples.add(FuelSample((System.nanoTime() - startNanos) / 1_000_000, speed.toInt(), air.gramsPerSec))
+                    }
+                    val derived = LiveDerivedCalculator.compute(latest, _vehicleEngineCc.value, _vehicleFuelType.value, tripSamples, turboSeen)
+                    turboSeen = derived.turboSeen
+
+                    _liveReadings.update { latest.toMap() }
+                    _liveDerived.update { derived }
+                    cycle++
+                    // A breather for the adapter, not a refresh-rate cap — the reads themselves set the pace.
+                    delay(LIVE_LOOP_PAUSE_MS)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _liveState.update { LiveDataState.Error(e.message ?: "Live data stopped unexpectedly.") }
             }
@@ -555,6 +597,12 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         liveJob = null
         _liveState.update { LiveDataState.Idle }
         _liveReadings.update { emptyMap() }
+        _liveDerived.update { LiveDerived() }
+    }
+
+    /** From the Live Data screen when mileage needs details onboarding didn't collect (e.g. onboarding was skipped). */
+    fun setVehicleFuelType(fuelType: String?) {
+        _vehicleFuelType.value = fuelType
     }
 
     /**
@@ -639,14 +687,34 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
                 recording = true
                 val startNanos = System.nanoTime()
 
+                // Cars without a MAF sensor (common in India) get air flow estimated from manifold
+                // pressure instead — see AirFlowEstimator. Intake temperature barely moves, so it's
+                // refreshed every 10th sample rather than costing a round-trip each time.
+                var hasMaf = true
+                var intakeAirTemp: PidReading? = null
+                var sampleCount = 0
                 while (isActive) {
-                    val speedReading = withContext(Dispatchers.IO) { reader.read(PidId.SPEED_KMH) }
-                    val mafReading = withContext(Dispatchers.IO) { reader.read(PidId.MAF_AIR_FLOW_RATE) }
-                    if (speedReading.status == PidStatus.VERIFIED && speedReading.value != null &&
-                        mafReading.status == PidStatus.VERIFIED && mafReading.value != null
-                    ) {
+                    val readings = withContext(Dispatchers.IO) {
+                        val r = mutableMapOf(PidId.SPEED_KMH to reader.read(PidId.SPEED_KMH))
+                        if (hasMaf) {
+                            val maf = reader.read(PidId.MAF_AIR_FLOW_RATE)
+                            r[PidId.MAF_AIR_FLOW_RATE] = maf
+                            if (maf.status == PidStatus.UNSUPPORTED) hasMaf = false
+                        }
+                        if (!hasMaf) {
+                            r[PidId.INTAKE_MANIFOLD_PRESSURE] = reader.read(PidId.INTAKE_MANIFOLD_PRESSURE)
+                            r[PidId.RPM] = reader.read(PidId.RPM)
+                            if (intakeAirTemp == null || sampleCount % 10 == 0) intakeAirTemp = reader.read(PidId.INTAKE_AIR_TEMP_C)
+                            intakeAirTemp?.let { r[PidId.INTAKE_AIR_TEMP_C] = it }
+                        }
+                        r
+                    }
+                    sampleCount++
+                    val air = LiveDerivedCalculator.airFlow(readings, _vehicleEngineCc.value)
+                    val speed = LiveDerivedCalculator.value(readings, PidId.SPEED_KMH)
+                    if (air != null && speed != null) {
                         val elapsedMs = (System.nanoTime() - startNanos) / 1_000_000
-                        samples.add(FuelSample(elapsedMs, speedReading.value.toInt(), mafReading.value))
+                        samples.add(FuelSample(elapsedMs, speed.toInt(), air.gramsPerSec))
                         _tripMileageLiveKmPerLitre.update { MileageAnalyzer.analyze(samples, _vehicleFuelType.value).averageKmPerLitre }
                     }
                 }
@@ -748,19 +816,57 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         /** Used only when a token's own `exp` claim couldn't be read — observed real expiry is ~1 hour; this is deliberately shorter so a decode failure errs toward re-fetching too often, not too rarely. */
         private const val ASSUMED_TOKEN_LIFETIME_SECONDS = 15L * 60L
 
+        /** Everything Live Data reads, in screen order within each group (see LiveDataScreen's groups). Unsupported ones are dropped at runtime. */
         val LIVE_DATA_PIDS = listOf(
+            // Moves with the pedal
             PidId.RPM,
             PidId.SPEED_KMH,
-            PidId.COOLANT_TEMP_C,
+            PidId.ACCELERATOR_PEDAL_POSITION_D,
             PidId.THROTTLE_POSITION,
-            PidId.CONTROL_MODULE_VOLTAGE,
             PidId.ENGINE_LOAD,
-            PidId.SHORT_TERM_FUEL_TRIM_1,
-            PidId.LONG_TERM_FUEL_TRIM_1,
             PidId.MAF_AIR_FLOW_RATE,
             PidId.INTAKE_MANIFOLD_PRESSURE,
+            // Engine
+            PidId.TIMING_ADVANCE,
+            PidId.ABSOLUTE_LOAD_VALUE,
+            PidId.ACTUAL_ENGINE_TORQUE_PERCENT,
+            PidId.COMMANDED_THROTTLE_ACTUATOR,
+            PidId.RUN_TIME_SINCE_START,
+            // Temperatures
+            PidId.COOLANT_TEMP_C,
+            PidId.INTAKE_AIR_TEMP_C,
+            PidId.ENGINE_OIL_TEMP_C,
+            PidId.CATALYST_TEMP_B1S1,
+            PidId.AMBIENT_AIR_TEMP_C,
+            // Fuel and air
+            PidId.SHORT_TERM_FUEL_TRIM_1,
+            PidId.LONG_TERM_FUEL_TRIM_1,
             PidId.O2_SENSOR_B1S1_VOLTAGE,
-            PidId.FUEL_LEVEL
+            PidId.O2_WIDEBAND_B1S1_LAMBDA,
+            PidId.FUEL_AIR_COMMANDED_RATIO,
+            PidId.FUEL_RAIL_PRESSURE_ABS,
+            PidId.FUEL_PRESSURE,
+            PidId.FUEL_LEVEL,
+            PidId.COMMANDED_EVAP_PURGE,
+            // Electrical and environment
+            PidId.CONTROL_MODULE_VOLTAGE,
+            PidId.BAROMETRIC_PRESSURE,
         )
+
+        /** Read every cycle — the values that visibly react to the accelerator, plus what instant mileage needs. */
+        val LIVE_FAST_PIDS = setOf(
+            PidId.RPM,
+            PidId.SPEED_KMH,
+            PidId.ACCELERATOR_PEDAL_POSITION_D,
+            PidId.THROTTLE_POSITION,
+            PidId.ENGINE_LOAD,
+            PidId.MAF_AIR_FLOW_RATE,
+            PidId.INTAKE_MANIFOLD_PRESSURE,
+        )
+
+        /** Slow PIDs are read on every Nth cycle only. */
+        const val LIVE_SLOW_EVERY = 5
+
+        private const val LIVE_LOOP_PAUSE_MS = 50L
     }
 }

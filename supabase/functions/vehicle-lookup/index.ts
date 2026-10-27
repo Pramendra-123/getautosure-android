@@ -165,6 +165,8 @@ export function shapeRcData(data: any, mode: LookupMode) {
       manufacturingMonth: text(data?.manufacturing_date_formatted),
       registrationDate: text(data?.registration_date),
       registeredAt: text(data?.registered_at),
+      // Engine size — the app needs it to estimate fuel use on cars without a MAF sensor.
+      cubicCapacity: text(data?.cubic_capacity),
     },
     validity: {
       insuranceCompany: text(data?.insurance_company),

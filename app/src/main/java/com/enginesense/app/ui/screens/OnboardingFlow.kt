@@ -550,8 +550,10 @@ fun AddVehicleDetailsScreen(
     initialYear: Int? = null,
     initialFuelType: String? = null,
     initialPlate: String? = null,
+    initialEngineCc: Int? = null,
 ) {
     var nickname by remember { mutableStateOf("") }
+    var engineCc by remember { mutableStateOf(initialEngineCc?.toString().orEmpty()) }
     var year by remember { mutableStateOf(initialYear?.toString()?.takeIf { it in YEARS } ?: YEARS.first()) }
     var fuelType by remember { mutableStateOf(initialFuelType?.takeIf { it in FUEL_TYPES } ?: FUEL_TYPES.first()) }
     var odometer by remember { mutableStateOf("") }
@@ -621,12 +623,28 @@ fun AddVehicleDetailsScreen(
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
+        Spacer(Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = engineCc,
+            onValueChange = { if (it.length <= 4 && it.all(Char::isDigit)) engineCc = it },
+            label = { Text("Engine size (optional)") },
+            placeholder = { Text("1197") },
+            suffix = { Text("cc") },
+            supportingText = { Text("Lets Live Data estimate mileage on cars without an air-flow sensor.") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
 
         Spacer(Modifier.weight(1f))
         Button(
             onClick = {
                 viewModel.setVehicle(brand.takeUnless { it == VEHICLE_MAKES.first() }, nickname, model.takeUnless { it == OTHER_MODEL } ?: "")
-                viewModel.setVehicleDetails(year.toIntOrNull(), fuelType, odometer.toIntOrNull(), plate.takeIf { it.isNotBlank() })
+                viewModel.setVehicleDetails(
+                    year.toIntOrNull(), fuelType, odometer.toIntOrNull(), plate.takeIf { it.isNotBlank() },
+                    engineCc = engineCc.toIntOrNull()?.takeIf { it in RcPrefillMapper.ENGINE_CC_RANGE }
+                )
                 onContinue()
             },
             modifier = Modifier.fillMaxWidth().height(52.dp)

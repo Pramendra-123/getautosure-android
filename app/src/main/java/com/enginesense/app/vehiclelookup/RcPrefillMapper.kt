@@ -101,6 +101,13 @@ object RcPrefillMapper {
             .firstNotNullOfOrNull { Regex("^(\\d{4})").find(it)?.groupValues?.get(1)?.toIntOrNull() }
             ?.takeIf { it in 1950..2100 }
 
+    /** "999.00" / "1197" -> 999 / 1197. Anything outside a plausible car-engine range is dropped rather than trusted. */
+    fun matchEngineCc(rtoCubicCapacity: String?): Int? =
+        rtoCubicCapacity?.trim()?.toDoubleOrNull()?.let { Math.round(it).toInt() }?.takeIf { it in ENGINE_CC_RANGE }
+
+    /** Smallest to largest engines plausibly seen on an Indian car — also bounds what the details screen accepts. */
+    val ENGINE_CC_RANGE = 600..7000
+
     /** OBD2 is cars-only; RTO records cover two- and three-wheelers too ("M-Cycle/Scooter", "e-Rickshaw"...). */
     fun isLikelyNotACar(category: String?): Boolean {
         val c = category?.uppercase() ?: return false

@@ -105,7 +105,7 @@ fun SeverityBadge(label: String, color: Color) {
 
 /** A WHOOP-dashboard-style stat card: label + a real value (or an honest "—" when unavailable). */
 @Composable
-fun StatTile(label: String, value: String, modifier: Modifier = Modifier) {
+fun StatTile(label: String, value: String, modifier: Modifier = Modifier, note: String? = null) {
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
@@ -115,6 +115,9 @@ fun StatTile(label: String, value: String, modifier: Modifier = Modifier) {
         Text(label.uppercase(), style = GetAutoSureType.Caption)
         Spacer(Modifier.height(4.dp))
         Text(value, style = GetAutoSureType.SectionTitle)
+        if (note != null) {
+            Text(note, style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Accent))
+        }
     }
 }
 

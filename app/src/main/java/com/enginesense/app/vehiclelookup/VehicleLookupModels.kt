@@ -15,6 +15,8 @@ data class RcLookupResult(
     val manufacturingMonth: String?,
     val registrationDate: String?,
     val registeredAt: String?,
+    /** RTO wording, e.g. "999.00" — see [RcPrefillMapper.matchEngineCc]. */
+    val cubicCapacity: String?,
     val insuranceCompany: String?,
     val insuranceUpto: String?,
     val puccUpto: String?,
@@ -36,6 +38,8 @@ data class RcPrefill(
     val fuelType: String?,
     val registrationNumber: String,
     val looksLikeNonCar: Boolean,
+    /** Engine size in cc, when the RTO record has it — lets Live Data estimate fuel use on cars without a MAF sensor. */
+    val engineCc: Int? = null,
 ) {
     companion object {
         fun from(result: RcLookupResult): RcPrefill? {
@@ -51,6 +55,7 @@ data class RcPrefill(
                 fuelType = RcPrefillMapper.matchFuel(result.fuelType),
                 registrationNumber = result.registrationNumber,
                 looksLikeNonCar = RcPrefillMapper.isLikelyNotACar(result.category),
+                engineCc = RcPrefillMapper.matchEngineCc(result.cubicCapacity),
             )
         }
     }

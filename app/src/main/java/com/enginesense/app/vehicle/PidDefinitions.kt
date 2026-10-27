@@ -22,6 +22,9 @@ enum class PidId(
     INTAKE_MANIFOLD_PRESSURE(0x0B, "Intake Manifold Pressure", "kPa", 1, { b -> b[0].toDouble() }, 0.0..255.0),
     MAF_AIR_FLOW_RATE(0x10, "Air Flow Rate", "g/s", 2, { b -> ((b[0] * 256.0) + b[1]) / 100.0 }, 0.0..655.35),
     O2_SENSOR_B1S1_VOLTAGE(0x14, "Oxygen Sensor Voltage (Bank 1 Sensor 1)", "V", 2, { b -> b[0] / 200.0 }, 0.0..1.275),
+    // Wide-band sensor (most cars since ~2010, e.g. VW 1.0 TSI) — these report 0x24 instead of
+    // 0x14. Equivalence ratio λ: 1.00 = ideal mixture, <1 rich, >1 lean (SAE J1979: 2/65536 × AB).
+    O2_WIDEBAND_B1S1_LAMBDA(0x24, "Oxygen Sensor Lambda (Bank 1 Sensor 1)", "λ", 4, { b -> ((b[0] * 256.0) + b[1]) * 2.0 / 65536.0 }, 0.0..2.0),
     INTAKE_AIR_TEMP_C(0x0F, "Intake Air Temperature", "°C", 1, { b -> (b[0] - 40).toDouble() }, -40.0..215.0),
     RPM(0x0C, "Engine RPM", "rpm", 2, { b -> ((b[0] * 256.0) + b[1]) / 4.0 }, 0.0..8000.0),
     SPEED_KMH(0x0D, "Vehicle Speed", "km/h", 1, { b -> b[0].toDouble() }, 0.0..255.0),

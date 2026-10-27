@@ -153,6 +153,7 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                             append("?plate=${encodeRouteArg(prefill.registrationNumber)}")
                             prefill.year?.let { append("&year=$it") }
                             prefill.fuelType?.let { append("&fuel=${encodeRouteArg(it)}") }
+                            prefill.engineCc?.let { append("&cc=$it") }
                         }
                         navController.navigate("addVehicleDetails/${encodeRouteArg(prefill.brand)}/${encodeRouteArg(prefill.model)}$query")
                     },
@@ -178,14 +179,15 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 )
             }
             composable(
-                "addVehicleDetails/{brand}/{model}?plate={plate}&year={year}&fuel={fuel}",
+                "addVehicleDetails/{brand}/{model}?plate={plate}&year={year}&fuel={fuel}&cc={cc}",
                 arguments = listOf(
                     navArgument("brand") { type = NavType.StringType },
                     navArgument("model") { type = NavType.StringType },
                     // Optional — only set when the car came from an RTO lookup (enterRegistration).
                     navArgument("plate") { type = NavType.StringType; nullable = true; defaultValue = null },
                     navArgument("year") { type = NavType.StringType; nullable = true; defaultValue = null },
-                    navArgument("fuel") { type = NavType.StringType; nullable = true; defaultValue = null }
+                    navArgument("fuel") { type = NavType.StringType; nullable = true; defaultValue = null },
+                    navArgument("cc") { type = NavType.StringType; nullable = true; defaultValue = null }
                 )
             ) { entry ->
                 val brand = decodeRouteArg(entry.arguments?.getString("brand"))
@@ -196,7 +198,8 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                     onContinue = { navController.navigate("addVehicleSuccess/${encodeRouteArg(brand)}/${encodeRouteArg(model)}") },
                     initialYear = entry.arguments?.getString("year")?.toIntOrNull(),
                     initialFuelType = entry.arguments?.getString("fuel")?.let { decodeRouteArg(it) },
-                    initialPlate = entry.arguments?.getString("plate")?.let { decodeRouteArg(it) }
+                    initialPlate = entry.arguments?.getString("plate")?.let { decodeRouteArg(it) },
+                    initialEngineCc = entry.arguments?.getString("cc")?.toIntOrNull()
                 )
             }
             composable(

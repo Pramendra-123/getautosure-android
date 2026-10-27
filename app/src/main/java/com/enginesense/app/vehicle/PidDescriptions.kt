@@ -17,6 +17,7 @@ fun PidId.plainDescription(): String = when (this) {
     PidId.INTAKE_MANIFOLD_PRESSURE -> "Vacuum/pressure inside the engine's intake. Used to spot vacuum leaks."
     PidId.MAF_AIR_FLOW_RATE -> "How much air the engine is pulling in. A key input the computer uses to decide how much fuel to add."
     PidId.O2_SENSOR_B1S1_VOLTAGE -> "How rich or lean the exhaust is reading just after the engine. Swinging steadily is healthy; stuck high or low suggests a sensor or mixture problem."
+    PidId.O2_WIDEBAND_B1S1_LAMBDA -> "How rich or lean the exhaust is, from a wide-band sensor. 1.00 is the ideal mixture; below is rich, above is lean. Briefly leaving 1.00 on acceleration or coasting is normal."
     PidId.INTAKE_AIR_TEMP_C -> "How hot the air entering the engine is. Mostly background info."
     PidId.RPM -> "How fast the engine is spinning right now."
     PidId.SPEED_KMH -> "How fast the car is going."

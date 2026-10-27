@@ -76,6 +76,16 @@ class RcPrefillMapperTest {
     }
 
     @Test
+    fun `engine size is read from the RTO's cubic capacity and implausible values are dropped`() {
+        assertEquals(999, RcPrefillMapper.matchEngineCc("999.00"))
+        assertEquals(1197, RcPrefillMapper.matchEngineCc("1197"))
+        assertNull(RcPrefillMapper.matchEngineCc(""))
+        assertNull(RcPrefillMapper.matchEngineCc("149.5")) // a scooter, not a car engine
+        assertNull(RcPrefillMapper.matchEngineCc(null))
+        assertEquals(999, RcPrefill.from(result(make = "SKODA AUTO VOLKSWAGEN INDIA PVT LTD", model = "SLAVIA 1.0 TSI"))!!.engineCc)
+    }
+
+    @Test
     fun `two- and three-wheelers are flagged, cars are not`() {
         assertTrue(RcPrefillMapper.isLikelyNotACar("M-Cycle/Scooter"))
         assertTrue(RcPrefillMapper.isLikelyNotACar("e-Rickshaw(P)"))
@@ -116,7 +126,7 @@ class RcPrefillMapperTest {
         category: String? = "Motor Car(LMV)",
     ) = RcLookupResult(
         registrationNumber = "MH12AB1234", make = make, model = model, fuelType = fuel, color = null,
-        category = category, manufacturingMonth = month, registrationDate = null, registeredAt = null,
+        category = category, manufacturingMonth = month, registrationDate = null, registeredAt = null, cubicCapacity = "999.00",
         insuranceCompany = null, insuranceUpto = null, puccUpto = null, fitnessUpto = null, taxUpto = null,
         partial = false, source = "RTO records",
     )

@@ -105,6 +105,7 @@ class VehicleLookupRepository(
                 manufacturingMonth = vehicle.optStringOrNull("manufacturingMonth"),
                 registrationDate = vehicle.optStringOrNull("registrationDate"),
                 registeredAt = vehicle.optStringOrNull("registeredAt"),
+                cubicCapacity = vehicle.optStringOrNull("cubicCapacity"),
                 insuranceCompany = validity.optStringOrNull("insuranceCompany"),
                 insuranceUpto = validity.optStringOrNull("insuranceUpto"),
                 puccUpto = validity.optStringOrNull("puccUpto"),

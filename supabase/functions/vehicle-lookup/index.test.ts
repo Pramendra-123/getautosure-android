@@ -128,6 +128,7 @@ Deno.test("customer mode has the prefill and reminder fields", () => {
   assertEquals(shaped.vehicle.model, "TESTMODEL VX");
   assertEquals(shaped.vehicle.fuelType, "PETROL");
   assertEquals(shaped.vehicle.manufacturingMonth, "2015-03");
+  assertEquals(shapeRcData({ ...FIXTURE, cubic_capacity: "999.00" }, "customer").vehicle.cubicCapacity, "999.00");
   assertEquals(shaped.validity.insuranceUpto, "2027-01-15");
   assertEquals(shaped.validity.fitnessUpto, "2030-03-31");
 });

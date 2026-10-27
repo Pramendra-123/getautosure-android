@@ -1,6 +1,9 @@
 package com.enginesense.app.vehicle
 
-/** One polled (speed, air-flow) sample pair during a trip-mileage run. */
+/** Fuel use at one instant — km/L only when moving fast enough for it to mean anything (see [MileageAnalyzer.MIN_SPEED_FOR_KM_PER_LITRE]). */
+data class InstantFuelUse(val litresPerHour: Double, val kmPerLitre: Double?)
+
+/** One polled (speed, air-flow) sample pair during a trip-mileage run. Air flow is measured (MAF) or estimated — see [AirFlowEstimator]. */
 data class FuelSample(val elapsedMs: Long, val speedKmh: Int, val mafGramsPerSec: Double)
 
 /** A completed trip estimate, or null fields if the trip was too short/unsupported — never a guessed number. */
@@ -36,6 +39,20 @@ object MileageAnalyzer {
         "Petrol" to FuelProperties(airFuelRatio = 14.7, densityGPerMl = 0.74),
         "Diesel" to FuelProperties(airFuelRatio = 14.5, densityGPerMl = 0.84)
     )
+
+    /** Below this speed km/L swings wildly (and is infinite-adjacent near zero) — show L/h instead, the way car trip computers do at idle. */
+    const val MIN_SPEED_FOR_KM_PER_LITRE = 5
+
+    /**
+     * Fuel use right now, from one air-flow + speed sample — what the Live Data screen shows.
+     * Null when the fuel type has no meaningful km/L (CNG/Electric/Hybrid/unset), same rule as [analyze].
+     */
+    fun instant(airGramsPerSec: Double, speedKmh: Int, fuelType: String?): InstantFuelUse? {
+        val properties = FUEL_PROPERTIES[fuelType] ?: return null
+        val litresPerHour = airGramsPerSec / properties.airFuelRatio / properties.densityGPerMl * 3600.0 / 1000.0
+        val kmPerLitre = if (speedKmh >= MIN_SPEED_FOR_KM_PER_LITRE && litresPerHour > 0.0) speedKmh / litresPerHour else null
+        return InstantFuelUse(litresPerHour, kmPerLitre)
+    }
 
     fun analyze(samples: List<FuelSample>, fuelType: String?): TripMileageResult {
         val properties = FUEL_PROPERTIES[fuelType]
