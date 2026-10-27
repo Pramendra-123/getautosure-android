@@ -125,22 +125,13 @@ fun LiveDataScreen(viewModel: GetAutoSureViewModel, onStop: () -> Unit) {
 }
 
 /** Shown in this order at the top — the values that visibly react to the accelerator. */
-private val TOP_PIDS = listOf(PidId.RPM, PidId.SPEED_KMH, PidId.ACCELERATOR_PEDAL_POSITION_D, PidId.THROTTLE_POSITION)
+private val TOP_PIDS = listOf(PidId.RPM, PidId.SPEED_KMH, PidId.ACCELERATOR_PEDAL_POSITION_D)
 
+/** The agreed layout (2026-10-27 mockup) — nothing else gets a tile. MAF/barometric are read only for mileage and boost. */
 private val GROUPS: List<Pair<String, List<PidId>>> = listOf(
-    "Engine" to listOf(
-        PidId.ENGINE_LOAD, PidId.INTAKE_MANIFOLD_PRESSURE, PidId.MAF_AIR_FLOW_RATE, PidId.TIMING_ADVANCE,
-        PidId.ABSOLUTE_LOAD_VALUE, PidId.ACTUAL_ENGINE_TORQUE_PERCENT, PidId.COMMANDED_THROTTLE_ACTUATOR,
-        PidId.RUN_TIME_SINCE_START,
-    ),
-    "Temperatures" to listOf(
-        PidId.COOLANT_TEMP_C, PidId.INTAKE_AIR_TEMP_C, PidId.ENGINE_OIL_TEMP_C, PidId.CATALYST_TEMP_B1S1, PidId.AMBIENT_AIR_TEMP_C,
-    ),
-    "Fuel and air" to listOf(
-        PidId.SHORT_TERM_FUEL_TRIM_1, PidId.LONG_TERM_FUEL_TRIM_1, PidId.O2_SENSOR_B1S1_VOLTAGE, PidId.O2_WIDEBAND_B1S1_LAMBDA,
-        PidId.FUEL_AIR_COMMANDED_RATIO, PidId.FUEL_RAIL_PRESSURE_ABS, PidId.FUEL_PRESSURE, PidId.FUEL_LEVEL, PidId.COMMANDED_EVAP_PURGE,
-    ),
-    "Electrical and outside" to listOf(PidId.CONTROL_MODULE_VOLTAGE, PidId.BAROMETRIC_PRESSURE),
+    "Engine" to listOf(PidId.THROTTLE_POSITION, PidId.ENGINE_LOAD, PidId.INTAKE_MANIFOLD_PRESSURE, PidId.TIMING_ADVANCE),
+    "Temperatures" to listOf(PidId.COOLANT_TEMP_C, PidId.INTAKE_AIR_TEMP_C),
+    "Fuel and electrical" to listOf(PidId.SHORT_TERM_FUEL_TRIM_1, PidId.LONG_TERM_FUEL_TRIM_1, PidId.FUEL_LEVEL, PidId.CONTROL_MODULE_VOLTAGE),
 )
 
 /** A tile appears once the PID has been read at least once and the car didn't say it's unsupported. */
@@ -227,14 +218,12 @@ private fun LiveLoadingRow(label: String) {
 
 /** Canonical display names that are too long for a 2-column grid tile. */
 private fun tileLabel(pid: PidId): String = when (pid) {
-    PidId.O2_SENSOR_B1S1_VOLTAGE -> "O2 Sensor Voltage"
-    PidId.O2_WIDEBAND_B1S1_LAMBDA -> "O2 Sensor Lambda"
     PidId.ACCELERATOR_PEDAL_POSITION_D -> "Accelerator Pedal"
-    PidId.COMMANDED_THROTTLE_ACTUATOR -> "Commanded Throttle"
-    PidId.RUN_TIME_SINCE_START -> "Engine Run Time"
     PidId.CONTROL_MODULE_VOLTAGE -> "Battery Voltage"
     PidId.INTAKE_MANIFOLD_PRESSURE -> "Manifold Pressure"
-    PidId.FUEL_AIR_COMMANDED_RATIO -> "Commanded Lambda"
+    PidId.TIMING_ADVANCE -> "Ignition Timing"
+    PidId.SHORT_TERM_FUEL_TRIM_1 -> "Short-Term Trim"
+    PidId.LONG_TERM_FUEL_TRIM_1 -> "Long-Term Trim"
     else -> pid.displayName
 }
 
@@ -242,8 +231,6 @@ private fun formatLive(pid: PidId, status: PidStatus?, value: Double?): String {
     if (status != PidStatus.VERIFIED || value == null) return "—"
     val formatted = when (pid) {
         PidId.RPM -> "%.0f".format(value) // "1744 rpm", not "1743.5 rpm"
-        PidId.O2_WIDEBAND_B1S1_LAMBDA, PidId.FUEL_AIR_COMMANDED_RATIO -> "%.2f".format(value)
-        PidId.RUN_TIME_SINCE_START -> return "%d:%02d".format(value.toInt() / 60, value.toInt() % 60)
         else -> if (value == value.toLong().toDouble()) value.toLong().toString() else "%.1f".format(value)
     }
     return if (pid.unit.isEmpty()) formatted else "$formatted ${pid.unit}"

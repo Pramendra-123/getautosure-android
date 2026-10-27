@@ -816,9 +816,12 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         /** Used only when a token's own `exp` claim couldn't be read — observed real expiry is ~1 hour; this is deliberately shorter so a decode failure errs toward re-fetching too often, not too rarely. */
         private const val ASSUMED_TOKEN_LIFETIME_SECONDS = 15L * 60L
 
-        /** Everything Live Data reads, in screen order within each group (see LiveDataScreen's groups). Unsupported ones are dropped at runtime. */
+        /**
+         * Everything Live Data reads. Deliberately the agreed short list (2026-10-27 mockup) — more
+         * tiles were tried and cut as clutter. MAF and barometric pressure are read but have no
+         * tile: they feed mileage and turbo boost. Unsupported ones are dropped at runtime.
+         */
         val LIVE_DATA_PIDS = listOf(
-            // Moves with the pedal
             PidId.RPM,
             PidId.SPEED_KMH,
             PidId.ACCELERATOR_PEDAL_POSITION_D,
@@ -826,29 +829,12 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
             PidId.ENGINE_LOAD,
             PidId.MAF_AIR_FLOW_RATE,
             PidId.INTAKE_MANIFOLD_PRESSURE,
-            // Engine
             PidId.TIMING_ADVANCE,
-            PidId.ABSOLUTE_LOAD_VALUE,
-            PidId.ACTUAL_ENGINE_TORQUE_PERCENT,
-            PidId.COMMANDED_THROTTLE_ACTUATOR,
-            PidId.RUN_TIME_SINCE_START,
-            // Temperatures
             PidId.COOLANT_TEMP_C,
             PidId.INTAKE_AIR_TEMP_C,
-            PidId.ENGINE_OIL_TEMP_C,
-            PidId.CATALYST_TEMP_B1S1,
-            PidId.AMBIENT_AIR_TEMP_C,
-            // Fuel and air
             PidId.SHORT_TERM_FUEL_TRIM_1,
             PidId.LONG_TERM_FUEL_TRIM_1,
-            PidId.O2_SENSOR_B1S1_VOLTAGE,
-            PidId.O2_WIDEBAND_B1S1_LAMBDA,
-            PidId.FUEL_AIR_COMMANDED_RATIO,
-            PidId.FUEL_RAIL_PRESSURE_ABS,
-            PidId.FUEL_PRESSURE,
             PidId.FUEL_LEVEL,
-            PidId.COMMANDED_EVAP_PURGE,
-            // Electrical and environment
             PidId.CONTROL_MODULE_VOLTAGE,
             PidId.BAROMETRIC_PRESSURE,
         )
