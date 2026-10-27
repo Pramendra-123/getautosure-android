@@ -132,16 +132,32 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                     // A real Google credential already identifies the user, so it skips
                     // straight past phoneOtp. "Skip" is the temporary testing bypass — see
                     // the note on LoginScreen — and lands in the same place.
-                    onSignedIn = { navController.navigate("selectBrand") },
+                    onSignedIn = { navController.navigate("enterRegistration") },
                     onContinueWithPhone = { navController.navigate("phoneOtp") },
-                    onSkip = { navController.navigate("selectBrand") }
+                    onSkip = { navController.navigate("enterRegistration") }
                 )
             }
             composable("phoneOtp") {
                 PhoneOtpScreen(
                     onBack = { navController.popBackStack() },
-                    onVerified = { navController.navigate("selectBrand") },
-                    onSkip = { navController.navigate("selectBrand") }
+                    onVerified = { navController.navigate("enterRegistration") },
+                    onSkip = { navController.navigate("enterRegistration") }
+                )
+            }
+            composable("enterRegistration") {
+                EnterRegistrationScreen(
+                    // Straight to the details screen — brand/model came from the RTO record and
+                    // were just confirmed, so the two picker screens are skipped.
+                    onConfirmed = { prefill ->
+                        val query = buildString {
+                            append("?plate=${encodeRouteArg(prefill.registrationNumber)}")
+                            prefill.year?.let { append("&year=$it") }
+                            prefill.fuelType?.let { append("&fuel=${encodeRouteArg(it)}") }
+                        }
+                        navController.navigate("addVehicleDetails/${encodeRouteArg(prefill.brand)}/${encodeRouteArg(prefill.model)}$query")
+                    },
+                    onEnterManually = { navController.navigate("selectBrand") },
+                    onSkip = { navController.navigate("connect") }
                 )
             }
             composable("selectBrand") {
@@ -162,10 +178,14 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 )
             }
             composable(
-                "addVehicleDetails/{brand}/{model}",
+                "addVehicleDetails/{brand}/{model}?plate={plate}&year={year}&fuel={fuel}",
                 arguments = listOf(
                     navArgument("brand") { type = NavType.StringType },
-                    navArgument("model") { type = NavType.StringType }
+                    navArgument("model") { type = NavType.StringType },
+                    // Optional — only set when the car came from an RTO lookup (enterRegistration).
+                    navArgument("plate") { type = NavType.StringType; nullable = true; defaultValue = null },
+                    navArgument("year") { type = NavType.StringType; nullable = true; defaultValue = null },
+                    navArgument("fuel") { type = NavType.StringType; nullable = true; defaultValue = null }
                 )
             ) { entry ->
                 val brand = decodeRouteArg(entry.arguments?.getString("brand"))
@@ -173,7 +193,10 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 AddVehicleDetailsScreen(
                     viewModel, brand, model,
                     onBack = { navController.popBackStack() },
-                    onContinue = { navController.navigate("addVehicleSuccess/${encodeRouteArg(brand)}/${encodeRouteArg(model)}") }
+                    onContinue = { navController.navigate("addVehicleSuccess/${encodeRouteArg(brand)}/${encodeRouteArg(model)}") },
+                    initialYear = entry.arguments?.getString("year")?.toIntOrNull(),
+                    initialFuelType = entry.arguments?.getString("fuel")?.let { decodeRouteArg(it) },
+                    initialPlate = entry.arguments?.getString("plate")?.let { decodeRouteArg(it) }
                 )
             }
             composable(
@@ -194,7 +217,7 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                             launchSingleTop = true
                         }
                     },
-                    onAddAnother = { navController.navigate("selectBrand") }
+                    onAddAnother = { navController.navigate("enterRegistration") }
                 )
             }
             composable("connect") {
