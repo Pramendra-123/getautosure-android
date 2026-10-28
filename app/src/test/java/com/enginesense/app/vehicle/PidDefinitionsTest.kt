@@ -38,6 +38,19 @@ class PidDefinitionsTest {
     }
 
     @Test
+    fun `ECU odometer decodes four bytes at 0_1 km per bit`() {
+        // 842105 tenths = 0x000CD979 -> 84,210.5 km.
+        assertEquals(84210.5, PidId.ODOMETER.decode(listOf(0x00, 0x0C, 0xD9, 0x79)), 0.01)
+        assertEquals("01A6", PidId.ODOMETER.obdCommand)
+    }
+
+    @Test
+    fun `cleared-code counters decode as plain counts`() {
+        assertEquals(3.0, PidId.WARM_UPS_SINCE_CODES_CLEARED.decode(listOf(3)), 0.001)
+        assertEquals(300.0, PidId.TIME_SINCE_CODES_CLEARED.decode(listOf(0x01, 0x2C)), 0.001)
+    }
+
+    @Test
     fun `every PID has a unique command and a non-empty display name`() {
         val commands = PidId.entries.map { it.obdCommand }
         assertEquals(commands.size, commands.toSet().size)

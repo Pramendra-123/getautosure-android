@@ -151,11 +151,12 @@ class Elm327Client(private val device: BluetoothDevice) : ObdTransport {
 
         /**
          * Decodes a Mode 03 response like "43 01 33 00 00 00 00" into DTC strings like "P0133".
+         * Modes 07 (pending, echo "47") and 0A (permanent, echo "4A") use the same layout.
          * Delegates the actual byte-pair math to [DtcDecoder] so this and the newer
          * [com.enginesense.app.vehicle] pipeline share one implementation.
          */
-        fun parseDtcResponse(response: String): List<String> {
-            val parsed = ObdResponseParser.parse(response, expectedModeEcho = "43")
+        fun parseDtcResponse(response: String, modeEcho: String = "43"): List<String> {
+            val parsed = ObdResponseParser.parse(response, expectedModeEcho = modeEcho)
             val bytes = (parsed as? ObdRawResult.Ok)?.bytes ?: return emptyList()
             return DtcDecoder.decode(bytes)
         }

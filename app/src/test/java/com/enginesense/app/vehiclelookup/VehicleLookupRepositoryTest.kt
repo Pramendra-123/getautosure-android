@@ -76,6 +76,30 @@ class VehicleLookupRepositoryTest {
     }
 
     @Test
+    fun `a VIN is sent only when given, and the chassis match comes back three-way`() = runTest {
+        server.enqueue(MockResponse().setBody(customerResponse.replaceFirst("\"partial\":true", "\"partial\":true,\"chassisMatch\":false")))
+        val mismatch = repo().lookup("MH12AB1234", vin = "XX9SAMPLEK0123456").getOrThrow()
+        assertEquals("XX9SAMPLEK0123456", JSONObject(server.takeRequest().body.readUtf8()).getString("vin"))
+        assertEquals(false, mismatch.chassisMatch)
+
+        server.enqueue(MockResponse().setBody(customerResponse.replaceFirst("\"partial\":true", "\"partial\":true,\"chassisMatch\":null")))
+        val unknown = repo().lookup("MH12AB1234").getOrThrow()
+        assertTrue(!JSONObject(server.takeRequest().body.readUtf8()).has("vin"))
+        assertNull(unknown.chassisMatch)
+
+        // An older deployment without the field at all reads as "couldn't compare".
+        server.enqueue(MockResponse().setBody(customerResponse))
+        assertNull(repo().lookup("MH12AB1234").getOrThrow().chassisMatch)
+    }
+
+    @Test
+    fun `RTO manufacturing month reads as month and year`() {
+        assertEquals("Mar 2019", PurchaseRcCheckViewModel.formatMonth("2019-03"))
+        assertEquals("11/1998", PurchaseRcCheckViewModel.formatMonth("11/1998")) // unknown format shown as-is
+        assertNull(PurchaseRcCheckViewModel.formatMonth(null))
+    }
+
+    @Test
     fun `server errors keep their code and people-facing message`() = runTest {
         server.enqueue(
             MockResponse().setResponseCode(422)

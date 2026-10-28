@@ -32,7 +32,8 @@ object DiagnosticRulesEngine {
     ): List<DiagnosticFinding> {
         val findings = mutableListOf<DiagnosticFinding>()
 
-        for (dtc in snapshot.dtcs) {
+        // Pending/permanent codes aren't confirmed active faults — see DtcSource.
+        for (dtc in snapshot.dtcs.filter { it.source == DtcSource.STORED }) {
             val explanation = dtcExplanations[dtc.code.uppercase()]
             findings.add(
                 DiagnosticFinding(

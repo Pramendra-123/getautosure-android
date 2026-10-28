@@ -12,7 +12,14 @@ enum class SimulatedProfile {
     MISFIRE_DTC,
     OVERHEATING,
     LOW_BATTERY_VOLTAGE,
-    VOLTAGE_PID_UNSUPPORTED
+    VOLTAGE_PID_UNSUPPORTED,
+    /**
+     * A used car whose seller cleared the codes just before showing it: normal fault list empty,
+     * but a permanent code survives, a fault is pending again, the clear-code counters are low,
+     * and the engine was warmed up before this start. Also reports an ECU odometer and a
+     * standard-format VIN, so every Used Car Check card has something to show.
+     */
+    SELLER_CLEARED_CODES
 }
 
 /**
@@ -40,6 +47,8 @@ class SimulatedObdTransport(private val profile: SimulatedProfile = SimulatedPro
         check(connected) { "SimulatedObdTransport: sendCommand called before connect()" }
         val normalized = command.trim().uppercase()
 
+        if (profile == SimulatedProfile.SELLER_CLEARED_CODES) sellerClearedResponse(normalized)?.let { return it }
+
         return when {
             normalized == "ATZ" -> "ELM327 v1.5"
             normalized.startsWith("AT") -> "OK"
@@ -62,6 +71,26 @@ class SimulatedObdTransport(private val profile: SimulatedProfile = SimulatedPro
             normalized == "0904" -> mode09Response(pid = 0x04, countByte = null, ascii = DEMO_CALIBRATION_ID)
             else -> "NO DATA"
         }
+    }
+
+    /** [SimulatedProfile.SELLER_CLEARED_CODES] overrides; null falls through to the shared responses. */
+    private fun sellerClearedResponse(command: String): String? = when (command) {
+        "0100" -> "41 00 18 1A 80 02" // shared set + 0x1F (run time since start)
+        "0120" -> "41 20 00 03 80 00" // 0x2F fuel level, 0x30 warm-ups, 0x31 distance since cleared
+        "0140" -> "41 40 40 04 00 00" // 0x42 voltage, 0x4E time since cleared
+        "01A0" -> "41 A0 04 00 00 00" // 0xA6 odometer
+        "011F" -> "41 1F 00 5A" // engine started 90 s ago...
+        "0105" -> "41 05 7D" // ...yet coolant is already 85°C
+        "0130" -> "41 30 03" // 3 warm-ups since codes cleared
+        "0131" -> "41 31 00 12" // 18 km since codes cleared
+        "014E" -> "41 4E 00 28" // 40 minutes since codes cleared
+        "01A6" -> "41 A6 00 0C D9 79" // 84,210.5 km
+        "03" -> "43 00 00 00 00 00 00" // normal fault list cleared
+        "07" -> if (dtcsCleared) "47 00 00 00 00 00 00" else "47 01 71 00 00 00 00" // pending P0171
+        "0A" -> "4A 04 20 00 00 00 00" // permanent P0420 — Mode 04 can't erase it
+        "0101" -> "41 01 00 07 21 01" // MIL off, 0 DTCs, catalyst monitor not complete
+        "0902" -> mode09Response(pid = 0x02, countByte = 0x01, ascii = SELLER_CLEARED_VIN)
+        else -> null
     }
 
     /** Byte A: MIL off, 1 DTC stored for MISFIRE_DTC else 0. Byte B: spark ignition, misfire+fuel+components all supported and complete except misfire on MISFIRE_DTC. Bytes C/D: catalyst+O2 sensor supported and complete, everything else not supported (0). */
@@ -143,5 +172,8 @@ class SimulatedObdTransport(private val profile: SimulatedProfile = SimulatedPro
         private const val DEMO_VIN = "DEMO1234567890VIN" // 17 chars, clearly fake — test mode only
         private const val DEMO_ECU_NAME = "ENGINE ECU"
         private const val DEMO_CALIBRATION_ID = "SW1.0.4"
+        // Standard 17-character format, sent with the RTO lookup for the chassis match; "XX9" isn't
+        // a real manufacturer code, so it can never match a real RC.
+        private const val SELLER_CLEARED_VIN = "XX9SAMPLEK0123456"
     }
 }

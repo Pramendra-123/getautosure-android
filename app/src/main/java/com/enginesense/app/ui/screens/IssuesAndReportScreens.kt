@@ -121,7 +121,7 @@ fun IssuesScreen(viewModel: GetAutoSureViewModel, onOpenIssue: (String) -> Unit)
         // Only offered after a real/test-mode scan with actual stored codes — a demo history
         // entry has no live connection to clear anything on, and there's nothing to clear if
         // the last scan found no DTCs.
-        if (result?.isDemo == false && (result?.snapshot?.dtcs?.isNotEmpty() == true)) {
+        if (result?.isDemo == false && (result?.snapshot?.dtcs?.any { it.source == com.enginesense.app.vehicle.DtcSource.STORED } == true)) {
             Spacer(Modifier.height(16.dp))
             OutlinedButton(
                 onClick = { showClearConfirm = true },

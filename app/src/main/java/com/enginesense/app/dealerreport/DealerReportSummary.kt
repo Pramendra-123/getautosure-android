@@ -28,7 +28,8 @@ fun healthSummaryJson(result: ScanResult): JSONObject = JSONObject().apply {
         put("dtcCount", JSONObject.NULL)
         put("emissionsReady", JSONObject.NULL)
     }
-    put("faultCodes", JSONArray(result.snapshot.dtcs.map { it.code }))
+    // Permanent codes (Mode 0A) usually repeat a stored one, so they'd double-list here.
+    put("faultCodes", JSONArray(result.snapshot.dtcs.filter { it.source != com.enginesense.app.vehicle.DtcSource.PERMANENT }.map { it.code }))
     put(
         "categories",
         JSONArray(

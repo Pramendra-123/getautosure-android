@@ -27,7 +27,9 @@ fun PidId.plainDescription(): String = when (this) {
     PidId.DISTANCE_WITH_MIL_ON -> "How far you've driven since the check-engine light came on. Longer distance means more urgency."
     PidId.COMMANDED_EVAP_PURGE -> "How much fuel vapor is being recycled from the gas tank — part of the EVAP system."
     PidId.FUEL_LEVEL -> "How much fuel is left in the tank."
+    PidId.WARM_UPS_SINCE_CODES_CLEARED -> "How many times the engine has fully warmed up since fault codes were last reset. A low number on a car for sale is worth asking about."
     PidId.DISTANCE_SINCE_CODES_CLEARED -> "How far you've driven since fault codes were last reset."
+    PidId.TIME_SINCE_CODES_CLEARED -> "How long the engine has run since fault codes were last reset."
     PidId.BAROMETRIC_PRESSURE -> "Outside air pressure, related to altitude. Just context, not a fault signal."
     PidId.CATALYST_TEMP_B1S1 -> "How hot the catalytic converter is running. Too cold means it's not cleaning exhaust properly."
     PidId.CONTROL_MODULE_VOLTAGE -> "How much charge your electrical system has while running. Low means a weak battery or failing alternator."
@@ -44,4 +46,5 @@ fun PidId.plainDescription(): String = when (this) {
     PidId.ENGINE_OIL_TEMP_C -> "How hot the engine oil is. Oil running too hot protects the engine less."
     PidId.ACTUAL_ENGINE_TORQUE_PERCENT -> "How much pulling power the engine is making right now, versus its maximum."
     PidId.ENGINE_REFERENCE_TORQUE -> "The engine's maximum rated pulling power, for comparison against the actual figure."
+    PidId.ODOMETER -> "Total distance as recorded by the car's computer. If it's far from the dashboard reading, ask why."
 }

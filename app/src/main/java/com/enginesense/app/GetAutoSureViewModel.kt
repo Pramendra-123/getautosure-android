@@ -430,12 +430,18 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
             val reader = PidReader(t)
             val readings = reader.readAll()
             val dtcCodes = Elm327Client.parseDtcResponse(t.sendCommand("03"))
+            // Pending/permanent are extras for the pre-purchase check — an adapter or ECU that
+            // chokes on them must not cost the user the rest of the scan.
+            val pendingCodes = runCatching { Elm327Client.parseDtcResponse(t.sendCommand("07"), modeEcho = "47") }.getOrDefault(emptyList())
+            val permanentCodes = runCatching { Elm327Client.parseDtcResponse(t.sendCommand("0A"), modeEcho = "4A") }.getOrDefault(emptyList())
 
             VehicleSnapshot(
                 timestampMillis = timestampMillis,
                 vehicleBrand = vehicleBrand,
                 readings = readings,
-                dtcs = dtcCodes.map { DtcReading(it, DtcSource.STORED) }
+                dtcs = dtcCodes.map { DtcReading(it, DtcSource.STORED) } +
+                    pendingCodes.map { DtcReading(it, DtcSource.PENDING) } +
+                    permanentCodes.map { DtcReading(it, DtcSource.PERMANENT) }
             )
         }
 

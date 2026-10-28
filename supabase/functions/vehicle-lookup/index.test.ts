@@ -7,6 +7,7 @@
 
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
+  chassisMatch,
   isUsableSurepassResponse,
   isValidIndianRegistration,
   normalizeRegistrationNumber,
@@ -80,7 +81,43 @@ Deno.test("mode defaults to customer", () => {
     ok: true,
     registrationNumber: "MH12AB1234",
     mode: "customer",
+    vin: null,
   });
+});
+
+Deno.test("a VIN is normalized, and an unusable one is just treated as absent", () => {
+  const withVin = parseLookupRequest({ registrationNumber: "MH12AB1234", vin: "ma3-ewde 1s00123456" });
+  assertEquals(withVin.ok && withVin.vin, "MA3EWDE1S00123456");
+  const junk = parseLookupRequest({ registrationNumber: "MH12AB1234", vin: "x1" });
+  assertEquals(junk.ok && junk.vin, null);
+  const notString = parseLookupRequest({ registrationNumber: "MH12AB1234", vin: 12345 });
+  assertEquals(notString.ok && notString.vin, null);
+});
+
+// --- chassisMatch ---
+
+const VIN = "MA3EWDE1S00123456";
+
+Deno.test("full chassis numbers must match exactly", () => {
+  assertEquals(chassisMatch(VIN, false, VIN), true);
+  assertEquals(chassisMatch("ma3-ewde1s 00123456", false, VIN), true);
+  assertEquals(chassisMatch("MA3EWDE1S00999999", false, VIN), false);
+});
+
+Deno.test("a masked chassis compares only its visible end", () => {
+  assertEquals(chassisMatch("MA3XXXXXXXX23456", true, VIN), true);
+  assertEquals(chassisMatch("MA3XXXXXXXX99999", true, VIN), false);
+  assertEquals(chassisMatch("********23456", true, VIN), true);
+  assertEquals(chassisMatch("********99999", false, VIN), false); // '*' marks masking even without the flag
+  assertEquals(chassisMatch("**************456", true, VIN), null); // too little visible
+});
+
+Deno.test("no VIN, no chassis, or a pre-VIN format can't be compared", () => {
+  assertEquals(chassisMatch(VIN, false, null), null);
+  assertEquals(chassisMatch(null, false, VIN), null);
+  assertEquals(chassisMatch("", false, VIN), null);
+  assertEquals(chassisMatch("ABC12", false, VIN), null); // short old-style number that isn't the VIN's end
+  assertEquals(chassisMatch("23456", false, VIN), true); // RC holds only the last digits
 });
 
 Deno.test("dealer mode is passed through (access is checked separately, server-side)", () => {

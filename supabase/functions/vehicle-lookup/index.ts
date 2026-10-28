@@ -7,6 +7,8 @@
 //                    set by hand in the Dashboard (see the migration for why).
 // Father's name, addresses and mobile number are never returned in either mode — nothing in the
 // app needs them, so they stay in the server-side cache only.
+// Optional `vin` (the car's own VIN, read over OBD): both modes then also return `chassisMatch`
+// (true/false/null) — customer mode learns whether the car matches its papers, never the chassis.
 //
 // STATUS: written and unit-tested (index.test.ts, run with `deno test`), NOT yet deployed or run
 // against a real Supabase project. The Surepass field names below come from a real sandbox
@@ -89,9 +91,45 @@ export function isValidIndianRegistration(normalized: string): boolean {
   return STANDARD_PLATE.test(normalized) || BH_PLATE.test(normalized);
 }
 
+/** The ECU's VIN as the app read it, letters and digits only. Anything unusable is treated as "no VIN", not an error — the lookup itself is still worth doing. */
+export function normalizeVin(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const vin = raw.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 17);
+  return vin.length >= MIN_CHASSIS_COMPARE_CHARS ? vin : null;
+}
+
+// RCs that mask the chassis number still show the end of it; fewer characters than this
+// can't tell two cars apart reliably.
+export const MIN_CHASSIS_COMPARE_CHARS = 5;
+
+/**
+ * Whether the VIN the car's computer reports belongs to the RC's chassis number — the only thing
+ * the app learns about the chassis in customer mode, never the number itself. null means "can't
+ * compare" (no VIN, no chassis on the record, too little left after masking, or a pre-VIN chassis
+ * format), which the app must not present as either a match or a mismatch.
+ */
+export function chassisMatch(rcChassis: unknown, maskedFlag: unknown, vin: string | null): boolean | null {
+  if (!vin || typeof rcChassis !== "string") return null;
+  const raw = rcChassis.toUpperCase().replace(/\s|-/g, "");
+  if (!raw) return null;
+
+  const masked = maskedFlag === true || /[*#]/.test(raw);
+  if (masked) {
+    // Masks hide the start; only what follows the last mask (*, #, or a run of X's) is real.
+    const visible = raw.replace(/^.*(?:[*#]|XXX+)/, "").replace(/[^A-Z0-9]/g, "");
+    if (visible.length < MIN_CHASSIS_COMPARE_CHARS) return null;
+    return vin.endsWith(visible);
+  }
+
+  const chassis = raw.replace(/[^A-Z0-9]/g, "");
+  if (chassis.length === vin.length) return chassis === vin;
+  const [shorter, longer] = chassis.length < vin.length ? [chassis, vin] : [vin, chassis];
+  return shorter.length >= MIN_CHASSIS_COMPARE_CHARS && longer.endsWith(shorter) ? true : null;
+}
+
 export function parseLookupRequest(
   rawBody: unknown,
-): { ok: true; registrationNumber: string; mode: LookupMode } | { ok: false; code: string; message: string } {
+): { ok: true; registrationNumber: string; mode: LookupMode; vin: string | null } | { ok: false; code: string; message: string } {
   if (typeof rawBody !== "object" || rawBody === null) {
     return { ok: false, code: "invalid_request", message: "Request body must be a JSON object" };
   }
@@ -114,7 +152,7 @@ export function parseLookupRequest(
       message: "That doesn't look like an Indian registration number (e.g. MH12AB1234)",
     };
   }
-  return { ok: true, registrationNumber, mode };
+  return { ok: true, registrationNumber, mode, vin: normalizeVin(body.vin) };
 }
 
 /** Surepass sends "" and "Not Available" for missing values — both become null so the app shows "not available" instead of a blank or a fake-looking string. */
@@ -376,7 +414,7 @@ Deno.serve(async (req: Request) => {
   const parsed = parseLookupRequest(rawBody);
   // `=== false`, not `!parsed.ok` — see the matching comment in ai-mechanic/index.ts.
   if (parsed.ok === false) return jsonError(400, parsed.code, parsed.message);
-  const { registrationNumber, mode } = parsed;
+  const { registrationNumber, mode, vin } = parsed;
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SUREPASS_API_TOKEN || !SUREPASS_BASE_URL) {
     console.error("Missing SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUREPASS_API_TOKEN or SUREPASS_BASE_URL");
@@ -421,6 +459,12 @@ Deno.serve(async (req: Request) => {
       // Surepass flags records where the RTO itself returned fewer fields — the app should say
       // "some details aren't available from the RTO" rather than imply the car has none.
       partial: (rcData as { less_info?: unknown })?.less_info === true,
+      // Match/no-match only — the chassis number itself stays dealer-mode-only.
+      chassisMatch: chassisMatch(
+        (rcData as { vehicle_chasi_number?: unknown })?.vehicle_chasi_number,
+        (rcData as { response_metadata?: { masked_chassis?: unknown } })?.response_metadata?.masked_chassis,
+        vin,
+      ),
       vehicle: shapeRcData(rcData, mode),
     }),
     { headers: { "Content-Type": "application/json" } },
