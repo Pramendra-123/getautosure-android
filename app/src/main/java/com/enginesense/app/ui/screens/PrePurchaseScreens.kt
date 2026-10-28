@@ -48,6 +48,16 @@ import com.enginesense.app.vehiclelookup.PurchaseRcCheckViewModel
 import com.enginesense.app.vehiclelookup.PurchaseRcState
 import com.enginesense.app.vehiclelookup.RcLookupResult
 import androidx.lifecycle.viewmodel.compose.viewModel
+import android.widget.Toast
+import androidx.compose.runtime.rememberCoroutineScope
+import com.enginesense.app.report.PrePurchaseReportPdfGenerator
+import com.enginesense.app.report.sharePdfIntent
+import com.enginesense.app.report.viewPdfIntent
+import com.enginesense.app.vehicle.PrePurchaseReport
+import com.enginesense.app.vehicle.PrePurchaseReportBuilder
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Calendar
 
 /** Entry point — explains the feature, then starts a scan same as any other, just flagged as a pre-purchase check (see GetAutoSureViewModel.startPrePurchaseCheck). */
@@ -86,10 +96,17 @@ fun PrePurchaseCheckScreen(viewModel: GetAutoSureViewModel, onStartScan: () -> U
  * never guesses one.
  */
 @Composable
-private fun FairPriceEstimateCard(viewModel: GetAutoSureViewModel) {
-    val year by viewModel.vehicleYear.collectAsState()
-    var priceInput by remember { mutableStateOf("") }
-    var kmInput by remember { mutableStateOf("") }
+private fun FairPriceEstimateCard(
+    priceInput: String,
+    onPriceChange: (String) -> Unit,
+    yearInput: String,
+    onYearChange: (String) -> Unit,
+    /** From the RTO lookup, when done — wins over [yearInput], which is only asked for without it. */
+    rcYear: Int?,
+    /** Dashboard km if entered, else the car's computer — never asked for twice. */
+    km: Int?
+) {
+    val year = rcYear ?: yearInput.toIntOrNull()
 
     Card(colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -103,24 +120,28 @@ private fun FairPriceEstimateCard(viewModel: GetAutoSureViewModel) {
 
             OutlinedTextField(
                 value = priceInput,
-                onValueChange = { priceInput = it.filter(Char::isDigit) },
+                onValueChange = { onPriceChange(it.filter(Char::isDigit)) },
                 label = { Text("Ex-showroom price (₹)") },
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value = kmInput,
-                onValueChange = { kmInput = it.filter(Char::isDigit) },
-                label = { Text("Odometer reading (km) — optional") },
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+            if (rcYear == null) {
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = yearInput,
+                    onValueChange = { onYearChange(it.filter(Char::isDigit).take(4)) },
+                    label = { Text("Year of manufacture") },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                Spacer(Modifier.height(6.dp))
+                Text("Manufactured $rcYear, from RTO records", style = GetAutoSureType.Caption)
+            }
 
             val price = priceInput.toDoubleOrNull()
-            val km = kmInput.toIntOrNull()
             val currentYear = Calendar.getInstance().get(Calendar.YEAR)
             val ageYears = year?.let { (currentYear - it).toDouble().coerceAtLeast(0.5) }
 
@@ -131,7 +152,7 @@ private fun FairPriceEstimateCard(viewModel: GetAutoSureViewModel) {
                     style = GetAutoSureType.Caption
                 )
                 ageYears == null -> Text(
-                    "Add the vehicle's year (edit vehicle on Home) to calculate an estimate.",
+                    "Add the year of manufacture, or check RTO records above, to calculate an estimate.",
                     style = GetAutoSureType.Caption
                 )
                 else -> {
@@ -143,7 +164,7 @@ private fun FairPriceEstimateCard(viewModel: GetAutoSureViewModel) {
                     Spacer(Modifier.height(4.dp))
                     Text(
                         "${est.depreciationPercent}% depreciation over ${est.ageYears} year${if (est.ageYears == 1) "" else "s"}" +
-                            if (km != null) ", adjusted for odometer reading" else "",
+                            if (km != null) ", adjusted for ${"%,d".format(km)} km" else "",
                         style = GetAutoSureType.Caption
                     )
                     if (est.beyondPublishedSchedule) {
@@ -167,6 +188,12 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onOpenDealer: () ->
     val result by viewModel.latestResult.collectAsState()
     val context = LocalContext.current
     val r = result
+    // What the buyer adds at the car — kept here, not in each card, because the PDF needs all of it.
+    val rcViewModel: PurchaseRcCheckViewModel = viewModel()
+    val rcState by rcViewModel.state.collectAsState()
+    var dashboardInput by remember { mutableStateOf("") }
+    var priceInput by remember { mutableStateOf("") }
+    var yearInput by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)) {
         if (r == null) {
@@ -177,12 +204,20 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onOpenDealer: () ->
         }
 
         val insight = PrePurchaseAnalyzer.analyze(r.findings, r.health.score, r.readiness, r.snapshot)
-        val (color, emoji) = when (insight.verdict) {
+        val rc = (rcState as? PurchaseRcState.Found)?.result
+        val report = PrePurchaseReportBuilder.build(
+            findings = r.findings, healthScore = r.health.score, readiness = r.readiness, snapshot = r.snapshot,
+            vin = r.vehicleId.vin, dashboardKm = dashboardInput.toDoubleOrNull(), rc = rc, registration = rc?.registrationNumber,
+            exShowroomPriceInr = priceInput.toDoubleOrNull(), buyerEnteredYear = yearInput.toIntOrNull(),
+            currentYear = Calendar.getInstance().get(Calendar.YEAR)
+        )
+        // The report's verdict also counts the buyer's own checks (odometer, chassis), so the screen uses it too.
+        val (color, emoji) = when (report.verdict) {
             PurchaseVerdict.GOOD_BUY -> GetAutoSureColors.Good to "🟢"
             PurchaseVerdict.BUY_WITH_CAUTION -> GetAutoSureColors.Watch to "🟡"
             PurchaseVerdict.AVOID -> GetAutoSureColors.Attention to "🔴"
         }
-        val verdictLabel = when (insight.verdict) {
+        val verdictLabel = when (report.verdict) {
             PurchaseVerdict.GOOD_BUY -> "Good buy"
             PurchaseVerdict.BUY_WITH_CAUTION -> "Buy with caution"
             PurchaseVerdict.AVOID -> "Avoid"
@@ -194,27 +229,27 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onOpenDealer: () ->
             label = verdictLabel,
             emoji = emoji,
             color = color,
-            headline = insight.headline,
-            redFlags = insight.fraudRiskFlags.size,
-            toAsk = insight.cautionNotes.size,
-            clear = insight.checks.count { it.outcome == CheckOutcome.CLEAR }
+            headline = report.headline,
+            redFlags = report.redFlags.size,
+            toAsk = report.worthAsking.size,
+            clear = report.checks.count { it.outcome == CheckOutcome.CLEAR }
         )
 
-        if (insight.fraudRiskFlags.isNotEmpty()) {
+        if (report.redFlags.isNotEmpty()) {
             SectionHeader("Red flags", "Signs something may have been hidden from you")
-            insight.fraudRiskFlags.forEach { SignalCard(it, GetAutoSureColors.Attention) }
+            report.redFlags.forEach { SignalCard(it, GetAutoSureColors.Attention) }
         }
-        if (insight.cautionNotes.isNotEmpty()) {
+        if (report.worthAsking.isNotEmpty()) {
             SectionHeader("Worth asking about", "Not tampering — but raise these with the seller")
-            insight.cautionNotes.forEach { SignalCard(it, GetAutoSureColors.Watch) }
+            report.worthAsking.forEach { SignalCard(it, GetAutoSureColors.Watch) }
         }
         if (insight.checks.isNotEmpty()) {
             SectionHeader("What we checked")
-            ChecksCard(insight.checks)
+            ChecksCard(report.checks)
         }
 
         SectionHeader("Verify the car", "Compare the car with its dashboard and papers")
-        OdometerCheckCard(insight.ecuOdometerKm, insight.odometerSupported)
+        OdometerCheckCard(insight.ecuOdometerKm, insight.odometerSupported, dashboardInput) { dashboardInput = it }
         VehicleIdentityCard(r.vehicleId.vin, isDemo = r.isDemo)
 
         SectionHeader("Price & negotiation")
@@ -241,7 +276,12 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onOpenDealer: () ->
 
         Spacer(Modifier.height(16.dp))
 
-        FairPriceEstimateCard(viewModel)
+        FairPriceEstimateCard(
+            priceInput = priceInput, onPriceChange = { priceInput = it },
+            yearInput = yearInput, onYearChange = { yearInput = it },
+            rcYear = rc?.manufacturingMonth?.take(4)?.toIntOrNull(),
+            km = (dashboardInput.toDoubleOrNull() ?: insight.ecuOdometerKm)?.toInt()
+        )
 
         Spacer(Modifier.height(16.dp))
         Text(
@@ -258,6 +298,9 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onOpenDealer: () ->
             onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.cars24.com/used-car-valuation/"))) },
             modifier = Modifier.fillMaxWidth()
         ) { Text("Cars24 Valuation →") }
+
+        SectionHeader("Pre-purchase report", "A PDF of everything above — red flags, odometer, RTO record, repair costs and value")
+        PrePurchaseReportActions(r, report)
 
         Spacer(Modifier.height(24.dp))
         Button(onClick = { viewModel.clearPrePurchaseCheck(); onDone() }, modifier = Modifier.fillMaxWidth().height(52.dp)) {
@@ -464,9 +507,8 @@ private fun RcCheckResult(rc: RcLookupResult, vinReported: Boolean) {
  * says "not tampered". Hidden when it's unknown whether the car reports PID 0xA6 (old saved scans).
  */
 @Composable
-private fun OdometerCheckCard(ecuKm: Double?, supported: Boolean?) {
+private fun OdometerCheckCard(ecuKm: Double?, supported: Boolean?, dashboardInput: String, onDashboardChange: (String) -> Unit) {
     if (supported == null) return
-    var dashboardInput by remember { mutableStateOf("") }
 
     Card(colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -483,7 +525,7 @@ private fun OdometerCheckCard(ecuKm: Double?, supported: Boolean?) {
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = dashboardInput,
-                    onValueChange = { dashboardInput = it.filter(Char::isDigit) },
+                    onValueChange = { onDashboardChange(it.filter(Char::isDigit)) },
                     label = { Text("Dashboard reading (km)") },
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
@@ -508,4 +550,53 @@ private fun OdometerCheckCard(ecuKm: Double?, supported: Boolean?) {
         }
     }
     Spacer(Modifier.height(16.dp))
+}
+
+/**
+ * Makes the pre-purchase PDF, then offers View and Share. Regenerated whenever [report] changes
+ * (the buyer typed a dashboard km or price, or the RTO check came back), so a shared PDF always
+ * matches the screen. A saved dealer profile brands it, same as the advanced report.
+ */
+@Composable
+private fun PrePurchaseReportActions(result: com.enginesense.app.ScanResult, report: PrePurchaseReport) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var file by remember(report) { mutableStateOf<java.io.File?>(null) }
+    var generating by remember { mutableStateOf(false) }
+
+    if (report.rc == null && !result.isDemo) {
+        Text("Tip: check RTO records above first so the report includes them.", style = GetAutoSureType.Caption)
+        Spacer(Modifier.height(8.dp))
+    }
+    val current = file
+    if (current == null) {
+        Button(
+            onClick = {
+                generating = true
+                scope.launch {
+                    try {
+                        file = withContext(Dispatchers.IO) {
+                            val dealerStore = com.enginesense.app.storage.DealerProfileStore(context)
+                            val dealerProfile = dealerStore.load()
+                            val dealerLogo = if (dealerProfile != null && dealerStore.hasLogo()) {
+                                android.graphics.BitmapFactory.decodeFile(dealerStore.logoFile.absolutePath)
+                            } else null
+                            PrePurchaseReportPdfGenerator.generate(context, result, report, dealerProfile, dealerLogo)
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Couldn't make the report: ${e.message}", Toast.LENGTH_LONG).show()
+                    } finally {
+                        generating = false
+                    }
+                }
+            },
+            enabled = !generating,
+            modifier = Modifier.fillMaxWidth().height(52.dp)
+        ) { Text(if (generating) "Making report…" else "Make pre-purchase report (PDF)") }
+    } else {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(onClick = { context.startActivity(viewPdfIntent(context, current)) }, modifier = Modifier.weight(1f)) { Text("View") }
+            Button(onClick = { context.startActivity(sharePdfIntent(context, current)) }, modifier = Modifier.weight(1f)) { Text("Share") }
+        }
+    }
 }

@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pre-purchase report sample</title>
+<!--
+  Preview of the pre-purchase PDF (PrePurchaseReportPdfGenerator.kt), drawn in HTML at the same
+  A4 size, margins, colours and type sizes. The data is the real PrePurchaseReportBuilder output
+  for the test-mode "codes cleared by seller" car, with an example RTO record, dashboard 62,000 km
+  and ex-showroom Rs 6.5 L. Layout approximates Android's Canvas drawing; the app's own PDF is the
+  source of truth.
+-->
+<style>
+  @page { size: 595pt 842pt; margin: 0; }
+  :root {
+    --orange: #FF6B2C; --ink: #12151A; --gray: #6B7280; --gray-light: #F8F9FB; --border: #E6E8EB;
+    --good: #1AA168; --watch: #B45309; --attention: #B91C1C; --amber-bg: #FFFBEB; --amber-border: #F0DBA8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #d9dce1; }
+  body { font-family: Roboto, "Segoe UI", Arial, sans-serif; color: var(--ink); line-height: 1.15; }
+  .page { width: 595pt; height: 842pt; background: #fff; position: relative; padding: 40pt 40pt 0; margin: 0 auto 12pt; overflow: hidden; page-break-after: always; }
+  @media print { html, body { background: #fff; } .page { margin: 0; } }
+  .b { font-weight: 700; }
+  .cap { color: var(--orange); font-size: 8.5pt; font-weight: 700; letter-spacing: .2pt; }
+  .gray { color: var(--gray); }
+  .good { color: var(--good); } .watch { color: var(--watch); } .attention { color: var(--attention); }
+
+  .runhead { display: flex; align-items: center; height: 20pt; margin-bottom: 10pt; }
+  .runhead svg { width: 20pt; height: 20pt; margin-right: 6pt; }
+  .runhead .word { font-size: 10pt; font-weight: 700; }
+  .runhead .title { margin-left: auto; font-size: 8.5pt; color: var(--gray); }
+  .word .sure { color: var(--orange); }
+  .footer { position: absolute; right: 40pt; bottom: 18pt; font-size: 7.5pt; color: var(--gray); }
+
+  .cover-head { display: flex; align-items: flex-start; height: 44pt; }
+  .cover-head svg { width: 34pt; height: 34pt; margin-right: 8pt; }
+  .cover-head .word { font-size: 15pt; font-weight: 700; margin-top: 10pt; }
+  .meta { margin-left: auto; text-align: right; font-size: 8pt; color: var(--gray); line-height: 10pt; }
+  .rule { border-top: 1.2pt solid var(--orange); margin-bottom: 20pt; }
+  .banner { border: .8pt solid var(--amber-border); background: var(--amber-bg); color: #412402; border-radius: 6pt; padding: 10pt; font-size: 8.5pt; font-weight: 700; }
+  .banner.ok { background: #1AA16816; border-color: #1AA16846; color: var(--good); }
+  .banner.neutral { background: var(--gray-light); border-color: var(--border); color: var(--gray); }
+
+  h1 { font-size: 19pt; margin: 6pt 0 6pt; }
+  .subtitle { font-size: 10pt; color: var(--gray); margin-bottom: 14pt; }
+
+  .verdict { position: relative; border-radius: 8pt; background: #B4530916; padding: 10pt 120pt 12pt 18pt; overflow: hidden; }
+  .verdict::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5pt; background: var(--watch); }
+  .verdict .lbl { font-size: 7.5pt; font-weight: 700; color: var(--gray); }
+  .verdict .v { font-size: 18pt; font-weight: 700; color: var(--watch); margin: 4pt 0 6pt; }
+  .verdict .h { font-size: 9.5pt; }
+  .verdict .score { position: absolute; right: 16pt; top: 10pt; text-align: right; }
+  .verdict .score .n { font-size: 22pt; font-weight: 700; }
+  .verdict .score .n small { font-size: 9pt; color: var(--gray); font-weight: 400; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8pt; margin: 12pt 0 18pt; }
+  .tile { background: var(--gray-light); border: .8pt solid var(--border); border-radius: 6pt; height: 58pt; padding: 8pt 9pt; }
+  .tile .t { font-size: 7pt; font-weight: 700; color: var(--gray); }
+  .tile .v { font-size: 13pt; font-weight: 700; margin: 6pt 0 3pt; white-space: nowrap; }
+  .tile .s { font-size: 7.5pt; color: var(--gray); }
+
+  .fields { display: grid; grid-template-columns: 260pt 1fr; row-gap: 8pt; margin: 6pt 0 14pt; }
+  .field .l { font-size: 7.5pt; color: var(--gray); }
+  .field .v { font-size: 9.5pt; font-weight: 700; margin-top: 3pt; }
+
+  .row { display: flex; align-items: center; min-height: 20pt; border-bottom: .5pt solid var(--border); padding: 3pt 4pt; font-size: 9pt; }
+  .chip { margin-left: auto; font-size: 8pt; font-weight: 700; padding: 2pt 8pt; border-radius: 7pt; }
+  .chip.good { background: #1AA1681E; } .chip.attention { background: #B91C1C1E; } .chip.watch { background: #B453091E; } .chip.na { background: #6B72801E; color: var(--gray); }
+
+  h2 { font-size: 15pt; margin-top: 4pt; }
+  .sub { font-size: 8.5pt; color: var(--gray); margin: 6pt 0 10pt; }
+  .card { position: relative; background: var(--gray-light); border-radius: 6pt; padding: 10pt 12pt 10pt 16pt; margin-bottom: 8pt; overflow: hidden; }
+  .card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4pt; background: var(--c); }
+  .card .t { font-size: 10pt; font-weight: 700; color: var(--c); margin-bottom: 6pt; }
+  .card .e { font-size: 8.5pt; margin-bottom: 6pt; }
+  .card .al { font-size: 7pt; font-weight: 700; color: var(--gray); margin-bottom: 2pt; }
+  .card .a { font-size: 8.5pt; color: var(--gray); }
+
+  .kv { display: grid; grid-template-columns: 226pt 1fr; }
+  .kv > div { border-bottom: .5pt solid var(--border); padding: 4pt 4pt; font-size: 9pt; min-height: 20pt; }
+  .kv .k { color: var(--gray); }
+  .kv .v { font-weight: 700; }
+  .note { font-size: 8pt; color: var(--gray); margin-top: 8pt; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+  th { background: var(--ink); color: #fff; font-size: 8.5pt; text-align: left; padding: 4pt 6pt; height: 20pt; }
+  td { padding: 4pt 6pt; border-bottom: .5pt solid var(--border); vertical-align: top; }
+  tr.total td { background: var(--gray-light); font-weight: 700; font-size: 9.5pt; border: 0; }
+
+  .value { display: grid; grid-template-columns: 1fr 1fr; gap: 10pt; margin-bottom: 10pt; }
+  .vbox { border-radius: 8pt; border: .8pt solid var(--border); background: var(--gray-light); height: 74pt; padding: 10pt 12pt; }
+  .vbox.hi { background: #FF6B2C16; border-color: #FF6B2C5A; }
+  .vbox .l { font-size: 7.5pt; font-weight: 700; color: var(--gray); }
+  .vbox .v { font-size: 17pt; font-weight: 700; margin: 8pt 0 4pt; }
+  .vbox.hi .v { color: var(--orange); }
+  .vbox .n { font-size: 7.5pt; color: var(--gray); }
+
+  .tick { display: flex; gap: 11pt; font-size: 9pt; padding: 3pt 0 5pt 2pt; }
+  .tick::before { content: ""; flex: none; width: 11pt; height: 11pt; border: .9pt solid var(--gray); border-radius: 2pt; margin-top: 1pt; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="logo" viewBox="0 0 64 64">
+    <rect x="4" y="4" width="56" height="56" rx="16" fill="#FF6B2C"/>
+    <path d="M14 34 A18 18 0 0 1 50 34" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+    <path d="M24 30 L30 37 L42 20" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="14" cy="46" r="6.5" fill="#12151A"/><circle cx="50" cy="46" r="6.5" fill="#12151A"/>
+  </symbol>
+</svg>
+
+<!-- ============ Page 1: summary ============ -->
+<section class="page">
+  <div class="cover-head">
+    <svg><use href="#logo"/></svg>
+    <div class="word">GetAuto<span class="sure">Sure</span></div>
+    <div class="meta">Report ID: GetAutoSure-PPI-20261028-1630<br>Scanned: 28 Oct 2026, 4:30 PM<br>Device: GetAutoSure OBD2 Scanner</div>
+  </div>
+  <div class="rule"></div>
+  <div class="banner" style="margin-bottom:10pt">Sample report — test-mode car with an example RTO record. Not a real vehicle.</div>
+
+  <div class="cap">PRE-PURCHASE INSPECTION REPORT</div>
+  <h1>MARUTI SUZUKI SWIFT VXI</h1>
+  <div class="subtitle">MH12AB1234 &nbsp;·&nbsp; Manufactured 2019 &nbsp;·&nbsp; PETROL</div>
+
+  <div class="verdict">
+    <div class="lbl">VERDICT</div>
+    <div class="v">Buy with caution</div>
+    <div class="h">Buyable, but go in with your eyes open — a few things are worth raising with the seller.</div>
+    <div class="score"><div class="lbl">ENGINE HEALTH</div><div class="n">100 <small>/100</small></div></div>
+  </div>
+
+  <div class="tiles">
+    <div class="tile"><div class="t">RED FLAGS</div><div class="v attention">3</div><div class="s">Need an answer</div></div>
+    <div class="tile"><div class="t">FAULTS FOUND</div><div class="v watch">1</div><div class="s">+ 1 developing</div></div>
+    <div class="tile"><div class="t">EST. REPAIR COST</div><div class="v watch">₹8,000–35,000</div><div class="s">Tentative range</div></div>
+    <div class="tile"><div class="t">FAIR VALUE</div><div class="v">₹2.51 L–2.95 L</div><div class="s">Before repairs</div></div>
+  </div>
+
+  <div class="fields">
+    <div class="cap">VEHICLE</div><div class="cap">ODOMETER</div>
+    <div class="field"><div class="l">Registration</div><div class="v">MH12AB1234</div></div>
+    <div class="field"><div class="l">Engine computer</div><div class="v">84,210 km</div></div>
+    <div class="field"><div class="l">VIN (from the car's computer)</div><div class="v">XX9SAMPLEK0123456</div></div>
+    <div class="field"><div class="l">Dashboard (entered at the car)</div><div class="v">62,000 km</div></div>
+    <div class="field"><div class="l">Manufactured</div><div class="v">Mar 2019</div></div>
+    <div class="field"><div class="l">Scanned on</div><div class="v">28 Oct 2026, 4:30 PM</div></div>
+  </div>
+
+  <div class="cap" style="margin-bottom:4pt">WHAT WE CHECKED</div>
+  <div class="row">Stored fault codes<span class="chip good">✓ Clear</span></div>
+  <div class="row">Hidden permanent codes<span class="chip attention">! Red flag</span></div>
+  <div class="row">Developing (pending) faults<span class="chip watch">? Ask the seller</span></div>
+  <div class="row">Codes cleared before the sale<span class="chip attention">! Red flag</span></div>
+  <div class="row">Driven with warning light on<span class="chip na">– Not reported</span></div>
+  <div class="row">Engine pre-warmed<span class="chip watch">? Ask the seller</span></div>
+  <div class="row">Odometer: dashboard vs computer<span class="chip attention">! Red flag</span></div>
+  <div class="row">Chassis number matches RC<span class="chip good">✓ Clear</span></div>
+  <div class="footer">Page 1</div>
+</section>
+
+<!-- ============ Page 2: red flags + odometer ============ -->
+<section class="page">
+  <div class="runhead"><svg><use href="#logo"/></svg><span class="word">GetAuto<span class="sure">Sure</span></span><span class="title">Fraud &amp; tamper checks</span></div>
+  <h2>Red flags</h2>
+  <div class="sub">Signs something may have been hidden from you. Each needs an answer from the seller before you pay.</div>
+  <div class="card" style="--c:var(--attention)">
+    <div class="t">Fault codes were cleared recently</div>
+    <div class="e">Only 18 km · 3 engine warm-ups · 40 min of running since the reset. Self-tests not finished yet: Catalyst.</div>
+    <div class="al">ASK THE SELLER</div><div class="a">Ask why they were cleared and what the fault was. Unless the car is nearly new, a reset just before a sale is a red flag.</div>
+  </div>
+  <div class="card" style="--c:var(--attention)">
+    <div class="t">Permanent fault code still stored</div>
+    <div class="e">P0420 — this can't be erased with a scanner, and it's no longer in the normal fault list. It was likely cleared before the fault was fixed.</div>
+    <div class="al">ASK THE SELLER</div><div class="a">Ask what was repaired and for the invoice.</div>
+  </div>
+  <div class="card" style="--c:var(--attention)">
+    <div class="t">Dashboard km doesn't match the car's computer</div>
+    <div class="e">Dashboard 62,000 km, engine computer 84,210 km — a gap of 22,210 km. It can mean the odometer was changed, or that the instrument cluster or engine computer was replaced.</div>
+    <div class="al">ASK THE SELLER</div><div class="a">Ask why, and ask for service records and invoices showing the km over the years.</div>
+  </div>
+
+  <h2 style="margin-top:14pt">Odometer history checks</h2>
+  <div class="sub">What the car's own computer says about its distance and when its fault memory was last cleared.</div>
+  <div class="kv">
+    <div class="k">Engine computer odometer</div><div class="v">84,210 km</div>
+    <div class="k">Dashboard odometer (entered at the car)</div><div class="v">62,000 km</div>
+    <div class="k">Dashboard vs computer</div><div class="v attention">Mismatch — 22,210 km apart</div>
+    <div class="k">Distance since fault codes were cleared</div><div class="v">18 km</div>
+    <div class="k">Engine warm-ups since codes were cleared</div><div class="v">3</div>
+    <div class="k">Engine running time since codes were cleared</div><div class="v">40 min</div>
+    <div class="k">Distance driven with the warning light on</div><div class="v gray">Not reported</div>
+  </div>
+  <div class="note">This is an odometer red-flag check, not a guarantee. A match means OBD shows no red flags; it can't rule out a rollback done on both the dashboard and the engine computer. Most cars made before about 2020 don't report their odometer over OBD at all — then service records are the best check.</div>
+  <div class="footer">Page 2</div>
+</section>
+
+<!-- ============ Page 3: RTO (overflow of the fraud section) ============ -->
+<section class="page">
+  <div class="runhead"><svg><use href="#logo"/></svg><span class="word">GetAuto<span class="sure">Sure</span></span><span class="title">Fraud &amp; tamper checks</span></div>
+  <h2>RTO verification</h2>
+  <div class="sub">The official registration record for this car, from the RTO.</div>
+  <div class="kv">
+    <div class="k">Registration</div><div class="v">MH12AB1234</div>
+    <div class="k">Make / model</div><div class="v">MARUTI SUZUKI SWIFT VXI</div>
+    <div class="k">Fuel</div><div class="v">PETROL</div>
+    <div class="k">Colour</div><div class="v">PEARL ARCTIC WHITE</div>
+    <div class="k">Manufactured</div><div class="v">Mar 2019</div>
+    <div class="k">Registered on</div><div class="v">02-Apr-2019</div>
+    <div class="k">Registering RTO</div><div class="v">PUNE RTO</div>
+    <div class="k">Insurance</div><div class="v">ICICI Lombard, valid until 14-Mar-2027</div>
+    <div class="k">PUC valid until</div><div class="v">10-Jan-2027</div>
+    <div class="k">Fitness valid until</div><div class="v">01-Apr-2034</div>
+    <div class="k">Road tax valid until</div><div class="v">LTT</div>
+    <div class="k">Chassis number</div><div class="v good">Matches the car's computer</div>
+  </div>
+  <div class="note">Check these against the seller's RC and what they told you about the car.</div>
+  <div class="footer">Page 3</div>
+</section>
+
+<!-- ============ Page 4: faults, cost, value ============ -->
+<section class="page">
+  <div class="runhead"><svg><use href="#logo"/></svg><span class="word">GetAuto<span class="sure">Sure</span></span><span class="title">Faults, repair cost &amp; value</span></div>
+  <h2>Major faults &amp; estimated repair cost</h2>
+  <div class="sub">Tentative Indian workshop ranges, not quotes — real prices vary by city, workshop and car. Get a quote before you negotiate on them.</div>
+  <table>
+    <colgroup><col style="width:52pt"><col style="width:238pt"><col style="width:100pt"><col></colgroup>
+    <tr><th>Code</th><th>Fault</th><th>Type</th><th>Est. cost</th></tr>
+    <tr><td class="b">P0420</td><td>Catalyst system efficiency below threshold (Bank 1)</td><td class="b attention">Hidden (cleared)</td><td>₹8,000–35,000</td></tr>
+    <tr><td class="b">P0171</td><td>System too lean (Bank 1)</td><td class="b watch">Developing</td><td class="gray">Workshop quote</td></tr>
+    <tr class="total"><td></td><td>Estimated total</td><td></td><td>₹8,000–35,000</td></tr>
+  </table>
+  <div class="note">Developing faults aren't in the total — the car hasn't confirmed them yet. "Workshop quote" means no reliable range fits that fault; it isn't free to fix. Several codes can share one cause, so the total can overstate the real bill.</div>
+
+  <h2 style="margin-top:18pt">Fair estimated value</h2>
+  <div class="sub">Based on the IRDAI standard depreciation schedule — a rough estimate, not a verified valuation.</div>
+  <div class="value">
+    <div class="vbox"><div class="l">FAIR VALUE (BEFORE REPAIRS)</div><div class="v">₹2.51 L – 2.95 L</div><div class="n">What a car like this is worth in good order</div></div>
+    <div class="vbox hi"><div class="l">AS IT STANDS (AFTER REPAIRS)</div><div class="v">₹2.16 L – 2.87 L</div><div class="n">Fair value less the repair estimate — a sensible offer range</div></div>
+  </div>
+  <div class="note" style="margin-top:0">58% depreciation over 7 years, adjusted for 62,000 km. IRDAI only publishes rates up to 5 years — beyond that this extrapolates, it isn't an official figure. Compare listings for the same model, year and km on CarDekho, Cars24 or OLX — they reflect your local market, this doesn't.</div>
+
+  <h2 style="margin-top:18pt">Worth asking the seller</h2>
+  <div class="sub">Not signs of tampering — but good questions before you agree a price.</div>
+  <div class="card" style="--c:var(--watch)">
+    <div class="t">Developing fault not yet confirmed</div>
+    <div class="e">P0171 — the car has noticed a problem once but hasn't turned on the warning light yet.</div>
+    <div class="al">ASK THE SELLER</div><div class="a">Ask the seller about it, or scan again after a longer drive.</div>
+  </div>
+  <div class="card" style="--c:var(--watch)">
+    <div class="t">Engine was already warm</div>
+    <div class="e">Coolant was 85°C just 1 minute after starting. A warm engine can hide hard starting, smoke and rattles.</div>
+    <div class="al">ASK THE SELLER</div><div class="a">If you didn't just drive it yourself, ask to see it start from cold — ideally after standing overnight.</div>
+  </div>
+  <div class="footer">Page 4</div>
+</section>
+
+<!-- ============ Page 5: before you pay ============ -->
+<section class="page">
+  <div class="runhead"><svg><use href="#logo"/></svg><span class="word">GetAuto<span class="sure">Sure</span></span><span class="title">Before you pay</span></div>
+  <h2>Before you pay</h2>
+  <div class="sub">What an OBD scan can't see. Tick these off at the car.</div>
+  <div class="tick">Chassis and engine numbers stamped on the car match the RC</div>
+  <div class="tick">Service book and invoices support the odometer reading</div>
+  <div class="tick">No loan on the car — the RC shows no hypothecation, or the bank's NOC and Form 35 are handed over</div>
+  <div class="tick">No pending traffic challans (check on the Parivahan e-challan site)</div>
+  <div class="tick">Insurance claim history — ask the insurer; a low No Claim Bonus can mean past claims</div>
+  <div class="tick">Body: even panel gaps, no repaint or rust; no damp carpet or silt under the seats (flood damage)</div>
+  <div class="tick">Cold start: starts easily, no smoke, steady idle</div>
+  <div class="tick">Test drive: brakes, steering, clutch and gearbox, suspension noises, AC</div>
+  <div class="tick">Tyres: even wear, enough tread, same make on each axle</div>
+  <div class="tick">Transfer papers: Form 29 and 30 signed, original RC, insurance and PUC in hand</div>
+
+  <div class="banner" style="background:#FFF8EC;margin-top:14pt">Not sure about something in this report? Talk to a real mechanic on WhatsApp from the GetAutoSure app, with this report in hand.</div>
+
+  <div class="b gray" style="font-size:8pt;margin-top:16pt">What this report doesn't cover</div>
+  <div class="note" style="margin-top:4pt">This report is built from the car's OBD2 data (engine, fuel and emissions) and, where checked, its RTO record. It doesn't cover accident repairs, bodywork, tyres, brakes, suspension, interior, or ABS/airbag/body-module codes, and it isn't a guarantee of the car's condition or history. Repair costs and fair value are tentative estimates. Scan profile: Test mode — used car, codes cleared by seller.</div>
+  <div class="note" style="font-size:7.5pt">Generated by GetAutoSure · getautosure.com</div>
+  <div class="footer">Page 5</div>
+</section>
+
+</body>
+</html>
