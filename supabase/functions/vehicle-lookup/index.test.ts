@@ -12,6 +12,7 @@ import {
   normalizeRegistrationNumber,
   parseLookupRequest,
   shapeRcData,
+  surepassOutcome,
 } from "./index.ts";
 
 // Field names copied from a real Surepass RC V2 sandbox response (2026-10-27); every VALUE is
@@ -180,4 +181,21 @@ Deno.test("fields Surepass doesn't send come back null rather than throwing", ()
   const shaped = shapeRcData({}, "customer");
   assertEquals(shaped.vehicle.make, null);
   assertEquals(shaped.validity.insuranceUpto, null);
+});
+
+Deno.test("Surepass error logging keeps the reason fields and drops the VAHAN record", () => {
+  const body = JSON.stringify({
+    data: { rc_number: "KA02MP3115", owner_name: "SOMEONE" },
+    status_code: 500,
+    success: false,
+    message: "Source unavailable",
+    message_code: "source_down",
+  });
+  assertEquals(surepassOutcome(body), {
+    status_code: 500,
+    success: false,
+    message: "Source unavailable",
+    message_code: "source_down",
+  });
+  assertEquals(surepassOutcome("<html>Bad Gateway</html>"), { unparseable_body_length: 24 });
 });

@@ -295,6 +295,16 @@ async function writeCache(supabase: SupabaseClient, registrationNumber: string, 
   if (error) console.error("cache write failed", error); // Non-fatal — the caller still gets their result.
 }
 
+/** The non-personal outcome fields of a Surepass body, for logging. A body that isn't JSON is logged as its length only. */
+export function surepassOutcome(body: string): Record<string, unknown> {
+  try {
+    const json = JSON.parse(body);
+    return { status_code: json?.status_code, success: json?.success, message: json?.message, message_code: json?.message_code };
+  } catch {
+    return { unparseable_body_length: body.length };
+  }
+}
+
 class SurepassError extends Error {
   constructor(public status: number, public code: string, message: string) {
     super(message);
@@ -330,13 +340,16 @@ async function callSurepass(registrationNumber: string): Promise<unknown> {
     throw new SurepassError(422, "lookup_failed", "No RTO record found for that registration number.");
   }
   if (!response.ok) {
-    console.error("Surepass error", response.status, (await response.text().catch(() => "")).slice(0, 500));
+    // Only Surepass's own outcome fields — the body's `data` is a VAHAN record (personal data), and
+    // the reason fields come after it, so slicing the raw body used to cut them off.
+    const body = await response.text().catch(() => "");
+    console.error("Surepass error", response.status, JSON.stringify(surepassOutcome(body)));
     throw new SurepassError(502, "upstream_error", "Vehicle lookup failed. Please try again.");
   }
 
   const json = await response.json();
   if (!isUsableSurepassResponse(json)) {
-    console.error("Surepass returned no usable data", json?.status_code, json?.message_code);
+    console.error("Surepass returned no usable data", json?.status_code, json?.message_code, json?.message);
     throw new SurepassError(422, "lookup_failed", "No RTO record found for that registration number.");
   }
   return json;
