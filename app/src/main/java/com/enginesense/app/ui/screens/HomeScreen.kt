@@ -15,7 +15,6 @@ import androidx.compose.material.icons.filled.FactCheck
 import androidx.compose.material.icons.filled.Handyman
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material3.Button
@@ -48,9 +47,9 @@ import com.enginesense.app.vehicle.HealthCategory
 /**
  * Home leads with the hero score, next action, and scan button, then a fixed 8-tile "Explore
  * your car" grid: Advanced Reports, AI Mechanic, Live Data, Car Diagnostics, Repair Guidance,
- * Guides & Tools, Ask a Real Expert, and Dealer Sathi — the full, current set of primary
- * destinations, not a subset. "Used Car Check" (prePurchaseCheck) was removed from this grid by
- * request — the screen and its route still exist and are still reachable from the Reports tab's
+ * Used Car Check, Ask a Real Expert, and Dealer Sathi — the full, current set of primary
+ * destinations, not a subset. Used Car Check took Guides & Tools' tile by request (it's the
+ * buyer-facing feature being marketed); Guides & Tools is still reachable from the Reports tab's
  * "Discover More" section (see ReportsScreen.kt), just no longer surfaced here. Everything else
  * not on this list (all sensors, VIN/ECU detail, scan history, remaining Pro teasers) still
  * lives one tap deeper on the Reports tab; nothing else was deleted from the app.
@@ -373,7 +372,7 @@ private val EXPLORE_ITEMS = listOf(
     ExploreItem("connect", "Live data", "Readings, 0-60 & trip mileage", Icons.Filled.Insights),
     ExploreItem("reports", "Car diagnostics", "Fault codes, sensors, emissions", Icons.Filled.Biotech),
     ExploreItem("understandRepair", "Repair guidance", "Understand a repair & its cost", Icons.Filled.Handyman),
-    ExploreItem("guidesAndTools", "Guides & tools", "Decode your dashboard, learn your car", Icons.Filled.MenuBook),
+    ExploreItem("prePurchaseCheck", "Used car check", "Buying a car? Catch hidden faults first", Icons.Filled.FactCheck),
     ExploreItem("expertList", "Ask a real expert", "Book a 15-min video consultation", Icons.Filled.SupportAgent, isPremium = true),
     ExploreItem("dealer", "Dealer Sathi", "Branded reports to build buyer trust", Icons.Filled.Storefront, isPremium = true)
 )

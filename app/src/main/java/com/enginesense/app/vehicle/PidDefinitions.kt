@@ -34,6 +34,7 @@ enum class PidId(
     DISTANCE_WITH_MIL_ON(0x21, "Distance Driven With Warning Light On", "km", 2, { b -> (b[0] * 256.0) + b[1] }, 0.0..65535.0),
     COMMANDED_EVAP_PURGE(0x2E, "Commanded Evaporative Purge", "%", 1, { b -> b[0] * 100.0 / 255.0 }, 0.0..100.0),
     FUEL_LEVEL(0x2F, "Fuel Level", "%", 1, { b -> b[0] * 100.0 / 255.0 }, 0.0..100.0),
+    WARM_UPS_SINCE_CODES_CLEARED(0x30, "Warm-ups Since Codes Cleared", "", 1, { b -> b[0].toDouble() }, 0.0..255.0),
     DISTANCE_SINCE_CODES_CLEARED(0x31, "Distance Since Codes Cleared", "km", 2, { b -> (b[0] * 256.0) + b[1] }, 0.0..65535.0),
     BAROMETRIC_PRESSURE(0x33, "Barometric Pressure", "kPa", 1, { b -> b[0].toDouble() }, 0.0..255.0),
     CATALYST_TEMP_B1S1(0x3C, "Catalyst Temperature", "°C", 2, { b -> ((b[0] * 256.0) + b[1]) / 10.0 - 40.0 }, -40.0..900.0),
@@ -46,11 +47,15 @@ enum class PidId(
     ACCELERATOR_PEDAL_POSITION_D(0x49, "Accelerator Pedal Position D", "%", 1, { b -> b[0] * 100.0 / 255.0 }, 0.0..100.0),
     ACCELERATOR_PEDAL_POSITION_E(0x4A, "Accelerator Pedal Position E", "%", 1, { b -> b[0] * 100.0 / 255.0 }, 0.0..100.0),
     COMMANDED_THROTTLE_ACTUATOR(0x4C, "Commanded Throttle Actuator", "%", 1, { b -> b[0] * 100.0 / 255.0 }, 0.0..100.0),
+    TIME_SINCE_CODES_CLEARED(0x4E, "Time Since Codes Cleared", "min", 2, { b -> (b[0] * 256.0) + b[1] }, 0.0..65535.0),
     FUEL_RAIL_PRESSURE_ABS(0x59, "Fuel Rail Pressure", "kPa", 2, { b -> ((b[0] * 256.0) + b[1]) * 10.0 }, 0.0..655350.0),
     RELATIVE_ACCELERATOR_PEDAL_POSITION(0x5A, "Relative Accelerator Pedal Position", "%", 1, { b -> b[0] * 100.0 / 255.0 }, 0.0..100.0),
     ENGINE_OIL_TEMP_C(0x5C, "Engine Oil Temperature", "°C", 1, { b -> (b[0] - 40).toDouble() }, -40.0..210.0),
     ACTUAL_ENGINE_TORQUE_PERCENT(0x62, "Actual Engine Torque", "%", 1, { b -> (b[0] - 125).toDouble() }, -125.0..130.0),
-    ENGINE_REFERENCE_TORQUE(0x63, "Engine Reference Torque", "N·m", 2, { b -> (b[0] * 256.0) + b[1] }, 0.0..65535.0);
+    ENGINE_REFERENCE_TORQUE(0x63, "Engine Reference Torque", "N·m", 2, { b -> (b[0] * 256.0) + b[1] }, 0.0..65535.0),
+    // Only newer cars report this (roughly 2019+ US / 2021+ EU; in India mostly BS6 Phase 2 and
+    // later) — UNSUPPORTED is the normal answer on most used cars, not a fault. 0.1 km per bit.
+    ODOMETER(0xA6, "Odometer (ECU)", "km", 4, { b -> ((b[0] * 16777216.0) + (b[1] * 65536.0) + (b[2] * 256.0) + b[3]) / 10.0 }, 0.0..429496729.5);
 
     /** The Mode 01 command string for this PID, e.g. "010C" for RPM. */
     val obdCommand: String get() = "01%02X".format(pid)

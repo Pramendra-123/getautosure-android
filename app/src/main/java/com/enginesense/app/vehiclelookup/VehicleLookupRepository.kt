@@ -33,7 +33,8 @@ class VehicleLookupRepository(
     timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS,
     private val httpClient: OkHttpClient = OkHttpClient.Builder().callTimeout(timeoutMillis, TimeUnit.MILLISECONDS).build()
 ) {
-    suspend fun lookup(registrationNumber: String): Result<RcLookupResult> = try {
+    /** [vin] is the car's own VIN read over OBD — when given, the result says whether it matches the RC's chassis number. */
+    suspend fun lookup(registrationNumber: String, vin: String? = null): Result<RcLookupResult> = try {
         val token = try {
             idTokenProvider()
         } catch (e: kotlinx.coroutines.CancellationException) {
@@ -44,6 +45,7 @@ class VehicleLookupRepository(
         val body = JSONObject().apply {
             put("registrationNumber", registrationNumber)
             put("mode", "customer")
+            if (vin != null) put("vin", vin)
         }
         val request = Request.Builder()
             .url(endpointUrl)
@@ -113,6 +115,7 @@ class VehicleLookupRepository(
                 taxUpto = validity.optStringOrNull("taxUpto"),
                 partial = json.optBoolean("partial", false),
                 source = json.optStringOrNull("source") ?: "RTO records",
+                chassisMatch = if (json.has("chassisMatch") && !json.isNull("chassisMatch")) json.getBoolean("chassisMatch") else null,
             )
         } catch (e: org.json.JSONException) {
             throw VehicleLookupParseException(e)

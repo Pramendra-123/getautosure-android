@@ -263,6 +263,7 @@ fun profileLabel(profile: SimulatedProfile): String = when (profile) {
     SimulatedProfile.OVERHEATING -> "Overheating engine"
     SimulatedProfile.LOW_BATTERY_VOLTAGE -> "Low battery voltage"
     SimulatedProfile.VOLTAGE_PID_UNSUPPORTED -> "Older car (voltage PID unsupported)"
+    SimulatedProfile.SELLER_CLEARED_CODES -> "Used car, codes cleared by seller"
 }
 
 private fun profileDescription(profile: SimulatedProfile): String = when (profile) {
@@ -271,6 +272,7 @@ private fun profileDescription(profile: SimulatedProfile): String = when (profil
     SimulatedProfile.OVERHEATING -> "Live coolant reading over 110°C"
     SimulatedProfile.LOW_BATTERY_VOLTAGE -> "Live voltage reading under 11.5V"
     SimulatedProfile.VOLTAGE_PID_UNSUPPORTED -> "Battery category shows 'No data', not fake-good"
+    SimulatedProfile.SELLER_CLEARED_CODES -> "Permanent P0420, pending P0171, pre-warmed engine"
 }
 
 @Composable

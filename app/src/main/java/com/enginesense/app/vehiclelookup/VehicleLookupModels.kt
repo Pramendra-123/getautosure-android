@@ -25,6 +25,8 @@ data class RcLookupResult(
     /** The RTO returned a reduced record — say "some details aren't available", don't imply the car has none. */
     val partial: Boolean,
     val source: String,
+    /** Whether the VIN sent with the lookup matches the RC's chassis number; null when it couldn't be compared (or no VIN was sent). */
+    val chassisMatch: Boolean? = null,
 )
 
 /** What the onboarding screens prefill from an [RcLookupResult] — see [RcPrefillMapper]. */

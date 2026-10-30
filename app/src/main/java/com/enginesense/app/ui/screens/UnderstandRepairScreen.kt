@@ -1,13 +1,16 @@
 package com.enginesense.app.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,66 +19,83 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.enginesense.app.GetAutoSureViewModel
+import com.enginesense.app.obd.Severity
 import com.enginesense.app.ui.theme.GetAutoSureColors
 import com.enginesense.app.ui.theme.GetAutoSureType
-import com.enginesense.app.vehicle.ai.RepairCostEntry
-import com.enginesense.app.vehicle.ai.RepairCostReference
+import com.enginesense.app.vehicle.DiagnosticFinding
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
- * A real, distinct journey for "Understand a repair" — not a blank AI Mechanic chat. Asks
- * what the mechanic actually recommended before answering, since the app has no way to know
- * that on its own (no invented fault is assumed). If a current scan exists, its context is
- * already what AI Mechanic answers from — this screen's only job is turning what the
- * customer was told into a useful, specific first question.
+ * Repair Guidance home: every finding from the latest scan, most urgent first, each opening
+ * [RepairGuidanceDetailScreen]. Below that, the free-text "what did your mechanic say?" ask is
+ * kept for repairs a scan can't see (brakes, suspension, a quotation in hand).
  */
 @Composable
-fun UnderstandRepairScreen(viewModel: GetAutoSureViewModel, onAsk: () -> Unit, onSeeAllCosts: () -> Unit = {}) {
+fun UnderstandRepairScreen(
+    viewModel: GetAutoSureViewModel,
+    onAsk: () -> Unit,
+    onOpenFinding: (findingId: String) -> Unit,
+    onRunScan: () -> Unit,
+) {
     val result by viewModel.latestResult.collectAsState()
     var description by remember { mutableStateOf("") }
     val context = LocalContext.current
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-        Text("Understand a Repair", style = GetAutoSureType.ScreenTitle)
+        Text("Repair guidance", style = GetAutoSureType.ScreenTitle)
         Spacer(Modifier.height(4.dp))
-        Text(
-            "What did the mechanic recommend, or what did the quotation say? Describe it in your own words.",
-            style = GetAutoSureType.Caption
-        )
-        Spacer(Modifier.height(16.dp))
 
+        val r = result
+        when {
+            r == null -> {
+                Text("Scan your car to get step-by-step guidance for any fault it finds.", style = GetAutoSureType.Caption)
+                Spacer(Modifier.height(16.dp))
+                Button(onClick = onRunScan, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("Scan my car") }
+            }
+            r.findings.isEmpty() -> {
+                Text("From your scan on ${scanDateLabel(r.timestampMillis)}${if (r.isDemo) " (demo data)" else ""}.", style = GetAutoSureType.Caption)
+                Spacer(Modifier.height(16.dp))
+                GuidanceCard {
+                    Text("No faults found", style = GetAutoSureType.SectionTitle)
+                    Spacer(Modifier.height(4.dp))
+                    Text("Your last scan didn't find any fault codes or warning readings. Scan again if a warning light comes on.", style = GetAutoSureType.Caption)
+                }
+            }
+            else -> {
+                Text(
+                    "From your scan on ${scanDateLabel(r.timestampMillis)}${if (r.isDemo) " (demo data)" else ""} — most urgent first. Tap one for what to do.",
+                    style = GetAutoSureType.Caption
+                )
+                Spacer(Modifier.height(16.dp))
+                r.findings.forEach { finding ->
+                    FindingRow(finding, onClick = { onOpenFinding(finding.id) })
+                    Spacer(Modifier.height(10.dp))
+                }
+            }
+        }
+
+        Spacer(Modifier.height(28.dp))
+        Text("Got a mechanic's recommendation?", style = GetAutoSureType.SectionTitle)
+        Spacer(Modifier.height(4.dp))
+        Text("Describe it or paste the quotation — AI Mechanic explains what it means and what to ask.", style = GetAutoSureType.Caption)
+        Spacer(Modifier.height(12.dp))
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },
-            modifier = Modifier.fillMaxWidth().height(120.dp),
-            placeholder = { Text("e.g. \"Mechanic said I need a new catalytic converter\"") }
+            modifier = Modifier.fillMaxWidth().height(110.dp),
+            placeholder = { Text("Mechanic said I need a new clutch plate and pressure plate") }
         )
         Spacer(Modifier.height(12.dp))
-
-        if (result != null) {
-            Card(colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    "Your last scan's findings will be included automatically, so the answer can connect this to what GetAutoSure actually found — not just general advice.",
-                    style = GetAutoSureType.Caption,
-                    modifier = Modifier.padding(14.dp)
-                )
-            }
-        } else {
-            Card(colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    "No recent scan — the answer will be general, not tied to your car's actual readings. Scan first for a more specific answer.",
-                    style = GetAutoSureType.Caption,
-                    modifier = Modifier.padding(14.dp)
-                )
-            }
-        }
-        Spacer(Modifier.height(16.dp))
-
-        Button(
+        OutlinedButton(
             onClick = {
                 val q = if (description.isBlank()) {
                     "A mechanic gave me a repair recommendation. What should I know, and what should I ask them?"
@@ -87,42 +107,61 @@ fun UnderstandRepairScreen(viewModel: GetAutoSureViewModel, onAsk: () -> Unit, o
             },
             modifier = Modifier.fillMaxWidth()
         ) { Text("Ask AI Mechanic") }
-
-        Spacer(Modifier.height(28.dp))
-        HorizontalDivider(color = GetAutoSureColors.SurfaceRaised)
-        Spacer(Modifier.height(20.dp))
-
-        Text("Typical repair costs (India)", style = GetAutoSureType.SectionTitle)
-        Spacer(Modifier.height(4.dp))
-        Text(
-            "Tentative ranges, not a real quote — varies a lot by city, workshop and car segment. Always confirm before agreeing.",
-            style = GetAutoSureType.Caption
-        )
-        Spacer(Modifier.height(14.dp))
-
-        RepairCostReference.preview.forEach { entry -> RepairCostRow(entry) }
-
-        Spacer(Modifier.height(14.dp))
-        Text(
-            "See all categories →",
-            style = GetAutoSureType.Body.copy(color = GetAutoSureColors.AccentPurple, fontWeight = FontWeight.SemiBold),
-            modifier = Modifier.clickable(onClick = onSeeAllCosts)
-        )
     }
 }
 
 @Composable
-private fun RepairCostRow(entry: RepairCostEntry) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(entry.category, style = GetAutoSureType.Body.copy(fontWeight = FontWeight.SemiBold))
-            Text(
-                "₹${"%,d".format(entry.minInr)}–${"%,d".format(entry.maxInr)}",
-                style = GetAutoSureType.Body.copy(color = GetAutoSureColors.Good, fontWeight = FontWeight.Bold)
-            )
+private fun FindingRow(finding: DiagnosticFinding, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(GetAutoSureColors.Surface)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            SeverityChip(finding.severity)
+            Spacer(Modifier.height(6.dp))
+            Text(finding.title, style = GetAutoSureType.SectionTitle)
+            Text(finding.plainLanguageSummary, style = GetAutoSureType.Caption, maxLines = 2)
         }
-        Spacer(Modifier.height(2.dp))
-        Text(entry.note, style = GetAutoSureType.Caption)
+        Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = GetAutoSureColors.TextSecondary)
     }
-    HorizontalDivider(color = GetAutoSureColors.SurfaceRaised)
 }
+
+@Composable
+internal fun SeverityChip(severity: Severity) {
+    val color = guidanceSeverityColor(severity)
+    Text(
+        severity.label.uppercase(),
+        style = GetAutoSureType.Caption.copy(color = color),
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(color.copy(alpha = 0.15f))
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+    )
+}
+
+internal fun guidanceSeverityColor(severity: Severity): Color = when (severity) {
+    Severity.CRITICAL -> GetAutoSureColors.Attention
+    Severity.MODERATE -> GetAutoSureColors.Watch
+    Severity.MINOR -> GetAutoSureColors.Good
+    Severity.INFO -> GetAutoSureColors.TextSecondary
+}
+
+@Composable
+internal fun GuidanceCard(content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(GetAutoSureColors.Surface)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        content = content
+    )
+}
+
+internal fun scanDateLabel(timestampMillis: Long): String =
+    SimpleDateFormat("d MMM yyyy", Locale.ENGLISH).format(Date(timestampMillis))

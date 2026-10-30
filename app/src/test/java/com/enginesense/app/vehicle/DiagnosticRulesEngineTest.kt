@@ -73,6 +73,14 @@ class DiagnosticRulesEngineTest {
     }
 
     @Test
+    fun `pending and permanent codes do not become findings`() {
+        // They feed the pre-purchase check only; health scores stay based on confirmed faults.
+        val dtcs = listOf(DtcReading("P0171", DtcSource.PENDING), DtcReading("P0420", DtcSource.PERMANENT))
+        val findings = DiagnosticRulesEngine.evaluate(snapshot(dtcs = dtcs), emptyMap())
+        assertTrue(findings.isEmpty())
+    }
+
+    @Test
     fun `findings are sorted critical first`() {
         val readings = mapOf(
             PidId.COOLANT_TEMP_C to PidReading(PidId.COOLANT_TEMP_C, PidStatus.VERIFIED, 120.0, null),

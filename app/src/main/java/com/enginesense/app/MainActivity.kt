@@ -345,7 +345,20 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 UnderstandRepairScreen(
                     viewModel,
                     onAsk = { navController.navigate("aiMechanic") },
-                    onSeeAllCosts = { navController.navigate("repairCostReference") }
+                    onOpenFinding = { id -> navController.navigate("repairGuidance/${encodeRouteArg(id)}") },
+                    onRunScan = { navController.navigate("connect") }
+                )
+            }
+            composable(
+                "repairGuidance/{findingId}",
+                arguments = listOf(navArgument("findingId") { type = NavType.StringType })
+            ) { entry ->
+                RepairGuidanceDetailScreen(
+                    viewModel,
+                    findingId = decodeRouteArg(entry.arguments?.getString("findingId")),
+                    onAsk = { navController.navigate("aiMechanic") },
+                    onSeeAllCosts = { navController.navigate("repairCostReference") },
+                    onRunScan = { navController.navigate("connect") }
                 )
             }
             composable("repairCostReference") {

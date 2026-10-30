@@ -31,7 +31,13 @@ data class PidReading(
     val rawBytes: List<Int>?
 )
 
-enum class DtcSource { STORED, PENDING }
+/**
+ * STORED (Mode 03) are confirmed faults. PENDING (Mode 07) were seen once but not yet confirmed.
+ * PERMANENT (Mode 0A) can't be erased by a scan tool — they stay until the car's own self-test
+ * passes, so they survive a seller clearing codes. Only STORED feed findings and the health
+ * score; the other two are read for the pre-purchase check.
+ */
+enum class DtcSource { STORED, PENDING, PERMANENT }
 
 data class DtcReading(
     val code: String,

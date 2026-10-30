@@ -44,7 +44,10 @@ class DtcRepository(context: Context) {
         "TATA MOTORS" to "TATA",
         "MAHINDRA" to "MAHINDRA",
         "MAHINDRA & MAHINDRA" to "MAHINDRA",
-        "KIA" to "KIA"
+        "KIA" to "KIA",
+        "HYUNDAI" to "HYUNDAI",
+        "HONDA" to "HONDA",
+        "TOYOTA" to "TOYOTA"
     )
 
     fun explain(code: String, vehicleBrand: String? = null): ExplainedDtc {
