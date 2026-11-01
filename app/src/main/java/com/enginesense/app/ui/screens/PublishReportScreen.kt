@@ -182,7 +182,8 @@ fun PublishReportScreen(scanResult: ScanResult?, vehicleInfo: VehicleReportInfo)
                             odometerKm = vehicleInfo.odometerKm,
                             ownership = null,
                             registrationNo = vehicleInfo.plate,
-                            healthSummary = scanResult?.let { healthSummaryJson(it) } ?: org.json.JSONObject(),
+                            healthSummary = scanResult?.let { healthSummaryJson(it, vehicleInfo.rc) }
+                                ?: org.json.JSONObject().apply { vehicleInfo.rc?.let { put("rto", rtoJson(it, java.time.LocalDate.now())) } },
                             dealerCondition = DealerConditionInput(
                                 exterior = DealerConditionItem(exterior.rating, exterior.options),
                                 interior = DealerConditionItem(interior.rating, interior.options),

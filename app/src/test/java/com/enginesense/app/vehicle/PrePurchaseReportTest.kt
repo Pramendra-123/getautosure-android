@@ -51,9 +51,10 @@ class PrePurchaseReportTest {
     }
 
     @Test
-    fun `an odometer mismatch is a red flag and rules out good buy`() {
+    fun `an odometer mismatch is a red flag and means avoid`() {
         val report = build(dashboardKm = 35_000.0)
-        assertEquals(PurchaseVerdict.BUY_WITH_CAUTION, report.verdict)
+        assertEquals(PurchaseVerdict.AVOID, report.verdict)
+        assertTrue(report.headline.contains("don't add up"))
         assertEquals(1, report.redFlags.size)
         assertTrue(report.redFlags.first().evidence.contains("25,000 km"))
         assertEquals(CheckOutcome.FLAGGED, report.checks.first { it.label.startsWith("Odometer") }.outcome)
@@ -118,6 +119,75 @@ class PrePurchaseReportTest {
         val noYear = build(price = 800_000.0)
         assertNull(noYear.value)
         assertTrue(noYear.valueMissingReason!!.contains("year"))
+    }
+
+    @Test
+    fun `a chassis mismatch means avoid`() {
+        assertEquals(PurchaseVerdict.AVOID, build(rc = rc(chassisMatch = false)).verdict)
+    }
+
+    @Test
+    fun `cleared codes plus a hidden permanent code together mean avoid, one alone means caution`() {
+        val both = snapshot(
+            PidId.ODOMETER to 60_000.0, PidId.DISTANCE_SINCE_CODES_CLEARED to 18.0,
+            dtcs = listOf(DtcReading("P0420", DtcSource.PERMANENT))
+        )
+        assertEquals(PurchaseVerdict.AVOID, build(snapshot = both).verdict)
+
+        val clearedOnly = snapshot(PidId.ODOMETER to 60_000.0, PidId.DISTANCE_SINCE_CODES_CLEARED to 18.0)
+        assertEquals(PurchaseVerdict.BUY_WITH_CAUTION, build(snapshot = clearedOnly).verdict)
+    }
+
+    @Test
+    fun `dealer RC details - a loan is a red flag but buyable, a blacklisting means avoid`() {
+        val loan = build(rc = rc().copy(mode = "dealer", financed = true, financer = "HDFC BANK", rcStatus = "ACTIVE"))
+        assertEquals(PurchaseVerdict.BUY_WITH_CAUTION, loan.verdict)
+        assertTrue(loan.redFlags.any { it.title == "Loan on the car" && it.evidence.contains("HDFC BANK") })
+        assertEquals(CheckOutcome.FLAGGED, loan.checks.first { it.label == "No loan on the car" }.outcome)
+        assertEquals(CheckOutcome.CLEAR, loan.checks.first { it.label == "RC active" }.outcome)
+
+        val blacklisted = build(rc = rc().copy(mode = "dealer", blacklistStatus = "BLACKLISTED"))
+        assertEquals(PurchaseVerdict.AVOID, blacklisted.verdict)
+
+        // A customer-mode lookup never adds the dealer-only checks.
+        assertTrue(build(rc = rc()).checks.none { it.label == "No loan on the car" })
+    }
+
+    @Test
+    fun `a clean car shows the evidence behind its verdict`() {
+        val snap = snapshot(PidId.ODOMETER to 60_000.0, PidId.DISTANCE_SINCE_CODES_CLEARED to 10_921.0, PidId.CONTROL_MODULE_VOLTAGE to 14.1)
+        val readiness = ReadinessStatus(
+            milOn = false, dtcCount = 0, ignitionType = IgnitionType.SPARK,
+            monitors = listOf(ReadinessMonitor("Misfire", true, true), ReadinessMonitor("Catalyst", true, true), ReadinessMonitor("EVAP", false, false))
+        )
+        val report = PrePurchaseReportBuilder.build(
+            emptyList(), healthScore = 100, readiness = readiness, snapshot = snap, vin = "MA3XXXXXXXX123456", dashboardKm = 60_100.0,
+            rc = rc(), registration = null, exShowroomPriceInr = null, buyerEnteredYear = null, currentYear = 2026
+        )
+        assertEquals(PurchaseVerdict.GOOD_BUY, report.verdict)
+        assertEquals(
+            listOf("Warning light off", "Codes last cleared 10,921 km ago", "All 2 self-tests complete", "Charging 14.1 V",
+                "Dashboard km matches the computer", "Chassis matches the RC"),
+            report.evidence
+        )
+    }
+
+    @Test
+    fun `hidden and developing codes are counted as outside the engine score`() {
+        val snap = snapshot(dtcs = listOf(DtcReading("P0420", DtcSource.PERMANENT), DtcReading("P0171", DtcSource.PENDING)))
+        assertEquals(2, build(snapshot = snap).faultsOutsideScore)
+        assertEquals(0, build().faultsOutsideScore)
+    }
+
+    @Test
+    fun `an expired insurance or PUC on the RC is worth asking about`() {
+        val report = PrePurchaseReportBuilder.build(
+            emptyList(), healthScore = 95, readiness = null, snapshot = snapshot(PidId.ODOMETER to 60_000.0), vin = null, dashboardKm = null,
+            rc = rc().copy(insuranceUpto = "2026-09-30", puccUpto = "2027-02-01"), registration = null,
+            exShowroomPriceInr = null, buyerEnteredYear = null, currentYear = 2026, today = java.time.LocalDate.of(2026, 11, 1)
+        )
+        assertTrue(report.worthAsking.any { it.title == "Insurance has expired" })
+        assertTrue(report.worthAsking.none { it.title.startsWith("PUC") })
     }
 
     private fun <T> assertNotNullValue(value: T?): T {

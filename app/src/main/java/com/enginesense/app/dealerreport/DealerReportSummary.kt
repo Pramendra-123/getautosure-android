@@ -1,8 +1,26 @@
 package com.enginesense.app.dealerreport
 
 import com.enginesense.app.ScanResult
+import com.enginesense.app.vehiclelookup.RcLookupResult
+import com.enginesense.app.vehiclelookup.RtoRecord
+import com.enginesense.app.vehiclelookup.RtoRow
 import org.json.JSONArray
 import org.json.JSONObject
+import java.time.LocalDate
+
+internal fun rtoJson(rc: RcLookupResult, today: LocalDate): JSONObject = JSONObject().apply {
+    fun rows(list: List<RtoRow>) = JSONArray(list.map { JSONObject().put("label", it.label).put("value", it.value).put("concern", it.concern) })
+    put("registrationNumber", rc.registrationNumber)
+    put("vehicle", rows(RtoRecord.vehicleRows(rc)))
+    put(
+        "validity",
+        JSONArray(RtoRecord.validity(rc, today).map { JSONObject().put("label", it.label).put("value", it.display).put("status", it.status.name) })
+    )
+    put("ownership", rows(RtoRecord.dealerRows(rc)))
+    put("chassisMatch", rc.chassisMatch ?: JSONObject.NULL)
+    put("partial", rc.partial)
+    put("source", RtoRecord.sourceLine(rc))
+}
 
 /**
  * Condenses a [ScanResult] into the JSON blob stored in `vehicle_reports.health_summary` — a
@@ -11,7 +29,11 @@ import org.json.JSONObject
  * (DTC codes, emissions-readiness detail) can add fields here without a new migration, since
  * nothing on the read side assumes a fixed schema beyond what it explicitly reads.
  */
-fun healthSummaryJson(result: ScanResult): JSONObject = JSONObject().apply {
+fun healthSummaryJson(result: ScanResult, rc: RcLookupResult? = null, today: LocalDate = LocalDate.now()): JSONObject = JSONObject().apply {
+    // The RTO record, already turned into labelled rows (RtoRecord — the same rows the PDFs print),
+    // so the web report renders it without knowing Surepass's shape. Dealer-mode rows carry masked
+    // chassis/engine numbers and never the owner's name.
+    if (rc != null) put("rto", rtoJson(rc, today))
     put("score", result.health.score ?: JSONObject.NULL)
     put("label", result.health.label)
     put("findingsCount", result.findings.size)

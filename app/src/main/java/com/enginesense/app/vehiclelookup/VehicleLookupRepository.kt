@@ -23,7 +23,7 @@ class VehicleLookupNotAuthenticatedException(cause: Throwable? = null) : Vehicle
 class VehicleLookupParseException(cause: Throwable? = null) : VehicleLookupException("vehicle-lookup returned a response that couldn't be read", cause)
 
 /**
- * Customer-mode client for the `vehicle-lookup` Edge Function — same cancellation-safe OkHttp
+ * Client for the `vehicle-lookup` Edge Function (customer mode, or dealer mode via [lookupBest]) — same cancellation-safe OkHttp
  * pattern as [com.enginesense.app.dealerreport.DealerReportRepository]. [idTokenProvider] is
  * called fresh per call, never cached here.
  */
@@ -33,8 +33,20 @@ class VehicleLookupRepository(
     timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS,
     private val httpClient: OkHttpClient = OkHttpClient.Builder().callTimeout(timeoutMillis, TimeUnit.MILLISECONDS).build()
 ) {
+    /**
+     * Dealer mode first when [preferDealer], else customer mode. The server only grants dealer mode
+     * to dealers whose full-RC access was switched on by hand, and turns everyone else away with a
+     * 403 before counting the lookup — so a refusal just means the basic record instead.
+     */
+    suspend fun lookupBest(registrationNumber: String, vin: String?, preferDealer: Boolean): Result<RcLookupResult> {
+        if (!preferDealer) return lookup(registrationNumber, vin)
+        val dealer = lookup(registrationNumber, vin, mode = "dealer")
+        val refused = (dealer.exceptionOrNull() as? VehicleLookupHttpException)?.statusCode == 403
+        return if (refused) lookup(registrationNumber, vin) else dealer
+    }
+
     /** [vin] is the car's own VIN read over OBD — when given, the result says whether it matches the RC's chassis number. */
-    suspend fun lookup(registrationNumber: String, vin: String? = null): Result<RcLookupResult> = try {
+    suspend fun lookup(registrationNumber: String, vin: String? = null, mode: String = "customer"): Result<RcLookupResult> = try {
         val token = try {
             idTokenProvider()
         } catch (e: kotlinx.coroutines.CancellationException) {
@@ -44,7 +56,7 @@ class VehicleLookupRepository(
         }
         val body = JSONObject().apply {
             put("registrationNumber", registrationNumber)
-            put("mode", "customer")
+            put("mode", mode)
             if (vin != null) put("vin", vin)
         }
         val request = Request.Builder()
@@ -97,6 +109,13 @@ class VehicleLookupRepository(
             val vehicleRoot = json.getJSONObject("vehicle")
             val vehicle = vehicleRoot.optJSONObject("vehicle") ?: JSONObject()
             val validity = vehicleRoot.optJSONObject("validity") ?: JSONObject()
+            // Dealer-mode sections — absent (so all null) in customer mode. ownership.ownerName is
+            // deliberately not read: no report prints it.
+            val ownership = vehicleRoot.optJSONObject("ownership") ?: JSONObject()
+            val compliance = vehicleRoot.optJSONObject("compliance") ?: JSONObject()
+            val identifiers = vehicleRoot.optJSONObject("identifiers") ?: JSONObject()
+            val technical = vehicleRoot.optJSONObject("technical") ?: JSONObject()
+            val registration = vehicleRoot.optJSONObject("registration") ?: JSONObject()
             RcLookupResult(
                 registrationNumber = vehicleRoot.optStringOrNull("registrationNumber") ?: "",
                 make = vehicle.optStringOrNull("make"),
@@ -116,6 +135,24 @@ class VehicleLookupRepository(
                 partial = json.optBoolean("partial", false),
                 source = json.optStringOrNull("source") ?: "RTO records",
                 chassisMatch = if (json.has("chassisMatch") && !json.isNull("chassisMatch")) json.getBoolean("chassisMatch") else null,
+                bodyType = vehicle.optStringOrNull("bodyType"),
+                fetchedAt = json.optStringOrNull("fetchedAt"),
+                mode = json.optStringOrNull("mode") ?: "customer",
+                ownerCount = ownership.optIntOrNull("ownerCount"),
+                financed = ownership.optBooleanOrNull("financed"),
+                financer = ownership.optStringOrNull("financer"),
+                rcStatus = compliance.optStringOrNull("rcStatus"),
+                blacklistStatus = compliance.optStringOrNull("blacklistStatus"),
+                nocDetails = compliance.optStringOrNull("nocDetails"),
+                nonUseStatus = compliance.optStringOrNull("nonUseStatus"),
+                chassisNumber = identifiers.optStringOrNull("chassisNumber"),
+                engineNumber = identifiers.optStringOrNull("engineNumber"),
+                emissionNorms = technical.optStringOrNull("emissionNorms"),
+                cylinders = technical.optIntOrNull("cylinders"),
+                seatCapacity = technical.optIntOrNull("seatCapacity"),
+                unladenWeightKg = technical.optIntOrNull("unladenWeightKg"),
+                rtoCode = registration.optStringOrNull("rtoCode"),
+                recordUpdatedOn = registration.optStringOrNull("recordUpdatedOn"),
             )
         } catch (e: org.json.JSONException) {
             throw VehicleLookupParseException(e)
@@ -126,3 +163,9 @@ class VehicleLookupRepository(
 /** org.json's optString turns JSON null into the string "null" — this keeps it a real null. */
 private fun JSONObject.optStringOrNull(key: String): String? =
     if (isNull(key)) null else optString(key).takeIf { it.isNotBlank() }
+
+private fun JSONObject.optIntOrNull(key: String): Int? =
+    if (!has(key) || isNull(key)) null else (opt(key) as? Number)?.toInt()
+
+private fun JSONObject.optBooleanOrNull(key: String): Boolean? =
+    if (!has(key) || isNull(key)) null else opt(key) as? Boolean

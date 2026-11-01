@@ -148,7 +148,9 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 EnterRegistrationScreen(
                     // Straight to the details screen — brand/model came from the RTO record and
                     // were just confirmed, so the two picker screens are skipped.
-                    onConfirmed = { prefill ->
+                    onConfirmed = { prefill, rc ->
+                        // Kept for the reports' RTO section; dropped again if the plate is later changed by hand.
+                        viewModel.setVehicleRc(rc)
                         val query = buildString {
                             append("?plate=${encodeRouteArg(prefill.registrationNumber)}")
                             prefill.year?.let { append("&year=$it") }
@@ -314,12 +316,13 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 val vehicleFuelType by viewModel.vehicleFuelType.collectAsState()
                 val vehicleOdometerKm by viewModel.vehicleOdometerKm.collectAsState()
                 val vehiclePlate by viewModel.vehiclePlate.collectAsState()
+                val vehicleRc by viewModel.vehicleRc.collectAsState()
                 PublishReportScreen(
                     scanResult = latestResult,
                     vehicleInfo = com.enginesense.app.report.VehicleReportInfo(
                         brand = vehicleBrand, nickname = vehicleNickname, model = vehicleModel,
                         year = vehicleYear, fuelType = vehicleFuelType,
-                        odometerKm = vehicleOdometerKm, plate = vehiclePlate
+                        odometerKm = vehicleOdometerKm, plate = vehiclePlate, rc = vehicleRc
                     )
                 )
             }

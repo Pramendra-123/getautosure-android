@@ -35,6 +35,20 @@ class VehicleLookupRepositoryTest {
              "fitnessUpto":"2034-04-11","taxUpto":"2034-04-11"}}}
     """.trimIndent()
 
+    // Shape copied from the function's dealer-mode shapeRcData; values are made up.
+    private val dealerResponse = """
+        {"mode":"dealer","source":"RTO (VAHAN) records via Surepass RC V2","fetchedAt":"2026-10-27T15:00:00Z",
+         "cached":true,"partial":false,"chassisMatch":true,
+         "vehicle":{"registrationNumber":"MH12AB1234",
+           "vehicle":{"make":"MARUTI SUZUKI","model":"SWIFT VXI","fuelType":"PETROL","bodyType":"HATCHBACK"},
+           "validity":{},
+           "ownership":{"ownerName":"SOMEONE","ownerCount":2,"financed":true,"financer":"HDFC BANK"},
+           "compliance":{"rcStatus":"ACTIVE","blacklistStatus":null,"nocDetails":null,"nonUseStatus":null},
+           "identifiers":{"chassisNumber":"MA3EWDE1S00123456","engineNumber":"K12MN1234567"},
+           "technical":{"emissionNorms":"BHARAT STAGE IV","cylinders":4,"seatCapacity":5},
+           "registration":{"rtoCode":"MH12","recordUpdatedOn":"2026-09-01"}}}
+    """.trimIndent()
+
     @Before
     fun setUp() {
         server = MockWebServer()
@@ -47,6 +61,39 @@ class VehicleLookupRepositoryTest {
     }
 
     private fun repo() = VehicleLookupRepository(endpointUrl = server.url("/vehicle-lookup").toString(), idTokenProvider = fixedToken)
+
+    @Test
+    fun `a dealer-mode response carries ownership, loan and identifiers but never the owner's name`() = runTest {
+        server.enqueue(MockResponse().setBody(dealerResponse))
+
+        val result = repo().lookup("MH12AB1234", mode = "dealer").getOrThrow()
+
+        assertTrue(result.hasDealerDetails)
+        assertEquals(2, result.ownerCount)
+        assertEquals(true, result.financed)
+        assertEquals("HDFC BANK", result.financer)
+        assertEquals("ACTIVE", result.rcStatus)
+        assertNull(result.blacklistStatus)
+        assertEquals("MA3EWDE1S00123456", result.chassisNumber)
+        assertEquals("BHARAT STAGE IV", result.emissionNorms)
+        assertEquals(4, result.cylinders)
+        assertEquals("HATCHBACK", result.bodyType)
+        assertEquals("MH12", result.rtoCode)
+        assertTrue(JSONObject(server.takeRequest().body.readUtf8()).getString("mode") == "dealer")
+        assertTrue(result.toString().contains("SOMEONE").not())
+    }
+
+    @Test
+    fun `lookupBest falls back to the basic record when dealer mode is refused`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(403).setBody("""{"error":{"code":"forbidden","message":"no"}}"""))
+        server.enqueue(MockResponse().setBody(customerResponse))
+
+        val result = repo().lookupBest("MH12AB1234", vin = null, preferDealer = true).getOrThrow()
+
+        assertEquals("customer", result.mode)
+        assertEquals("dealer", JSONObject(server.takeRequest().body.readUtf8()).getString("mode"))
+        assertEquals("customer", JSONObject(server.takeRequest().body.readUtf8()).getString("mode"))
+    }
 
     @Test
     fun `a customer-mode response is parsed, nulls staying null`() = runTest {

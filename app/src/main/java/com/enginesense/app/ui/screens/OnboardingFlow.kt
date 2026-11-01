@@ -296,7 +296,7 @@ fun PhoneOtpScreen(onBack: () -> Unit, onVerified: () -> Unit, onSkip: () -> Uni
 
 @Composable
 fun EnterRegistrationScreen(
-    onConfirmed: (RcPrefill) -> Unit,
+    onConfirmed: (RcPrefill, RcLookupResult) -> Unit,
     onEnterManually: () -> Unit,
     onSkip: () -> Unit,
 ) {
@@ -320,7 +320,7 @@ fun EnterRegistrationScreen(
             is LookupState.Found -> FoundVehicleCard(
                 result = s.result,
                 prefill = s.prefill,
-                onConfirm = { onConfirmed(s.prefill) },
+                onConfirm = { onConfirmed(s.prefill, s.result) },
                 onNotMine = {
                     lookupViewModel.reset()
                     onEnterManually()

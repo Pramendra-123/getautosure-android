@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.enginesense.app.auth.GoogleIdTokenCache
+import com.enginesense.app.storage.DealerProfileStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -62,7 +63,9 @@ class PurchaseRcCheckViewModel(application: Application) : AndroidViewModel(appl
         viewModelScope.launch {
             authUiContext = uiContext
             val result = try {
-                repo.lookup(plate, vin)
+                // A dealer checking stock gets the full record (owners, loan, blacklist) when the server allows it.
+                val preferDealer = DealerProfileStore(getApplication()).load() != null
+                repo.lookupBest(plate, vin, preferDealer)
             } finally {
                 authUiContext = null
             }

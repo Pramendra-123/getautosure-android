@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.enginesense.app.auth.GoogleIdTokenCache
+import com.enginesense.app.storage.DealerProfileStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -62,7 +63,9 @@ class VehicleLookupViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch {
             authUiContext = uiContext
             val result = try {
-                repo.lookup(plate)
+                // A dealer adding a car from stock gets the full record for their reports, when the server allows it.
+                val preferDealer = DealerProfileStore(getApplication()).load() != null
+                repo.lookupBest(plate, vin = null, preferDealer = preferDealer)
             } finally {
                 authUiContext = null
             }

@@ -5,6 +5,10 @@ import com.enginesense.app.vehicle.ai.CommonDtcGlossary
 import com.enginesense.app.vehicle.ai.RepairCostEntry
 import com.enginesense.app.vehicle.ai.RepairCostReference
 import com.enginesense.app.vehiclelookup.RcLookupResult
+import com.enginesense.app.vehiclelookup.RtoRecord
+import com.enginesense.app.vehiclelookup.ValidityLine
+import com.enginesense.app.vehiclelookup.ValidityStatus
+import java.time.LocalDate
 
 /** Where a fault in the report came from — only [STORED] codes are findings; the other two come straight from the car's code lists. */
 enum class FaultKind { STORED, HIDDEN_PERMANENT, PENDING }
@@ -58,7 +62,13 @@ data class PrePurchaseReport(
     val repairMaxInr: Int,
     val value: ValueEstimate?,
     /** Why [value] is missing, phrased for the buyer; null when [value] is set. */
-    val valueMissingReason: String?
+    val valueMissingReason: String?,
+    /** Short facts behind the verdict ("Codes last cleared 10,921 km ago"), so a "Good buy" shows its working. Only facts the scan or RC actually gave. */
+    val evidence: List<String> = emptyList(),
+    /** Hidden (permanent) and developing (pending) codes — the engine health score counts only stored ones, so the report says how many it leaves out. */
+    val faultsOutsideScore: Int = 0,
+    /** The RC's insurance/PUC/fitness/tax dates and what they mean today; empty without an RTO check. */
+    val validity: List<ValidityLine> = emptyList()
 )
 
 object PrePurchaseReportBuilder {
@@ -74,7 +84,8 @@ object PrePurchaseReportBuilder {
         registration: String?,
         exShowroomPriceInr: Double?,
         buyerEnteredYear: Int?,
-        currentYear: Int
+        currentYear: Int,
+        today: LocalDate = LocalDate.now()
     ): PrePurchaseReport {
         val insight = PrePurchaseAnalyzer.analyze(findings, healthScore, readiness, snapshot)
 
@@ -103,7 +114,29 @@ object PrePurchaseReportBuilder {
             evidence = "The VIN this car's engine computer reports doesn't match the chassis number on its RTO record.",
             advice = "Ask whether the engine computer was replaced, and check the chassis number stamped on the body against the RC."
         ) else null
-        val redFlags = insight.fraudRiskFlags + listOfNotNull(odometerFlag, chassisFlag)
+        // Dealer-mode RC details (null in customer mode, so these never fire for a regular buyer).
+        val blacklistFlag = rc?.blacklistStatus?.takeIf { RtoRecord.isBlacklisted(it) }?.let { status ->
+            BuyerSignal(
+                title = "Car is blacklisted on the RTO record",
+                evidence = "The RTO lists this car as blacklisted ($status). A blacklisted car usually can't be transferred to you.",
+                advice = "Don't pay until the seller gets it cleared at the RTO and the record shows it."
+            )
+        }
+        val rcStatusFlag = rc?.rcStatus?.takeIf { !RtoRecord.isActive(it) }?.let { status ->
+            BuyerSignal(
+                title = "RC isn't active",
+                evidence = "The RTO record shows the RC status as \"$status\", not active.",
+                advice = "Ask why, and don't pay until the RC is active again — an inactive RC can block the transfer."
+            )
+        }
+        val loanFlag = if (rc?.financed == true) BuyerSignal(
+            title = "Loan on the car",
+            evidence = "The RC shows the car is hypothecated" + (rc.financer?.let { " to $it" } ?: "") + " — the lender has a claim on it until the loan is closed.",
+            advice = "Ask for the lender's NOC and a signed Form 35, and make sure the loan is closed before you pay."
+        ) else null
+        // These mean the car's papers or history don't add up — on their own they rule the car out.
+        val seriousFlags = listOfNotNull(odometerFlag, chassisFlag, blacklistFlag, rcStatusFlag)
+        val redFlags = insight.fraudRiskFlags + seriousFlags + listOfNotNull(loanFlag)
 
         val checks = insight.checks + listOf(
             PurchaseCheck(
@@ -122,12 +155,48 @@ object PrePurchaseReportBuilder {
                     else -> CheckOutcome.FLAGGED
                 }
             )
+        ) + if (rc?.hasDealerDetails != true) emptyList() else listOf(
+            PurchaseCheck(
+                "No loan on the car",
+                when (rc.financed) { true -> CheckOutcome.FLAGGED; false -> CheckOutcome.CLEAR; null -> CheckOutcome.NOT_AVAILABLE }
+            ),
+            PurchaseCheck(
+                "Not blacklisted",
+                when { rc.blacklistStatus == null -> CheckOutcome.NOT_AVAILABLE; blacklistFlag != null -> CheckOutcome.FLAGGED; else -> CheckOutcome.CLEAR }
+            ),
+            PurchaseCheck(
+                "RC active",
+                when { rc.rcStatus == null -> CheckOutcome.NOT_AVAILABLE; rcStatusFlag != null -> CheckOutcome.FLAGGED; else -> CheckOutcome.CLEAR }
+            )
         )
 
-        // A red flag the seller hasn't explained rules out a clean "good buy", whatever the faults say.
-        val capped = insight.verdict == PurchaseVerdict.GOOD_BUY && redFlags.isNotEmpty()
-        val verdict = if (capped) PurchaseVerdict.BUY_WITH_CAUTION else insight.verdict
-        val headline = if (capped) "No serious faults found, but there's a red flag the seller needs to explain before you buy." else insight.headline
+        // Papers or history that don't add up — or several signs of hidden faults together — mean
+        // walk away, however healthy the engine looks. A single unexplained flag rules out "good buy".
+        val avoidForFlags = insight.verdict != PurchaseVerdict.AVOID &&
+            (seriousFlags.isNotEmpty() || insight.fraudRiskFlags.size >= 2)
+        val capped = !avoidForFlags && insight.verdict == PurchaseVerdict.GOOD_BUY && redFlags.isNotEmpty()
+        val verdict = when {
+            avoidForFlags -> PurchaseVerdict.AVOID
+            capped -> PurchaseVerdict.BUY_WITH_CAUTION
+            else -> insight.verdict
+        }
+        val headline = when {
+            avoidForFlags && seriousFlags.isNotEmpty() ->
+                "This car's records don't add up — ${seriousFlags.first().title.replaceFirstChar { it.lowercase() }}. Don't buy unless the seller can prove why."
+            avoidForFlags -> "Several signs that faults were hidden before the sale. Don't buy unless the seller can explain them."
+            capped -> "No serious faults found, but there's a red flag the seller needs to explain before you buy."
+            else -> insight.headline
+        }
+
+        val validity = rc?.let { RtoRecord.validity(it, today) }.orEmpty()
+        val validityNotes = validity.filter { it.status == ValidityStatus.EXPIRED }
+            .map { line ->
+                BuyerSignal(
+                    title = "${line.label} has expired",
+                    evidence = "The RTO record shows ${line.label.lowercase()} valid until ${line.display}.",
+                    advice = "Ask the seller to renew it before the sale, or take the cost off the price."
+                )
+            }
 
         val faults = faultLines(findings, snapshot)
         val priced = faults.filter { it.countedInTotal }.mapNotNull { it.cost }.distinctBy { it.category }
@@ -156,7 +225,7 @@ object PrePurchaseReportBuilder {
             verdict = verdict,
             headline = headline,
             redFlags = redFlags,
-            worthAsking = insight.cautionNotes,
+            worthAsking = insight.cautionNotes + validityNotes,
             checks = checks,
             odometer = odometer,
             rc = rc,
@@ -166,8 +235,24 @@ object PrePurchaseReportBuilder {
             repairMinInr = repairMin,
             repairMaxInr = repairMax,
             value = value,
-            valueMissingReason = valueMissing
+            valueMissingReason = valueMissing,
+            // Reassurance next to "Avoid" would undercut it — the red flags speak for that verdict.
+            evidence = if (verdict == PurchaseVerdict.AVOID) emptyList() else evidence(readiness, snapshot, odometer, rc),
+            faultsOutsideScore = faults.count { it.kind != FaultKind.STORED },
+            validity = validity
         )
+    }
+
+    /** Clean-bill facts only — each one is something the scan or RC positively showed, never the absence of data. */
+    private fun evidence(readiness: ReadinessStatus?, snapshot: VehicleSnapshot?, odometer: OdometerEvidence, rc: RcLookupResult?): List<String> = buildList {
+        if (readiness != null && !readiness.milOn) add("Warning light off")
+        odometer.kmSinceCodesCleared?.takeIf { it >= 1000 }?.let { add("Codes last cleared ${"%,d".format(it.toLong())} km ago") }
+        readiness?.monitors?.filter { it.supported }?.takeIf { it.isNotEmpty() && it.all { m -> m.ready } }?.let { supported ->
+            add("All ${supported.size} self-tests complete")
+        }
+        snapshot?.verifiedValue(PidId.CONTROL_MODULE_VOLTAGE)?.takeIf { it in 13.5..14.8 }?.let { add("Charging ${"%.1f".format(it)} V") }
+        if (odometer.match == OdometerMatch.MATCHES) add("Dashboard km matches the computer")
+        if (rc?.chassisMatch == true) add("Chassis matches the RC")
     }
 
     private fun faultLines(findings: List<DiagnosticFinding>, snapshot: VehicleSnapshot?): List<FaultCostLine> {

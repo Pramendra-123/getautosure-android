@@ -237,6 +237,7 @@ fun AiReportScreen(viewModel: GetAutoSureViewModel, onPublishReport: () -> Unit 
     val vehicleFuelType by viewModel.vehicleFuelType.collectAsState()
     val vehicleOdometerKm by viewModel.vehicleOdometerKm.collectAsState()
     val vehiclePlate by viewModel.vehiclePlate.collectAsState()
+    val vehicleRc by viewModel.vehicleRc.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().padding(20.dp).verticalScroll(rememberScrollState())) {
         Text("Advanced Report", style = GetAutoSureType.SectionTitle)
@@ -283,7 +284,7 @@ fun AiReportScreen(viewModel: GetAutoSureViewModel, onPublishReport: () -> Unit 
             vehicleInfo = VehicleReportInfo(
                 brand = vehicleBrand, nickname = vehicleNickname, model = vehicleModel,
                 year = vehicleYear, fuelType = vehicleFuelType,
-                odometerKm = vehicleOdometerKm, plate = vehiclePlate
+                odometerKm = vehicleOdometerKm, plate = vehiclePlate, rc = vehicleRc
             )
         )
 

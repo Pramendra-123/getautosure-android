@@ -59,6 +59,27 @@ class DealerReportSummaryTest {
     }
 
     @Test
+    fun `the RTO record goes out as rows, identifiers masked and the owner's name nowhere`() {
+        val rc = com.enginesense.app.vehiclelookup.RcLookupResult(
+            registrationNumber = "MH12AB1234", make = "MARUTI SUZUKI", model = "SWIFT VXI", fuelType = "PETROL", color = null,
+            category = null, manufacturingMonth = "2019-03", registrationDate = null, registeredAt = null, cubicCapacity = null,
+            insuranceCompany = null, insuranceUpto = "2026-09-30", puccUpto = null, fitnessUpto = null, taxUpto = "LTT",
+            partial = false, source = "test", mode = "dealer", ownerCount = 2, financed = false, chassisNumber = "MA3EWDE1S00123456"
+        )
+        val rto = healthSummaryJson(scanResult(), rc, java.time.LocalDate.of(2026, 11, 1)).getJSONObject("rto")
+
+        assertEquals("MH12AB1234", rto.getString("registrationNumber"))
+        val validity = rto.getJSONArray("validity")
+        assertEquals("EXPIRED", validity.getJSONObject(0).getString("status"))
+        assertEquals("LIFETIME", validity.getJSONObject(3).getString("status"))
+        val ownership = rto.getJSONArray("ownership").toString()
+        assertTrue(ownership.contains("2nd owner"))
+        assertTrue(ownership.contains("23456"))
+        assertTrue(!ownership.contains("MA3EWDE1S"))
+        assertTrue(healthSummaryJson(scanResult()).has("rto").not())
+    }
+
+    @Test
     fun `a null score is represented as JSON null, not a guessed number`() {
         val json = healthSummaryJson(scanResult(score = null))
         assertTrue(json.isNull("score"))

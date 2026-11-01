@@ -20,20 +20,25 @@ import com.enginesense.app.vehiclelookup.PurchaseRcCheckViewModel
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.util.Date
 import java.util.Locale
 
 /**
  * The buyer's PDF: "should I buy this car, and for how much?" — verdict, fraud/tamper checks,
- * odometer evidence, RTO record, faults with tentative repair costs, and fair value, in the order
- * a buyer reads it. Everything comes from a [PrePurchaseReport]; this only draws it, with the same
- * page kit ([ReportBuilder], [PdfKit]) as the advanced report so a dealer profile brands it the
- * same way. Like the advanced report, a value the scan didn't get is shown as such, never guessed.
+ * odometer evidence, RTO record, faults with tentative repair costs, engine self-tests and key
+ * readings, and fair value, in the order a buyer reads it. Everything comes from a
+ * [PrePurchaseReport] (plus the scan's own readiness and readings); this only draws it, with the
+ * same page kit ([ReportBuilder], [PdfKit]) as the advanced report so a dealer profile brands it
+ * the same way. Like the advanced report, a value the scan didn't get is shown as such, never guessed.
+ *
+ * Sections flow onto the current page when they fit instead of each forcing a new one, so the
+ * report has no half-empty pages.
  */
 object PrePurchaseReportPdfGenerator {
 
     private const val PAGE_FRAUD = "Fraud & tamper checks"
-    private const val PAGE_COST = "Faults, repair cost & value"
+    private const val PAGE_COST = "Faults, engine & value"
     private const val PAGE_BEFORE_YOU_PAY = "Before you pay"
 
     fun generate(
@@ -43,18 +48,30 @@ object PrePurchaseReportPdfGenerator {
         dealerProfile: DealerProfile? = null,
         dealerLogo: Bitmap? = null
     ): File {
+        val dir = File(context.cacheDir, "reports").apply { mkdirs() }
+        return generateTo(dir, result, report, dealerProfile, dealerLogo, LocalDate.now())
+    }
+
+    /** [generate] into [dir] — also what the sample-report test calls, with a fixed [today]. */
+    internal fun generateTo(
+        dir: File,
+        result: ScanResult,
+        report: PrePurchaseReport,
+        dealerProfile: DealerProfile?,
+        dealerLogo: Bitmap?,
+        today: LocalDate
+    ): File {
         val doc = PdfDocument()
         val reportId = "GetAutoSure-PPI-" + SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date(result.timestampMillis))
         val scannedOn = SimpleDateFormat("d MMM yyyy, h:mm a", Locale.getDefault()).format(Date(result.timestampMillis))
         val b = ReportBuilder(doc, dealerProfile, dealerLogo)
 
         drawSummaryPage(b, result, report, reportId, scannedOn, dealerProfile, dealerLogo)
-        drawFraudPage(b, report)
-        drawCostPage(b, report)
-        drawBeforeYouPayPage(b, result)
+        drawFraudPage(b, report, today)
+        drawCostPage(b, report, result)
+        drawBeforeYouPay(b, result)
         b.finish()
 
-        val dir = File(context.cacheDir, "reports").apply { mkdirs() }
         val file = File(dir, "$reportId.pdf")
         FileOutputStream(file).use { doc.writeTo(it) }
         doc.close()
@@ -91,7 +108,8 @@ object PrePurchaseReportPdfGenerator {
         val subtitle = listOfNotNull(
             report.registration,
             report.manufactureYear?.let { "Manufactured $it" },
-            rc?.fuelType
+            rc?.fuelType,
+            rc?.ownerCount?.let { "Owners so far: $it" }
         ).joinToString("  ·  ").ifBlank { "Registration not checked" }
         b.canvas.drawText(subtitle, MARGIN, b.y + 11f, textPaint(GRAY, 10f))
         b.y += 24f
@@ -113,7 +131,7 @@ object PrePurchaseReportPdfGenerator {
         val right = listOf(
             "Engine computer" to ecuKmText(report),
             "Dashboard (entered at the car)" to (odo.dashboardKm?.let { km(it) } ?: "Not entered"),
-            "Scanned on" to scannedOn
+            "Codes last cleared" to (odo.kmSinceCodesCleared?.let { "${km(it)} ago" } ?: "Not reported")
         )
         for (i in left.indices) {
             drawField(b.canvas, MARGIN, b.y, left[i].first, left[i].second)
@@ -132,6 +150,7 @@ object PrePurchaseReportPdfGenerator {
             b.canvas.drawLine(MARGIN, b.y + 19f, CONTENT_RIGHT, b.y + 19f, strokePaint(BORDER, 0.5f))
             b.y += 20f
         }
+        b.y += 14f
     }
 
     private fun drawVerdictBox(canvas: Canvas, y: Float, report: PrePurchaseReport, healthScore: Int?): Float {
@@ -141,15 +160,20 @@ object PrePurchaseReportPdfGenerator {
             PurchaseVerdict.AVOID -> "Avoid" to ATTENTION
         }
         val textLeft = MARGIN + 18f
-        val textWidth = CONTENT_RIGHT - textLeft - 110f
+        val textWidth = CONTENT_RIGHT - textLeft - 120f
         val headlinePaint = textPaint(INK, 9.5f)
-        val h = 44f + measureWrapped(textWidth, report.headline, headlinePaint) + 12f
+        val evidencePaint = textPaint(GRAY, 8.5f)
+        // The facts behind the verdict — e.g. "Codes last cleared 10,921 km ago · All 7 self-tests complete".
+        val evidence = report.evidence.joinToString("  ·  ") { "✓ $it" }
+        val evidenceH = if (evidence.isBlank()) 0f else measureWrapped(textWidth, evidence, evidencePaint) + 6f
+        val h = 44f + measureWrapped(textWidth, report.headline, headlinePaint) + evidenceH + 12f
         val rect = RectF(MARGIN, y, CONTENT_RIGHT, y + h)
         canvas.drawRoundRect(rect, 8f, 8f, fillPaint(tint(color, 22)))
         canvas.drawRect(MARGIN, y, MARGIN + 5f, y + h, fillPaint(color))
         canvas.drawText("VERDICT", textLeft, y + 16f, textPaint(GRAY, 7.5f, bold = true))
         canvas.drawText(label, textLeft, y + 36f, textPaint(color, 18f, bold = true))
-        drawWrapped(canvas, textLeft, y + 44f, textWidth, report.headline, headlinePaint)
+        val headlineH = drawWrapped(canvas, textLeft, y + 44f, textWidth, report.headline, headlinePaint)
+        if (evidence.isNotBlank()) drawWrapped(canvas, textLeft, y + 44f + headlineH + 6f, textWidth, evidence, evidencePaint)
 
         val scoreRight = CONTENT_RIGHT - 16f
         val small = textPaint(GRAY, 7.5f, bold = true).apply { textAlign = Paint.Align.RIGHT }
@@ -157,6 +181,13 @@ object PrePurchaseReportPdfGenerator {
         val scorePaint = textPaint(INK, 22f, bold = true).apply { textAlign = Paint.Align.RIGHT }
         canvas.drawText(healthScore?.let { "$it" } ?: "—", scoreRight - (if (healthScore != null) 24f else 0f), y + 40f, scorePaint)
         if (healthScore != null) canvas.drawText("/100", scoreRight, y + 40f, textPaint(GRAY, 9f).apply { textAlign = Paint.Align.RIGHT })
+        // The score counts stored faults only — say so when hidden or developing codes exist, so 100 never reads as "nothing wrong".
+        if (healthScore != null && report.faultsOutsideScore > 0) {
+            val n = report.faultsOutsideScore
+            val notePaint = textPaint(WATCH, 7.5f, bold = true).apply { textAlign = Paint.Align.RIGHT }
+            canvas.drawText("Stored faults only —", scoreRight, y + 54f, notePaint)
+            canvas.drawText("$n hidden/developing code${if (n == 1) "" else "s"} not counted", scoreRight, y + 64f, notePaint)
+        }
         return h
     }
 
@@ -188,11 +219,11 @@ object PrePurchaseReportPdfGenerator {
         return h
     }
 
-    // ---------- page 2: fraud, odometer, RTO ----------
+    // ---------- fraud, odometer, RTO ----------
 
-    private fun drawFraudPage(b: ReportBuilder, report: PrePurchaseReport) {
+    private fun drawFraudPage(b: ReportBuilder, report: PrePurchaseReport, today: LocalDate) {
         b.newPage(PAGE_FRAUD)
-        sectionTitle(b, "Red flags", "Signs something may have been hidden from you. Each needs an answer from the seller before you pay.")
+        sectionTitle(b, "Red flags", "Signs something may have been hidden from you. Each needs an answer from the seller before you pay.", PAGE_FRAUD)
         if (report.redFlags.isEmpty()) {
             b.y += drawBanner(b.canvas, b.y, "No red flags from this scan.", tint(GOOD, 22), tint(GOOD, 70), GOOD)
             b.y += 16f
@@ -201,8 +232,7 @@ object PrePurchaseReportPdfGenerator {
             b.y += 6f
         }
 
-        b.ensure(170f, PAGE_FRAUD)
-        sectionTitle(b, "Odometer history checks", "What the car's own computer says about its distance and when its fault memory was last cleared.")
+        sectionTitle(b, "Odometer history checks", "What the car's own computer says about its distance and when its fault memory was last cleared.", PAGE_FRAUD)
         val odo = report.odometer
         val rows = listOf(
             "Engine computer odometer" to ecuKmText(report),
@@ -226,70 +256,40 @@ object PrePurchaseReportPdfGenerator {
             }
         }
         b.y += 6f
-        b.ensure(40f, PAGE_FRAUD)
-        b.y += drawWrapped(
-            b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN,
-            "This is an odometer red-flag check, not a guarantee. A match means OBD shows no red flags; it can't rule out a " +
-                "rollback done on both the dashboard and the engine computer. Most cars made before about 2020 don't report " +
-                "their odometer over OBD at all — then service records are the best check.",
-            textPaint(GRAY, 8f)
-        )
+        val odoNote = "This is an odometer red-flag check, not a guarantee. A match means OBD shows no red flags; it can't rule out a " +
+            "rollback done on both the dashboard and the engine computer. Most cars made before about 2020 don't report " +
+            "their odometer over OBD at all — then service records are the best check."
+        b.ensure(measureWrapped(CONTENT_RIGHT - MARGIN, odoNote, textPaint(GRAY, 8f)) + 4f, PAGE_FRAUD)
+        b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, odoNote, textPaint(GRAY, 8f))
         b.y += 18f
 
-        b.ensure(150f, PAGE_FRAUD)
-        sectionTitle(b, "RTO verification", "The official registration record for this car, from the RTO.")
         val rc = report.rc
         if (rc == null) {
+            sectionTitle(b, "RTO record", "The official registration record for this car, from the RTO.", PAGE_FRAUD)
             b.y += drawBanner(
                 b.canvas, b.y,
                 "RTO records weren't checked for this report. Enter the registration number under \"Check against RTO records\" on the Used Car Check screen, then make the report again.",
                 AMBER_BG, AMBER_BORDER, Color.parseColor("#412402")
             )
-            b.y += 12f
+            b.y += 16f
             return
         }
         val chassis = when (rc.chassisMatch) {
-            true -> "Matches the car's computer"
-            false -> "Does NOT match the car's computer"
-            null -> "Couldn't compare — check the number stamped on the body"
+            true -> "✓ The VIN from the car's computer matches the chassis number on the RC." to GOOD
+            false -> "! The VIN from the car's computer does NOT match the chassis number on the RC." to ATTENTION
+            null -> "The VIN couldn't be compared with the RC — check the chassis number stamped on the body yourself." to GRAY
         }
-        val rcRows = listOfNotNull(
-            "Registration" to rc.registrationNumber,
-            "Make / model" to (listOfNotNull(rc.make, rc.model).joinToString(" ").ifBlank { "Not on record" }),
-            rc.fuelType?.let { "Fuel" to it },
-            rc.color?.let { "Colour" to it },
-            "Manufactured" to (PurchaseRcCheckViewModel.formatMonth(rc.manufacturingMonth) ?: "Not on record"),
-            "Registered on" to (rc.registrationDate ?: "Not on record"),
-            rc.registeredAt?.let { "Registering RTO" to it },
-            "Insurance" to (listOfNotNull(rc.insuranceCompany, rc.insuranceUpto?.let { "valid until $it" }).joinToString(", ").ifBlank { "Not on record" }),
-            "PUC valid until" to (rc.puccUpto ?: "Not on record"),
-            rc.fitnessUpto?.let { "Fitness valid until" to it },
-            rc.taxUpto?.let { "Road tax valid until" to it },
-            "Chassis number" to chassis
-        )
-        drawKeyValueRows(b, rcRows, PAGE_FRAUD) { key, value ->
-            when {
-                key == "Chassis number" && rc.chassisMatch == true -> GOOD
-                key == "Chassis number" && rc.chassisMatch == false -> ATTENTION
-                value.startsWith("Not on record") || value.startsWith("Couldn't") -> GRAY
-                else -> INK
-            }
-        }
-        if (rc.partial) {
-            b.y += 4f
-            b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, "Some details aren't available from the RTO for this car.", textPaint(GRAY, 8f))
-        }
-        b.y += 6f
-        b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, "Check these against the seller's RC and what they told you about the car.", textPaint(GRAY, 8f))
+        drawRtoSection(b, rc, today, PAGE_FRAUD, footnote = chassis.first, footnoteColor = chassis.second)
     }
 
-    // ---------- page 3: faults, cost, value ----------
+    // ---------- faults, cost, engine, value ----------
 
-    private fun drawCostPage(b: ReportBuilder, report: PrePurchaseReport) {
+    private fun drawCostPage(b: ReportBuilder, report: PrePurchaseReport, result: ScanResult) {
         b.newPage(PAGE_COST)
         sectionTitle(
             b, "Major faults & estimated repair cost",
-            "Tentative Indian workshop ranges, not quotes — real prices vary by city, workshop and car. Get a quote before you negotiate on them."
+            "Tentative Indian workshop ranges, not quotes — real prices vary by city, workshop and car. Get a quote before you negotiate on them.",
+            PAGE_COST
         )
         if (report.faults.isEmpty()) {
             b.y += drawBanner(b.canvas, b.y, "No fault codes found — stored, hidden or developing.", tint(GOOD, 22), tint(GOOD, 70), GOOD)
@@ -325,14 +325,19 @@ object PrePurchaseReportPdfGenerator {
             b.y += 18f
         }
 
-        b.ensure(130f, PAGE_COST)
-        sectionTitle(b, "Fair estimated value", "Based on the IRDAI standard depreciation schedule — a rough estimate, not a verified valuation.")
+        drawReadiness(b, result.readiness, PAGE_COST)
+        drawKeyReadings(b, result.snapshot, PAGE_COST, title = "Engine readings at the scan")
+
         val value = report.value
+        // Heading, both value boxes and the basis line belong together.
+        b.ensure(if (value != null) 170f else 90f, PAGE_COST)
+        sectionTitle(b, "Fair estimated value", "Based on the IRDAI standard depreciation schedule — a rough estimate, not a verified valuation.", PAGE_COST)
         if (value == null) {
             b.y += drawBanner(b.canvas, b.y, report.valueMissingReason ?: "Fair value not available.", GRAY_LIGHT, BORDER, GRAY)
             b.y += 16f
         } else {
             val boxH = 74f
+            b.ensure(boxH + 50f, PAGE_COST)
             val half = (CONTENT_RIGHT - MARGIN - 10f) / 2
             listOf(
                 Triple("FAIR VALUE (BEFORE REPAIRS)", "${rupees(value.fair.lowEstimate)} – ${rupees(value.fair.highEstimate, symbol = false)}", "What a car like this is worth in good order"),
@@ -356,18 +361,16 @@ object PrePurchaseReportPdfGenerator {
         }
 
         if (report.worthAsking.isNotEmpty()) {
-            b.ensure(80f, PAGE_COST)
-            sectionTitle(b, "Worth asking the seller", "Not signs of tampering — but good questions before you agree a price.")
+            sectionTitle(b, "Worth asking the seller", "Not signs of tampering — but good questions before you agree a price.", PAGE_COST)
             report.worthAsking.forEach { drawSignalCard(b, it, WATCH, PAGE_COST) }
+            b.y += 10f
         }
     }
 
-    // ---------- page 4: before you pay ----------
+    // ---------- before you pay ----------
 
-    private fun drawBeforeYouPayPage(b: ReportBuilder, result: ScanResult) {
-        b.newPage(PAGE_BEFORE_YOU_PAY)
-        sectionTitle(b, "Before you pay", "What an OBD scan can't see. Tick these off at the car.")
-        listOf(
+    private fun drawBeforeYouPay(b: ReportBuilder, result: ScanResult) {
+        val items = listOf(
             "Chassis and engine numbers stamped on the car match the RC",
             "Service book and invoices support the odometer reading",
             "No loan on the car — the RC shows no hypothecation, or the bank's NOC and Form 35 are handed over",
@@ -378,7 +381,12 @@ object PrePurchaseReportPdfGenerator {
             "Test drive: brakes, steering, clutch and gearbox, suspension noises, AC",
             "Tyres: even wear, enough tread, same make on each axle",
             "Transfer papers: Form 29 and 30 signed, original RC, insurance and PUC in hand"
-        ).forEach { item ->
+        )
+        // Checklist, mechanic banner and the "doesn't cover" note close the report together —
+        // continue on this page only if all of it fits, so no page holds just the last lines.
+        b.ensure(60f + items.size * 20f + 14f + 50f + 120f, PAGE_BEFORE_YOU_PAY)
+        sectionTitle(b, "Before you pay", "What an OBD scan can't see. Tick these off at the car.", PAGE_BEFORE_YOU_PAY)
+        items.forEach { item ->
             val paint = textPaint(INK, 9f)
             val h = maxOf(20f, measureWrapped(CONTENT_RIGHT - MARGIN - 26f, item, paint) + 8f)
             b.ensure(h, PAGE_BEFORE_YOU_PAY)
@@ -413,12 +421,8 @@ object PrePurchaseReportPdfGenerator {
 
     // ---------- helpers ----------
 
-    private fun sectionTitle(b: ReportBuilder, title: String, subtitle: String) {
-        b.canvas.drawText(title, MARGIN, b.y + 14f, textPaint(INK, 15f, bold = true))
-        b.y += 20f
-        b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, subtitle, textPaint(GRAY, 8.5f))
-        b.y += 10f
-    }
+    private fun sectionTitle(b: ReportBuilder, title: String, subtitle: String, pageTitle: String) =
+        drawSectionTitle(b, title, subtitle, pageTitle)
 
     /** Title, what the scan saw, then what to ask — measured first so the card's background goes under the text. */
     private fun drawSignalCard(b: ReportBuilder, signal: BuyerSignal, color: Int, pageTitle: String) {
@@ -455,14 +459,6 @@ object PrePurchaseReportPdfGenerator {
         }
     }
 
-    /** A small rounded label right-aligned at [right]. */
-    private fun drawChip(canvas: Canvas, right: Float, top: Float, text: String, color: Int) {
-        val paint = textPaint(color, 8f, bold = true)
-        val w = paint.measureText(text) + 16f
-        canvas.drawRoundRect(RectF(right - w, top, right, top + 14f), 7f, 7f, fillPaint(tint(color, 30)))
-        canvas.drawText(text, right - w + 8f, top + 10f, paint)
-    }
-
     private fun outcomeLabel(outcome: CheckOutcome): Pair<String, Int> = when (outcome) {
         CheckOutcome.CLEAR -> "✓ Clear" to GOOD
         CheckOutcome.FLAGGED -> "! Red flag" to ATTENTION
@@ -492,8 +488,6 @@ object PrePurchaseReportPdfGenerator {
         val prefix = if (symbol) "₹" else ""
         return if (value >= 100000) prefix + "%.2f L".format(value / 100000) else prefix + "%,.0f".format(value)
     }
-
-    private fun tint(color: Int, alpha: Int) = Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color))
 
     /** Largest text size up to [max] at which [text] fits [width] — tiles are narrow and a cut-off amount would mislead. */
     private fun fitSize(text: String, width: Float, max: Float): Float {

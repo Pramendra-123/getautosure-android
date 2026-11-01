@@ -16,11 +16,18 @@ import com.enginesense.app.obd.Severity
 import com.enginesense.app.storage.DealerProfile
 import com.enginesense.app.vehicle.CategoryState
 import com.enginesense.app.vehicle.HealthCategory
+import com.enginesense.app.vehicle.PidId
+import com.enginesense.app.vehicle.PidStatus
+import com.enginesense.app.vehicle.SensorRating
+import com.enginesense.app.vehicle.benchmark
+import com.enginesense.app.vehicle.rate
 import com.enginesense.app.vehicle.scannedSystemGroupFor
 import com.enginesense.app.vehicle.ScannedSystemGroup
+import com.enginesense.app.vehiclelookup.RcLookupResult
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.util.Date
 import java.util.Locale
 import kotlin.math.cos
@@ -34,7 +41,9 @@ data class VehicleReportInfo(
     val year: Int?,
     val fuelType: String?,
     val odometerKm: Int?,
-    val plate: String?
+    val plate: String?,
+    /** The RTO record confirmed when the car was added, if it was added by registration number. */
+    val rc: RcLookupResult? = null
 )
 
 /**
@@ -59,6 +68,19 @@ object VehicleReportPdfGenerator {
         dealerProfile: DealerProfile? = null,
         dealerLogo: Bitmap? = null
     ): File {
+        val dir = File(context.cacheDir, "reports").apply { mkdirs() }
+        return generateTo(dir, result, vehicle, dealerProfile, dealerLogo, LocalDate.now())
+    }
+
+    /** [generate] into [dir] — also what the sample-report test calls, with a fixed [today]. */
+    internal fun generateTo(
+        dir: File,
+        result: ScanResult,
+        vehicle: VehicleReportInfo,
+        dealerProfile: DealerProfile?,
+        dealerLogo: Bitmap?,
+        today: LocalDate
+    ): File {
         val doc = PdfDocument()
         val dateFmt = SimpleDateFormat("yyyyMMdd-HHmm", Locale.US)
         val reportId = "GetAutoSure-" + dateFmt.format(Date(result.timestampMillis))
@@ -67,11 +89,11 @@ object VehicleReportPdfGenerator {
 
         drawCoverPage(b, result, vehicle, reportId, scannedOn, dealerProfile, dealerLogo)
         drawHealthAndFindingsPage(b, result)
+        drawPapersSection(b, vehicle, today)
         drawSensorsPage(b, result)
         drawNextStepsPage(b, result)
         b.finish()
 
-        val dir = File(context.cacheDir, "reports").apply { mkdirs() }
         val file = File(dir, "$reportId.pdf")
         FileOutputStream(file).use { doc.writeTo(it) }
         doc.close()
@@ -119,7 +141,7 @@ object VehicleReportPdfGenerator {
 
         val vin = result.vehicleId.vin?.takeIf { it.isNotBlank() } ?: "Not available"
         val odometer = vehicle.odometerKm?.let { "%,d km".format(it) } ?: "Not entered"
-        val plate = vehicle.plate?.takeIf { it.isNotBlank() } ?: "Not entered"
+        val plate = vehicle.plate?.takeIf { it.isNotBlank() } ?: vehicle.rc?.registrationNumber ?: "Not entered"
         val makeModel = listOfNotNull(vehicle.brand, vehicle.model.ifBlank { null }).joinToString(" ").ifBlank { "Not entered" }
 
         val leftFields = listOf("Make / model" to makeModel, "Registration" to plate, "VIN" to vin, "Odometer" to odometer)
@@ -151,7 +173,8 @@ object VehicleReportPdfGenerator {
         val scoreW = textPaint(stateColor, 30f, bold = true).measureText(scoreText)
         if (health.score != null) b.canvas.drawText("/100", MARGIN + 18f + scoreW + 2f, b.y + 40f, textPaint(GRAY, 11f))
 
-        val labelX = MARGIN + 95f
+        // Clear of "100/100" whatever its width, so the label never runs into the score.
+        val labelX = maxOf(MARGIN + 95f, MARGIN + 18f + scoreW + 2f + textPaint(GRAY, 11f).measureText("/100") + 16f)
         b.canvas.drawText(health.label, labelX, b.y + 22f, textPaint(stateColor, 12f, bold = true))
         val countsText = if (result.findings.isEmpty()) "Nothing flagged this scan" else "$majorCount major · $watchCount to watch"
         b.canvas.drawText(countsText, labelX, b.y + 36f, textPaint(GRAY, 9f))
@@ -166,12 +189,32 @@ object VehicleReportPdfGenerator {
         )
         b.y += 12f
 
-        drawWrapped(
+        b.y += drawWrapped(
             b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN,
             "This report reflects sensor data read directly from the vehicle's OBD2 port via a GetAutoSure scan. " +
                 "Nothing in it is estimated or guessed — a reading not available on this scan is shown as such, not invented.",
             textPaint(GRAY, 8.5f)
         )
+        b.y += 18f
+
+        drawKeyReadings(b, result.snapshot, "Key readings")
+    }
+
+    // ---------- vehicle papers (RTO) ----------
+
+    private fun drawPapersSection(b: ReportBuilder, vehicle: VehicleReportInfo, today: LocalDate) {
+        val rc = vehicle.rc
+        if (rc != null) {
+            drawRtoSection(b, rc, today, "Vehicle papers")
+            return
+        }
+        drawSectionTitle(b, "RTO record", "Insurance, PUC, fitness and road tax dates from the official registration record.", "Vehicle papers")
+        b.y += drawBanner(
+            b.canvas, b.y,
+            "Not included — this car was added without looking up its registration number. Add the car by registration number to include its RTO record and expiry dates.",
+            GRAY_LIGHT, BORDER, GRAY
+        )
+        b.y += 16f
     }
 
     // ---------- page 2 ----------
@@ -234,7 +277,7 @@ object VehicleReportPdfGenerator {
         val summaryText = if (result.findings.isEmpty()) "No faults found in this scan."
             else "${result.findings.size} finding${if (result.findings.size == 1) "" else "s"} from this scan. Severity reflects how soon it's worth acting on, not how expensive it is to fix."
         b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, summaryText, textPaint(GRAY, 8.5f))
-        b.y += 10f
+        b.y += 16f
 
         if (result.findings.isNotEmpty()) {
             b.canvas.drawText("DTC SUMMARY", MARGIN, b.y, textPaint(ORANGE, 8.5f, bold = true))
@@ -300,6 +343,7 @@ object VehicleReportPdfGenerator {
             b.canvas.drawLine(MARGIN, b.y + 20f, CONTENT_RIGHT, b.y + 20f, strokePaint(BORDER, 0.5f))
             b.y += 22f
         }
+        b.y += 18f
     }
 
     private fun redrawFindingCard(
@@ -315,66 +359,65 @@ object VehicleReportPdfGenerator {
         drawWrapped(canvas, textLeft, innerY, right - textLeft - 10f, "Recommended action: $action", textPaint(INK, 8.5f))
     }
 
-    // ---------- page 4 ----------
+    // ---------- readiness & sensors ----------
 
     private fun drawSensorsPage(b: ReportBuilder, result: ScanResult) {
-        b.newPage("Sensor readings")
-        b.canvas.drawText("Sensor readings", MARGIN, b.y + 14f, textPaint(INK, 16f, bold = true))
-        b.y += 20f
+        drawReadiness(b, result.readiness, "Sensor readings")
 
         // PIDs this vehicle doesn't support are left out entirely rather than listed as noise —
         // noted once, in one line, instead of a long "Not supported" row per PID.
         val allReadings = result.snapshot.readings.values
-        val shown = allReadings.filter { it.status.name != "UNSUPPORTED" }.sortedBy { it.pid.displayName }
+        val shown = allReadings.filter { it.status != PidStatus.UNSUPPORTED }.sortedBy { it.pid.displayName }
         val unsupportedCount = allReadings.size - shown.size
         val summaryText = "${shown.size} sensors this vehicle supports" +
-            (if (unsupportedCount > 0) " ($unsupportedCount other monitored PIDs aren't supported by this vehicle and are left out)." else ".") +
-            " \"Valid range\" is each sensor's full decodable range, not a \"healthy\" band — a reading outside it is flagged as implausible, not just unusual."
-        b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, summaryText, textPaint(GRAY, 8.5f))
-        b.y += 10f
+            (if (unsupportedCount > 0) " ($unsupportedCount other monitored sensors aren't supported by this vehicle and are left out)." else ".") +
+            " \"Normal\" is the range for a warmed-up, healthy engine where one exists; readings that change with how the car is driven are shown without a verdict."
+        drawSectionTitle(b, "All sensor readings", summaryText, "Sensor readings")
 
-        val colX = floatArrayOf(MARGIN, MARGIN + 190f, MARGIN + 280f, MARGIN + 380f)
-        b.y += drawTableHeader(b.canvas, b.y, colX, listOf("Sensor", "Value", "Valid range", "Status"))
+        val colX = floatArrayOf(MARGIN, MARGIN + 200f, MARGIN + 290f)
+        b.ensure(44f, "Sensor readings")
+        b.y += drawTableHeader(b.canvas, b.y, colX, listOf("Sensor", "Value", "Normal"))
         shown.forEach { reading ->
-            b.ensure(18f, "Sensor readings")
+            b.ensure(20f, "Sensor readings")
+            val value = reading.value
             val valueText = when {
-                reading.status.name == "VERIFIED" && reading.value != null -> "%.1f %s".format(reading.value, reading.pid.unit)
-                reading.status.name == "SUPPORTED_NO_DATA" -> "No data this scan"
+                reading.status == PidStatus.VERIFIED && value != null -> "${trimNum(value)} ${reading.pid.unit}".trim()
+                reading.status == PidStatus.SUPPORTED_NO_DATA -> "No data this scan"
+                reading.status == PidStatus.IMPLAUSIBLE -> "Unreliable reading"
                 else -> "—"
             }
-            val range = reading.pid.plausibleRange
-            val rangeText = "${trimNum(range.start)}–${trimNum(range.endInclusive)} ${reading.pid.unit}"
-            val statusText = reading.status.name.lowercase().replaceFirstChar { it.uppercase() }.replace("_", " ")
-            b.canvas.drawText(reading.pid.displayName, colX[0], b.y + 12f, textPaint(INK, 8.5f))
-            b.canvas.drawText(valueText, colX[1], b.y + 12f, textPaint(INK, 8.5f))
-            b.canvas.drawText(rangeText, colX[2], b.y + 12f, textPaint(GRAY, 8f))
-            b.canvas.drawText(statusText, colX[3], b.y + 12f, textPaint(GRAY, 8.5f))
-            b.canvas.drawLine(MARGIN, b.y + 16f, CONTENT_RIGHT, b.y + 16f, strokePaint(BORDER, 0.5f))
-            b.y += 18f
+            val benchmark = reading.pid.benchmark()
+            val rangeText = benchmark?.typicalRange?.let { "${trimNum(it.start)}–${trimNum(it.endInclusive)} ${reading.pid.unit}".trim() } ?: "—"
+            val (chip, chipColor) = sensorChip(reading.pid, reading.status, value)
+            b.canvas.drawText(ellipsize(reading.pid.displayName, colX[1] - colX[0] - 10f, textPaint(INK, 8.5f)), colX[0] + 6f, b.y + 13f, textPaint(INK, 8.5f))
+            b.canvas.drawText(valueText, colX[1] + 6f, b.y + 13f, textPaint(INK, 8.5f, bold = true))
+            b.canvas.drawText(rangeText, colX[2] + 6f, b.y + 13f, textPaint(GRAY, 8f))
+            if (chip != null) drawChip(b.canvas, CONTENT_RIGHT, b.y + 3f, chip, chipColor)
+            b.canvas.drawLine(MARGIN, b.y + 19f, CONTENT_RIGHT, b.y + 19f, strokePaint(BORDER, 0.5f))
+            b.y += 20f
         }
-        b.y += 12f
-
-        val readiness = result.readiness
-        b.ensure(50f, "Sensor readings")
-        b.canvas.drawText("Emissions readiness", MARGIN, b.y + 11f, textPaint(INK, 11f, bold = true))
         b.y += 16f
-        if (readiness == null) {
-            b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, "Not read on this scan.", textPaint(GRAY, 9f))
-        } else {
-            val readyCount = readiness.monitors.count { it.supported && it.ready }
-            val supportedCount = readiness.monitors.count { it.supported }
-            val milText = if (readiness.milOn) "On" else "Off"
-            val notReady = readiness.monitors.filter { it.supported && !it.ready }.joinToString(", ") { it.name }
-            val text = "MIL (check engine light): $milText. $readyCount of $supportedCount readiness monitors complete." +
-                if (notReady.isNotBlank()) " Incomplete: $notReady — needs further drive cycles to finish self-testing." else ""
-            b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, text, textPaint(INK, 9f))
+    }
+
+    /** The verdict chip for one sensor row — null when there's nothing honest to say (no benchmark, no data). */
+    private fun sensorChip(pid: PidId, status: PidStatus, value: Double?): Pair<String?, Int> {
+        if (status == PidStatus.IMPLAUSIBLE) return "! Unreliable" to WATCH
+        if (status != PidStatus.VERIFIED || value == null) return null to GRAY
+        val benchmark = pid.benchmark() ?: return null to GRAY
+        if ((pid == PidId.COOLANT_TEMP_C || pid == PidId.ENGINE_OIL_TEMP_C) && value < benchmark.typicalRange.start) return "Warming up" to GRAY
+        if (benchmark.contextDependent) return (if (value in benchmark.typicalRange) "✓ Typical" else "Varies with driving") to (if (value in benchmark.typicalRange) GOOD else GRAY)
+        return when (pid.rate(value)) {
+            SensorRating.GOOD -> "✓ Normal" to GOOD
+            SensorRating.WATCH -> "! Watch" to WATCH
+            SensorRating.ATTENTION -> "! Check" to ATTENTION
+            SensorRating.NOT_RATED -> null to GRAY
         }
     }
 
-    // ---------- page 5 ----------
+    // ---------- next steps ----------
 
     private fun drawNextStepsPage(b: ReportBuilder, result: ScanResult) {
-        b.newPage("Next steps")
+        b.ensure(180f, "Next steps")
         b.canvas.drawText("Next steps", MARGIN, b.y + 14f, textPaint(INK, 16f, bold = true))
         b.y += 24f
 

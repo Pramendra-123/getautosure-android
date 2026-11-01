@@ -11,6 +11,17 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
 import com.enginesense.app.storage.DealerProfile
+import com.enginesense.app.vehicle.PidId
+import com.enginesense.app.vehicle.ReadinessStatus
+import com.enginesense.app.vehicle.SensorRating
+import com.enginesense.app.vehicle.VehicleSnapshot
+import com.enginesense.app.vehicle.benchmark
+import com.enginesense.app.vehicle.rate
+import com.enginesense.app.vehiclelookup.RcLookupResult
+import com.enginesense.app.vehiclelookup.RtoRecord
+import com.enginesense.app.vehiclelookup.RtoRow
+import com.enginesense.app.vehiclelookup.ValidityStatus
+import java.time.LocalDate
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -54,9 +65,9 @@ internal fun fillPaint(color: Int) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
     this.color = color; style = Paint.Style.FILL
 }
 
-internal fun drawField(canvas: Canvas, x: Float, y: Float, label: String, value: String) {
+internal fun drawField(canvas: Canvas, x: Float, y: Float, label: String, value: String, valueColor: Int = INK) {
     canvas.drawText(label, x, y + 8f, textPaint(GRAY, 7.5f))
-    canvas.drawText(value, x, y + 20f, textPaint(INK, 9.5f, bold = true))
+    canvas.drawText(value, x, y + 20f, textPaint(valueColor, 9.5f, bold = true))
 }
 
 internal fun drawTableHeader(canvas: Canvas, y: Float, colX: FloatArray, headers: List<String>): Float {
@@ -247,6 +258,228 @@ internal fun drawDealerCompactHeader(canvas: Canvas, y: Float, dealer: DealerPro
     val titlePaint = textPaint(GRAY, 8.5f)
     titlePaint.textAlign = Paint.Align.RIGHT
     canvas.drawText(title, CONTENT_RIGHT, y + 14f, titlePaint)
+}
+
+// ---------- sections shared by both PDFs ----------
+
+/** A section heading with a one-line explanation under it. */
+internal fun drawSectionTitle(b: ReportBuilder, title: String, subtitle: String, pageTitle: String) {
+    val subPaint = textPaint(GRAY, 8.5f)
+    b.ensure(20f + measureWrapped(CONTENT_RIGHT - MARGIN, subtitle, subPaint) + 40f, pageTitle)
+    b.canvas.drawText(title, MARGIN, b.y + 14f, textPaint(INK, 15f, bold = true))
+    b.y += 20f
+    b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, subtitle, subPaint)
+    b.y += 10f
+}
+
+/** A small rounded label right-aligned at [right]. Returns its width. */
+internal fun drawChip(canvas: Canvas, right: Float, top: Float, text: String, color: Int): Float {
+    val paint = textPaint(color, 8f, bold = true)
+    val w = paint.measureText(text) + 16f
+    canvas.drawRoundRect(RectF(right - w, top, right, top + 14f), 7f, 7f, fillPaint(tint(color, 30)))
+    canvas.drawText(text, right - w + 8f, top + 10f, paint)
+    return w
+}
+
+internal fun tint(color: Int, alpha: Int) = Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color))
+
+private const val GRID_ROW_H = 27f
+
+/** Label/value pairs in two columns — denser than one row per line, so a long RC record doesn't eat a page. */
+private fun drawRowGrid(b: ReportBuilder, rows: List<RtoRow>, pageTitle: String) {
+    val colW = (CONTENT_RIGHT - MARGIN) / 2
+    rows.chunked(2).forEach { pair ->
+        b.ensure(GRID_ROW_H, pageTitle)
+        pair.forEachIndexed { i, row ->
+            val x = MARGIN + i * colW
+            val value = ellipsize(row.value, colW - 12f, textPaint(INK, 9.5f, bold = true))
+            drawField(b.canvas, x, b.y, row.label, value, if (row.concern) ATTENTION else INK)
+        }
+        b.y += GRID_ROW_H
+    }
+}
+
+/** Cuts [text] with "…" so it fits [width] — RTO strings (financer names, RTO offices) can be long. */
+internal fun ellipsize(text: String, width: Float, paint: TextPaint): String {
+    if (paint.measureText(text) <= width) return text
+    var end = text.length
+    while (end > 1 && paint.measureText(text.substring(0, end) + "…") > width) end--
+    return text.substring(0, end).trimEnd() + "…"
+}
+
+/**
+ * The car's RTO record: what it is, its insurance/PUC/fitness/tax dates with what each means today,
+ * and — for a dealer with full RC access — ownership, loan and legal status. Shared by every report
+ * so the record reads the same everywhere. The owner's name is never part of [RcLookupResult].
+ */
+internal fun drawRtoSection(
+    b: ReportBuilder, rc: RcLookupResult, today: LocalDate, pageTitle: String,
+    /** One closing line in [footnoteColor], e.g. the buyer report's chassis-match result — kept on the same page as the dates. */
+    footnote: String? = null, footnoteColor: Int = GRAY
+) {
+    drawSectionTitle(b, "RTO record", "The official registration record for this car, from the RTO (VAHAN). Check it against the RC the seller hands you.", pageTitle)
+    drawRowGrid(b, RtoRecord.vehicleRows(rc), pageTitle)
+    b.y += 4f
+
+    val dealerRows = RtoRecord.dealerRows(rc)
+    val sourceLine = RtoRecord.sourceLine(rc)
+    val footnotePaint = textPaint(footnoteColor, 9f, bold = true)
+    val tailH = 14f + measureWrapped(CONTENT_RIGHT - MARGIN, sourceLine, textPaint(GRAY, 7.5f)) +
+        (footnote?.let { measureWrapped(CONTENT_RIGHT - MARGIN, it, footnotePaint) + 10f } ?: 0f)
+
+    // Validity — one row each, with a status chip so an expired date can't be missed. Without
+    // ownership rows to follow, the source line and footnote come right after, so keep them together.
+    b.ensure(24f + 4 * 22f + (if (dealerRows.isEmpty()) tailH else 0f), pageTitle)
+    b.canvas.drawText("VALID UNTIL", MARGIN, b.y + 8f, textPaint(ORANGE, 8.5f, bold = true))
+    b.y += 14f
+    RtoRecord.validity(rc, today).forEach { line ->
+        b.ensure(22f, pageTitle)
+        b.canvas.drawText(line.label, MARGIN + 4f, b.y + 13f, textPaint(GRAY, 9f))
+        b.canvas.drawText(line.display, MARGIN + 170f, b.y + 13f, textPaint(if (line.status == ValidityStatus.UNKNOWN) GRAY else INK, 9f, bold = true))
+        val (label, color) = when (line.status) {
+            ValidityStatus.VALID -> "✓ Valid" to GOOD
+            ValidityStatus.LIFETIME -> "✓ Lifetime" to GOOD
+            ValidityStatus.EXPIRES_SOON -> "! Expires soon" to WATCH
+            ValidityStatus.EXPIRED -> "! Expired" to ATTENTION
+            ValidityStatus.UNKNOWN -> "– Not on record" to GRAY
+        }
+        drawChip(b.canvas, CONTENT_RIGHT, b.y + 3f, label, color)
+        b.canvas.drawLine(MARGIN, b.y + 20f, CONTENT_RIGHT, b.y + 20f, strokePaint(BORDER, 0.5f))
+        b.y += 22f
+    }
+    b.y += 10f
+
+    if (dealerRows.isNotEmpty()) {
+        b.ensure(14f + ((dealerRows.size + 1) / 2) * GRID_ROW_H + tailH, pageTitle)
+        b.canvas.drawText("OWNERSHIP & LEGAL STATUS", MARGIN, b.y + 8f, textPaint(ORANGE, 8.5f, bold = true))
+        b.y += 14f
+        drawRowGrid(b, dealerRows, pageTitle)
+        b.y += 4f
+    }
+
+    b.ensure(tailH, pageTitle)
+    if (footnote != null) {
+        b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, footnote, footnotePaint)
+        b.y += 10f
+    }
+    b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, sourceLine, textPaint(GRAY, 7.5f))
+    b.y += 18f
+}
+
+/** The readings a non-mechanic can judge, in this order — the rest stay in the full sensor table. */
+internal val KEY_READING_PIDS = listOf(
+    PidId.CONTROL_MODULE_VOLTAGE, PidId.COOLANT_TEMP_C, PidId.SHORT_TERM_FUEL_TRIM_1, PidId.LONG_TERM_FUEL_TRIM_1,
+    PidId.RPM, PidId.ENGINE_LOAD, PidId.INTAKE_MANIFOLD_PRESSURE, PidId.ENGINE_OIL_TEMP_C
+)
+
+private val KEY_READING_NAMES = mapOf(
+    PidId.CONTROL_MODULE_VOLTAGE to "Battery / charging",
+    PidId.COOLANT_TEMP_C to "Coolant temperature",
+    PidId.SHORT_TERM_FUEL_TRIM_1 to "Fuel mixture (short-term)",
+    PidId.LONG_TERM_FUEL_TRIM_1 to "Fuel mixture (long-term)",
+    PidId.RPM to "Idle speed",
+    PidId.ENGINE_LOAD to "Engine load",
+    PidId.INTAKE_MANIFOLD_PRESSURE to "Intake pressure",
+    PidId.ENGINE_OIL_TEMP_C to "Oil temperature"
+)
+
+/** Rows of (name, value, normal range, chip label, chip color) for [KEY_READING_PIDS] the car actually reported. */
+internal fun keyReadingRows(snapshot: VehicleSnapshot): List<KeyReadingRow> = KEY_READING_PIDS.mapNotNull { pid ->
+    val value = snapshot.verifiedValue(pid) ?: return@mapNotNull null
+    val benchmark = pid.benchmark()
+    val unit = pid.unit
+    val valueText = when (pid) {
+        PidId.RPM -> "${value.toInt()} rpm"
+        PidId.CONTROL_MODULE_VOLTAGE -> "%.1f V".format(value)
+        PidId.SHORT_TERM_FUEL_TRIM_1, PidId.LONG_TERM_FUEL_TRIM_1 -> (if (value >= 0) "+" else "") + "%.1f%%".format(value)
+        else -> "${value.toInt()} $unit".trim()
+    }
+    val rangeText = benchmark?.typicalRange?.let { r ->
+        when (pid) {
+            PidId.SHORT_TERM_FUEL_TRIM_1, PidId.LONG_TERM_FUEL_TRIM_1 -> "within ±${r.endInclusive.toInt()}%"
+            PidId.CONTROL_MODULE_VOLTAGE -> "%.1f–%.1f V".format(r.start, r.endInclusive)
+            else -> "${r.start.toInt()}–${r.endInclusive.toInt()} $unit".trim()
+        }
+    } ?: "—"
+    // Below the warm range right after a start just means the engine hasn't warmed up — not a fault.
+    val warmingUp = (pid == PidId.COOLANT_TEMP_C || pid == PidId.ENGINE_OIL_TEMP_C) && benchmark != null && value < benchmark.typicalRange.start
+    val (chip, color) = when {
+        warmingUp -> "Warming up" to GRAY
+        benchmark?.contextDependent == true -> (if (value in benchmark.typicalRange) "✓ Typical" to GOOD else "Varies with driving" to GRAY)
+        else -> when (pid.rate(value)) {
+            SensorRating.GOOD -> "✓ Normal" to GOOD
+            SensorRating.WATCH -> "! Watch" to WATCH
+            SensorRating.ATTENTION -> "! Check" to ATTENTION
+            SensorRating.NOT_RATED -> "–" to GRAY
+        }
+    }
+    KeyReadingRow(KEY_READING_NAMES[pid] ?: pid.displayName, valueText, rangeText, chip, color)
+}
+
+internal data class KeyReadingRow(val name: String, val value: String, val range: String, val chip: String, val chipColor: Int)
+
+/** The key readings as a table with normal ranges — what a buyer or owner can actually judge. Draws nothing when the car reported none. */
+internal fun drawKeyReadings(b: ReportBuilder, snapshot: VehicleSnapshot, pageTitle: String, title: String = "Key readings") {
+    val rows = keyReadingRows(snapshot)
+    if (rows.isEmpty()) return
+    drawSectionTitle(
+        b, title,
+        "Taken with the engine running during the scan. \"Normal\" is the range for a warmed-up, healthy engine; idle speed, load and intake pressure change with how the car is being driven.",
+        pageTitle
+    )
+    val colX = floatArrayOf(MARGIN, MARGIN + 175f, MARGIN + 265f)
+    b.ensure(24f + 22f, pageTitle)
+    b.y += drawTableHeader(b.canvas, b.y, colX, listOf("Reading", "Value", "Normal"))
+    rows.forEach { row ->
+        b.ensure(22f, pageTitle)
+        b.canvas.drawText(row.name, colX[0] + 6f, b.y + 13f, textPaint(INK, 9f))
+        b.canvas.drawText(row.value, colX[1] + 6f, b.y + 13f, textPaint(INK, 9f, bold = true))
+        b.canvas.drawText(row.range, colX[2] + 6f, b.y + 13f, textPaint(GRAY, 8.5f))
+        drawChip(b.canvas, CONTENT_RIGHT, b.y + 3f, row.chip, row.chipColor)
+        b.canvas.drawLine(MARGIN, b.y + 20f, CONTENT_RIGHT, b.y + 20f, strokePaint(BORDER, 0.5f))
+        b.y += 22f
+    }
+    b.y += 14f
+}
+
+/** Each emissions self-test the car supports, as a grid of ✓ / not-yet tiles, plus the PUC-readiness line. */
+internal fun drawReadiness(b: ReportBuilder, readiness: ReadinessStatus?, pageTitle: String) {
+    drawSectionTitle(
+        b, "Self-tests (readiness monitors)",
+        "The car's computer re-runs these checks while it's driven. All complete means nothing was reset recently and the car is ready for a PUC test.",
+        pageTitle
+    )
+    if (readiness == null) {
+        b.y += drawBanner(b.canvas, b.y, "This car didn't report its self-tests on this scan.", GRAY_LIGHT, BORDER, GRAY)
+        b.y += 14f
+        return
+    }
+    val supported = readiness.monitors.filter { it.supported }
+    val ready = supported.count { it.ready }
+    val summary = "Warning light ${if (readiness.milOn) "ON" else "off"} · $ready of ${supported.size} self-tests complete · " +
+        if (readiness.readyForEmissionsTest) "ready for a PUC test" else "not ready for a PUC test yet"
+    b.ensure(20f, pageTitle)
+    b.canvas.drawText(summary, MARGIN, b.y + 11f, textPaint(if (readiness.milOn || !readiness.readyForEmissionsTest) WATCH else GOOD, 9.5f, bold = true))
+    b.y += 20f
+
+    val cols = 3
+    val gap = 8f
+    val w = (CONTENT_RIGHT - MARGIN - gap * (cols - 1)) / cols
+    val h = 26f
+    supported.chunked(cols).forEach { line ->
+        b.ensure(h + gap, pageTitle)
+        line.forEachIndexed { i, m ->
+            val x = MARGIN + i * (w + gap)
+            val color = if (m.ready) GOOD else WATCH
+            b.canvas.drawRoundRect(RectF(x, b.y, x + w, b.y + h), 5f, 5f, fillPaint(tint(color, 22)))
+            b.canvas.drawText(if (m.ready) "✓" else "…", x + 9f, b.y + 17f, textPaint(color, 10f, bold = true))
+            b.canvas.drawText(ellipsize(m.name, w - 60f, textPaint(INK, 8.5f)), x + 24f, b.y + 17f, textPaint(INK, 8.5f))
+            val state = textPaint(color, 7.5f, bold = true).apply { textAlign = Paint.Align.RIGHT }
+            b.canvas.drawText(if (m.ready) "Complete" else "Not yet", x + w - 8f, b.y + 17f, state)
+        }
+        b.y += h + gap
+    }
+    b.y += 8f
 }
 
 /** Tracks the current page/canvas/y-cursor across a variable-length report, starting a new page (re-drawing the header) whenever content would overflow. */

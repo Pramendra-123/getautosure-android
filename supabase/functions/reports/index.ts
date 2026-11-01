@@ -127,6 +127,30 @@ async function uploadPhotos(
 }
 
 /** Indian-plate-shaped masking (e.g. "KA01AB1234" -> "KA 01 * * * 1234") matching the reference design — state + RTO code visible, the rest hidden behind a fixed-length placeholder so the real length is never leaked either. Falls back to a conservative full mask for anything shorter/unusually shaped rather than guessing at a format. */
+/**
+ * health_summary.rto (the app's RTO record block) repeats the registration number — once on its
+ * own and once as the "Registration" row. Same public-read masking as registration_no, so the
+ * public report never shows the full plate. Everything else in the block is already safe to
+ * publish: the app sends chassis/engine numbers masked and never sends the owner's name.
+ */
+export function maskRtoInHealthSummary(healthSummary: unknown): unknown {
+  if (typeof healthSummary !== "object" || healthSummary === null) return healthSummary;
+  const summary = healthSummary as Record<string, unknown>;
+  const rto = summary.rto;
+  if (typeof rto !== "object" || rto === null) return healthSummary;
+  const r = rto as Record<string, unknown>;
+  const vehicle = Array.isArray(r.vehicle)
+    ? r.vehicle.map((row) => {
+      const cell = row as Record<string, unknown>;
+      return cell?.label === "Registration" ? { ...cell, value: maskRegistrationNumber(cell.value as string | null) } : row;
+    })
+    : r.vehicle;
+  return {
+    ...summary,
+    rto: { ...r, registrationNumber: maskRegistrationNumber(r.registrationNumber as string | null), vehicle },
+  };
+}
+
 function maskRegistrationNumber(raw: string | null | undefined): string | null {
   if (!raw) return null;
   const compact = raw.replace(/[\s-]/g, "").toUpperCase();
@@ -242,7 +266,12 @@ async function getReport(supabase: SupabaseClient, slug: unknown): Promise<Respo
   if (!data) return jsonError(404, "not_found", "Report not found");
   // Masked only in the PUBLIC read path — the stored value stays full-fidelity for the dealer's
   // own future edit view; this is a presentation-layer redaction, not a data-loss one.
-  const report = { ...(data as Record<string, unknown>), registration_no: maskRegistrationNumber((data as Record<string, unknown>).registration_no as string | null) };
+  const row = data as Record<string, unknown>;
+  const report = {
+    ...row,
+    registration_no: maskRegistrationNumber(row.registration_no as string | null),
+    health_summary: maskRtoInHealthSummary(row.health_summary),
+  };
   return new Response(JSON.stringify({ report }), { headers: { "Content-Type": "application/json" } });
 }
 

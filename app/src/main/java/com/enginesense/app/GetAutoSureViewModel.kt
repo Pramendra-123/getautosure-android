@@ -43,6 +43,8 @@ import com.enginesense.app.vehicle.TripMileageResult
 import com.enginesense.app.vehicle.VehicleSnapshot
 import com.enginesense.app.storage.PersistedTripMileage
 import com.enginesense.app.storage.ScanHistoryStore
+import com.enginesense.app.vehiclelookup.RcLookupResult
+import com.enginesense.app.vehiclelookup.RcPrefillMapper
 import com.enginesense.app.storage.TripMileageStore
 import com.enginesense.app.storage.toPersistedScan
 import com.enginesense.app.storage.toSnapshot
@@ -255,6 +257,14 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         _vehicleEngineCc.value = cc
     }
 
+    /** The RTO record confirmed during Add Vehicle — shown in the advanced and dealer reports. Null when the car was entered by hand. */
+    private val _vehicleRc = MutableStateFlow<RcLookupResult?>(null)
+    val vehicleRc: StateFlow<RcLookupResult?> = _vehicleRc.asStateFlow()
+
+    fun setVehicleRc(rc: RcLookupResult?) {
+        _vehicleRc.value = rc
+    }
+
     /** User-entered only — this app has no vehicle spec catalog, so the manufacturer-claimed (ARAI) figure is never looked up, only typed in. Shown on the Trip Mileage screen as a labeled lab-test reference, never used to judge a "drop". */
     private val _vehicleClaimedMileageKmPerLitre = MutableStateFlow<Double?>(null)
     val vehicleClaimedMileageKmPerLitre: StateFlow<Double?> = _vehicleClaimedMileageKmPerLitre.asStateFlow()
@@ -315,6 +325,11 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         _vehicleOdometerKm.value = odometerKm
         _vehiclePlate.value = plate
         _vehicleEngineCc.value = engineCc
+        // An RTO record for a different plate isn't this car's any more.
+        val rc = _vehicleRc.value
+        if (rc != null && RcPrefillMapper.normalizePlate(plate.orEmpty()) != RcPrefillMapper.normalizePlate(rc.registrationNumber)) {
+            _vehicleRc.value = null
+        }
     }
 
     init {

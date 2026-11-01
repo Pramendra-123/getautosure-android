@@ -13,6 +13,7 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "0.1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -125,4 +126,9 @@ dependencies {
     // MockWebServer: tests RemoteAiMechanicChatService's actual HTTP/parsing behavior (success,
     // timeout, non-2xx, malformed JSON) against a local test server, not a real network call.
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+
+    // Renders the sample PDFs in brand/reports on a real device — PdfDocument needs Android's
+    // native graphics, which neither plain JUnit nor Robolectric provides.
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
 }

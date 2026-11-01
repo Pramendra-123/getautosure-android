@@ -1,9 +1,11 @@
 package com.enginesense.app.vehiclelookup
 
 /**
- * The customer-mode `vehicle-lookup` response, exactly as the RTO record has it (strings are the
- * RTO's own wording; null means the RTO didn't have it). Customer mode never carries owner,
- * loan or chassis details — that's enforced server-side, not by leaving fields out here.
+ * The `vehicle-lookup` response, exactly as the RTO record has it (strings are the RTO's own
+ * wording; null means the RTO didn't have it). The fields after [chassisMatch] only come back in
+ * dealer mode — customer mode never carries owner, loan or chassis details, and that's enforced
+ * server-side, not by leaving fields out here. The owner's name is never read at all, so no
+ * report can print it.
  */
 data class RcLookupResult(
     val registrationNumber: String,
@@ -27,7 +29,42 @@ data class RcLookupResult(
     val source: String,
     /** Whether the VIN sent with the lookup matches the RC's chassis number; null when it couldn't be compared (or no VIN was sent). */
     val chassisMatch: Boolean? = null,
-)
+    val bodyType: String? = null,
+    /** When our server fetched the record from Surepass (ISO-8601) — a cached record can be up to 30 days old. */
+    val fetchedAt: String? = null,
+    /** "dealer" when the server returned the full record, else "customer". */
+    val mode: String = "customer",
+    val ownerCount: Int? = null,
+    /** True when the RC shows a loan (hypothecation) on the car. */
+    val financed: Boolean? = null,
+    val financer: String? = null,
+    val rcStatus: String? = null,
+    val blacklistStatus: String? = null,
+    val nocDetails: String? = null,
+    val nonUseStatus: String? = null,
+    /** Full numbers — print them through [maskIdentifier], never as-is. */
+    val chassisNumber: String? = null,
+    val engineNumber: String? = null,
+    val emissionNorms: String? = null,
+    val cylinders: Int? = null,
+    val seatCapacity: Int? = null,
+    val unladenWeightKg: Int? = null,
+    val rtoCode: String? = null,
+    /** When the RTO record itself was last updated on Surepass's side. */
+    val recordUpdatedOn: String? = null,
+) {
+    val hasDealerDetails: Boolean get() = mode == "dealer"
+}
+
+/**
+ * Chassis and engine numbers on a shared report show only their last five characters — enough
+ * for a buyer to match against the number stamped on the car, not enough to clone its papers.
+ */
+fun maskIdentifier(value: String?): String? {
+    val clean = value?.trim()?.uppercase()?.takeIf { it.isNotEmpty() } ?: return null
+    val visible = clean.takeLast(5)
+    return "•".repeat((clean.length - visible.length).coerceIn(3, 12)) + visible
+}
 
 /** What the onboarding screens prefill from an [RcLookupResult] — see [RcPrefillMapper]. */
 data class RcPrefill(
