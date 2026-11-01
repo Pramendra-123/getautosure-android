@@ -126,7 +126,6 @@ async function uploadPhotos(
   return { urls, warnings };
 }
 
-/** Indian-plate-shaped masking (e.g. "KA01AB1234" -> "KA 01 * * * 1234") matching the reference design — state + RTO code visible, the rest hidden behind a fixed-length placeholder so the real length is never leaked either. Falls back to a conservative full mask for anything shorter/unusually shaped rather than guessing at a format. */
 /**
  * health_summary.rto (the app's RTO record block) repeats the registration number — once on its
  * own and once as the "Registration" row. Same public-read masking as registration_no, so the
@@ -151,6 +150,7 @@ export function maskRtoInHealthSummary(healthSummary: unknown): unknown {
   };
 }
 
+/** Indian-plate-shaped masking (e.g. "KA01AB1234" -> "KA 01 * * * 1234") matching the reference design — state + RTO code visible, the rest hidden behind a fixed-length placeholder so the real length is never leaked either. Falls back to a conservative full mask for anything shorter/unusually shaped rather than guessing at a format. */
 function maskRegistrationNumber(raw: string | null | undefined): string | null {
   if (!raw) return null;
   const compact = raw.replace(/[\s-]/g, "").toUpperCase();
