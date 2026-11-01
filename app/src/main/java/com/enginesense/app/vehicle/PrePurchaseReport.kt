@@ -42,6 +42,33 @@ data class OdometerEvidence(
 data class ValueEstimate(val fair: FairPriceEstimate, val afterRepairsLow: Double, val afterRepairsHigh: Double)
 
 /**
+ * A dealer's own asking range, raised or dropped from the estimate as they see fit. Always shown
+ * beside the GetAutoSure estimate and labelled as the dealer's — never in place of it — so a buyer
+ * can see how the two compare.
+ */
+data class DealerPrice(val low: Double, val high: Double, val dealerName: String) {
+    /** "₹20,000 above the GetAutoSure estimate", comparing range midpoints; null without an estimate. */
+    fun comparedTo(estimate: FairPriceEstimate?): String? {
+        estimate ?: return null
+        val diff = (low + high) / 2 - (estimate.lowEstimate + estimate.highEstimate) / 2
+        val amount = "₹" + "%,.0f".format(kotlin.math.abs(diff))
+        return when {
+            kotlin.math.abs(diff) < 1000 -> "In line with the GetAutoSure estimate"
+            diff > 0 -> "$amount above the GetAutoSure estimate"
+            else -> "$amount below the GetAutoSure estimate"
+        }
+    }
+
+    companion object {
+        /** A typed range, made sane: swapped if back to front, null if either end is missing or not positive. */
+        fun from(low: Double?, high: Double?, dealerName: String): DealerPrice? {
+            if (low == null || high == null || low <= 0 || high <= 0) return null
+            return DealerPrice(minOf(low, high), maxOf(low, high), dealerName)
+        }
+    }
+}
+
+/**
  * Everything the pre-purchase PDF shows, worked out once from the scan plus what the buyer added
  * on the Used Car Check screen (dashboard km, RTO lookup, ex-showroom price). Kept free of Android
  * so it can be unit-tested; [com.enginesense.app.report.PrePurchaseReportPdfGenerator] only draws it.
@@ -68,7 +95,9 @@ data class PrePurchaseReport(
     /** Hidden (permanent) and developing (pending) codes — the engine health score counts only stored ones, so the report says how many it leaves out. */
     val faultsOutsideScore: Int = 0,
     /** The RC's insurance/PUC/fitness/tax dates and what they mean today; empty without an RTO check. */
-    val validity: List<ValidityLine> = emptyList()
+    val validity: List<ValidityLine> = emptyList(),
+    /** Set only on a dealer's report, when the dealer entered their own price. */
+    val dealerPrice: DealerPrice? = null
 )
 
 object PrePurchaseReportBuilder {

@@ -353,7 +353,7 @@ private fun SummaryChip(text: String, color: Color) {
 }
 
 @Composable
-private fun SectionHeader(title: String, subtitle: String? = null) {
+internal fun SectionHeader(title: String, subtitle: String? = null) {
     Spacer(Modifier.height(28.dp))
     Text(title, style = GetAutoSureType.SectionTitle)
     if (subtitle != null) Text(subtitle, style = GetAutoSureType.Caption)
@@ -430,7 +430,7 @@ private fun ChecksCard(checks: List<PurchaseCheck>) {
  * and comes back as yes/no/can't-tell — customer mode never sees the chassis number itself.
  */
 @Composable
-private fun VehicleIdentityCard(vin: String?, isDemo: Boolean) {
+internal fun VehicleIdentityCard(vin: String?, isDemo: Boolean) {
     if (isDemo) return
     val rcViewModel: PurchaseRcCheckViewModel = viewModel()
     val state by rcViewModel.state.collectAsState()
@@ -507,7 +507,7 @@ private fun RcCheckResult(rc: RcLookupResult, vinReported: Boolean) {
  * says "not tampered". Hidden when it's unknown whether the car reports PID 0xA6 (old saved scans).
  */
 @Composable
-private fun OdometerCheckCard(ecuKm: Double?, supported: Boolean?, dashboardInput: String, onDashboardChange: (String) -> Unit) {
+internal fun OdometerCheckCard(ecuKm: Double?, supported: Boolean?, dashboardInput: String, onDashboardChange: (String) -> Unit) {
     if (supported == null) return
 
     Card(colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth()) {

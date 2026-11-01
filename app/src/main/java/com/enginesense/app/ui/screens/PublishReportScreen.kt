@@ -42,14 +42,14 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-private const val MAX_PHOTO_DIMENSION_PX = 1024
-private val EXTERIOR_SLOT_LABELS = listOf("Front", "Rear", "Left Side", "Right Side")
-private const val MAX_ADDITIONAL_PHOTOS = 4 // Exterior (4, fixed slots) + additional (this) = 8 total, same overall budget the backend already validates against.
+internal const val MAX_PHOTO_DIMENSION_PX = 1024
+internal val EXTERIOR_SLOT_LABELS = listOf("Front", "Rear", "Left Side", "Right Side")
+internal const val MAX_ADDITIONAL_PHOTOS = 4 // Exterior (4, fixed slots) + additional (this) = 8 total, same overall budget the backend already validates against.
 
-private data class ConditionFieldState(var rating: String = "Good", var options: List<String> = emptyList())
+internal data class ConditionFieldState(var rating: String = "Good", var options: List<String> = emptyList())
 
 /** One fixed exterior-view slot. [originalUri] is the untouched pick; [processedPhoto] only exists once the dealer has run — and kept — background removal, and publishing always falls back to the original when it's null (never processed, declined, or failed). */
-private class ExteriorPhotoSlot(val label: String) {
+internal class ExteriorPhotoSlot(val label: String) {
     var originalUri by mutableStateOf<Uri?>(null)
     var processedPhoto by mutableStateOf<PhotoUpload?>(null)
     var processing by mutableStateOf(false)
@@ -204,7 +204,7 @@ fun PublishReportScreen(scanResult: ScanResult?, vehicleInfo: VehicleReportInfo)
 }
 
 @Composable
-private fun ConditionRow(label: String, field: ConditionFieldState, options: List<String>) {
+internal fun ConditionRow(label: String, field: ConditionFieldState, options: List<String>) {
     var rating by remember { mutableStateOf(field.rating) }
     val selectedOptions = remember { mutableStateListOf<String>().apply { addAll(field.options) } }
 
@@ -248,7 +248,7 @@ private fun ConditionRow(label: String, field: ConditionFieldState, options: Lis
 }
 
 @Composable
-private fun ExteriorPhotoSlotRow(slot: ExteriorPhotoSlot, viewModel: PublishReportViewModel) {
+internal fun ExteriorPhotoSlotRow(slot: ExteriorPhotoSlot, viewModel: PublishReportViewModel) {
     val context = LocalContext.current
     val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
@@ -342,13 +342,13 @@ private fun ExteriorPhotoSlotRow(slot: ExteriorPhotoSlot, viewModel: PublishRepo
     }
 }
 
-private fun decodeBase64Bitmap(base64: String): Bitmap? = runCatching {
+internal fun decodeBase64Bitmap(base64: String): Bitmap? = runCatching {
     val bytes = android.util.Base64.decode(base64, android.util.Base64.NO_WRAP)
     BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
 }.getOrNull()
 
 @Composable
-private fun PhotoThumbnail(uri: Uri, onRemove: () -> Unit) {
+internal fun PhotoThumbnail(uri: Uri, onRemove: () -> Unit) {
     val context = LocalContext.current
     val bitmap = remember(uri) {
         runCatching {
@@ -484,7 +484,7 @@ private fun generateQrBitmap(content: String, sizePx: Int): Bitmap? = runCatchin
 }.getOrNull()
 
 /** Downscales, JPEG-compresses and base64-encodes a picked photo — same budget-conscious approach as DealerProfileScreen's logo handling, just for a larger "listing photo" size instead of a small logo. */
-private fun encodeUriAsPhoto(context: android.content.Context, uri: Uri): PhotoUpload? = runCatching {
+internal fun encodeUriAsPhoto(context: android.content.Context, uri: Uri): PhotoUpload? = runCatching {
     val source = context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) } ?: return null
     val scaled = downscaleBitmap(source, MAX_PHOTO_DIMENSION_PX)
     val bytes = ByteArrayOutputStream().apply { scaled.compress(Bitmap.CompressFormat.JPEG, 80, this) }.toByteArray()

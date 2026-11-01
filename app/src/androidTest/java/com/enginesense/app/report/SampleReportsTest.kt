@@ -1,9 +1,18 @@
 package com.enginesense.app.report
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.RectF
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.enginesense.app.dealerreport.DealerConditionInput
+import com.enginesense.app.dealerreport.DealerConditionItem
+import com.enginesense.app.vehicle.DealerPrice
 import androidx.test.platform.app.InstrumentationRegistry
 import com.enginesense.app.ScanResult
 import com.enginesense.app.obd.VehicleIdInfo
+import com.enginesense.app.storage.DealerProfile
 import com.enginesense.app.vehicle.DiagnosticRulesEngine
 import com.enginesense.app.vehicle.DtcReading
 import com.enginesense.app.vehicle.DtcSource
@@ -121,6 +130,59 @@ class SampleReportsTest {
             exShowroomPriceInr = 650_000.0, buyerEnteredYear = null, currentYear = 2026, today = today
         )
         write("pre-purchase-sample", PrePurchaseReportPdfGenerator.generateTo(outDir, result, report, null, null, today))
+    }
+
+    /** What a dealer hands a buyer: their own branding on the pre-purchase report, with the full (dealer-mode) RTO record. */
+    @Test
+    fun dealerReport() {
+        val result = scan(realMaruti, emptyList(), readiness(), vin = "XX9SAMPLEK0123456", profile = "Real dongle")
+        val report = PrePurchaseReportBuilder.build(
+            result.findings, result.health.score, result.readiness, result.snapshot, vin = "XX9SAMPLEK0123456", dashboardKm = 48_500.0,
+            rc = rc(mode = "dealer", financed = false, ownerCount = 1), registration = null, exShowroomPriceInr = 750_000.0,
+            buyerEnteredYear = null, currentYear = 2026, today = today
+        )
+        val dealer = DealerProfile(
+            name = "AutoTrust Motors", tagline = "Certified pre-owned cars", phone = "+91 98765 43210", location = "Baner, Pune"
+        )
+        write("dealer-report-sample", PrePurchaseReportPdfGenerator.generateTo(outDir, result, report, dealer, null, today))
+    }
+
+    /** The second Dealer Sathi option: photos (stand-in drawings here — the app uses the dealer's Gemini-cleaned photos), condition notes and the dealer's own price. */
+    @Test
+    fun dealerPhotoReport() {
+        val result = scan(realMaruti, emptyList(), readiness(), vin = "XX9SAMPLEK0123456", profile = "Real dongle")
+        val dealer = DealerProfile(name = "AutoTrust Motors", tagline = "Certified pre-owned cars", phone = "+91 98765 43210", location = "Baner, Pune")
+        val report = PrePurchaseReportBuilder.build(
+            result.findings, result.health.score, result.readiness, result.snapshot, vin = "XX9SAMPLEK0123456", dashboardKm = 48_500.0,
+            rc = rc(mode = "dealer", financed = false, ownerCount = 1), registration = null, exShowroomPriceInr = 750_000.0,
+            buyerEnteredYear = null, currentYear = 2026, today = today
+        ).copy(dealerPrice = DealerPrice(395_000.0, 425_000.0, dealer.name))
+        val extras = DealerReportExtras(
+            photos = listOf("Front", "Rear", "Left Side", "Right Side").map { ReportPhoto(it, standInPhoto(it, 800, 520), backgroundCleaned = true) } +
+                listOf(ReportPhoto("Photo 1", standInPhoto("Interior", 600, 450), false), ReportPhoto("Photo 2", standInPhoto("Dashboard", 600, 450), false)),
+            condition = DealerConditionInput(
+                exterior = DealerConditionItem("Good", listOf("Minor scratches", "No visible damage")),
+                interior = DealerConditionItem("Good", listOf("Clean, no visible wear", "AC working well")),
+                tyres = DealerConditionItem("Fair", listOf("Moderate wear (~40-70%)", "Spare tyre available"))
+            )
+        )
+        write("dealer-photo-report-sample", PrePurchaseReportPdfGenerator.generateTo(outDir, result, report, dealer, null, today, extras))
+    }
+
+    /** A plain labelled drawing standing in for a car photo, so no real photo lives in the repo. */
+    private fun standInPhoto(label: String, w: Int, h: Int): Bitmap {
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+        c.drawColor(Color.parseColor("#EEF1F5"))
+        val body = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#C9D1DC") }
+        c.drawRoundRect(RectF(w * 0.12f, h * 0.42f, w * 0.88f, h * 0.70f), 40f, 40f, body)
+        c.drawRoundRect(RectF(w * 0.28f, h * 0.26f, w * 0.70f, h * 0.48f), 50f, 50f, body)
+        val wheel = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#4B5563") }
+        c.drawCircle(w * 0.28f, h * 0.70f, h * 0.09f, wheel)
+        c.drawCircle(w * 0.72f, h * 0.70f, h * 0.09f, wheel)
+        val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#6B7280"); textSize = h * 0.07f; textAlign = Paint.Align.CENTER }
+        c.drawText("$label (sample photo)", w / 2f, h * 0.92f, text)
+        return bmp
     }
 
     @Test

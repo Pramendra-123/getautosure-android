@@ -143,7 +143,9 @@ private val DEALER_AI = listOf(
 fun DealerScreen(
     onSetUpDealerProfile: () -> Unit = {},
     onOpenPricingCalculator: () -> Unit = {},
-    onPublishWebReport: () -> Unit = {}
+    onPublishWebReport: () -> Unit = {},
+    onDealerReport: () -> Unit = {},
+    onDealerPhotoReport: () -> Unit = {}
 ) {
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
         Text("GetAutoSure Dealer", style = GetAutoSureType.ScreenTitle)
@@ -164,6 +166,24 @@ fun DealerScreen(
             style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Good)
         )
         Spacer(Modifier.height(10.dp))
+
+        Text("Dealer reports", style = GetAutoSureType.SectionTitle)
+        Spacer(Modifier.height(4.dp))
+        Text("A branded PDF for the car you just scanned, with your own price next to GetAutoSure's estimate.", style = GetAutoSureType.Caption)
+        Spacer(Modifier.height(8.dp))
+        androidx.compose.material3.Button(onClick = onDealerReport, modifier = Modifier.fillMaxWidth()) {
+            Text("Dealer report")
+        }
+        Spacer(Modifier.height(8.dp))
+        androidx.compose.material3.Button(onClick = onDealerPhotoReport, modifier = Modifier.fillMaxWidth()) {
+            Text("Dealer report with photos (Gemini)")
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "Adds the car's photos — backgrounds cleaned by Gemini — and your condition notes.",
+            style = GetAutoSureType.Caption
+        )
+        Spacer(Modifier.height(16.dp))
 
         androidx.compose.material3.OutlinedButton(onClick = onOpenPricingCalculator, modifier = Modifier.fillMaxWidth()) {
             Text("Max Buy Price Calculator (preview)")

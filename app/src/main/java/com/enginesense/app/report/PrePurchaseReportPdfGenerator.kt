@@ -10,8 +10,11 @@ import android.graphics.pdf.PdfDocument
 import com.enginesense.app.ScanResult
 import com.enginesense.app.obd.Severity
 import com.enginesense.app.storage.DealerProfile
+import com.enginesense.app.dealerreport.DealerConditionInput
 import com.enginesense.app.vehicle.BuyerSignal
 import com.enginesense.app.vehicle.CheckOutcome
+import com.enginesense.app.vehicle.DealerPrice
+import com.enginesense.app.vehicle.ValueEstimate
 import com.enginesense.app.vehicle.FaultKind
 import com.enginesense.app.vehicle.OdometerMatch
 import com.enginesense.app.vehicle.PrePurchaseReport
@@ -35,21 +38,29 @@ import java.util.Locale
  * Sections flow onto the current page when they fit instead of each forcing a new one, so the
  * report has no half-empty pages.
  */
+/** One car photo on a dealer's report. [backgroundCleaned] marks a photo whose background Gemini replaced — the PDF says so under it. */
+data class ReportPhoto(val label: String, val bitmap: Bitmap, val backgroundCleaned: Boolean)
+
+/** What the photo version of a dealer's report adds: the car's photos and the dealer's own condition notes. */
+data class DealerReportExtras(val photos: List<ReportPhoto>, val condition: DealerConditionInput?)
+
 object PrePurchaseReportPdfGenerator {
 
     private const val PAGE_FRAUD = "Fraud & tamper checks"
     private const val PAGE_COST = "Faults, engine & value"
     private const val PAGE_BEFORE_YOU_PAY = "Before you pay"
+    private const val PAGE_PHOTOS = "Photos & condition"
 
     fun generate(
         context: Context,
         result: ScanResult,
         report: PrePurchaseReport,
         dealerProfile: DealerProfile? = null,
-        dealerLogo: Bitmap? = null
+        dealerLogo: Bitmap? = null,
+        extras: DealerReportExtras? = null
     ): File {
         val dir = File(context.cacheDir, "reports").apply { mkdirs() }
-        return generateTo(dir, result, report, dealerProfile, dealerLogo, LocalDate.now())
+        return generateTo(dir, result, report, dealerProfile, dealerLogo, LocalDate.now(), extras)
     }
 
     /** [generate] into [dir] — also what the sample-report test calls, with a fixed [today]. */
@@ -59,7 +70,8 @@ object PrePurchaseReportPdfGenerator {
         report: PrePurchaseReport,
         dealerProfile: DealerProfile?,
         dealerLogo: Bitmap?,
-        today: LocalDate
+        today: LocalDate,
+        extras: DealerReportExtras? = null
     ): File {
         val doc = PdfDocument()
         val reportId = "GetAutoSure-PPI-" + SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date(result.timestampMillis))
@@ -67,6 +79,8 @@ object PrePurchaseReportPdfGenerator {
         val b = ReportBuilder(doc, dealerProfile, dealerLogo)
 
         drawSummaryPage(b, result, report, reportId, scannedOn, dealerProfile, dealerLogo)
+        // A dealer's photo report shows the car right after the summary — what a buyer wants to see next.
+        if (extras != null && (extras.photos.isNotEmpty() || extras.condition != null)) drawPhotosPage(b, extras, dealerProfile?.name)
         drawFraudPage(b, report, today)
         drawCostPage(b, report, result)
         drawBeforeYouPay(b, result)
@@ -201,8 +215,10 @@ object PrePurchaseReportPdfGenerator {
                 (if (faultCount == 0) GOOD else WATCH),
             Triple("EST. REPAIR COST", if (report.repairMaxInr == 0) "₹0" else "${rupees(report.repairMinInr.toDouble())}–${rupees(report.repairMaxInr.toDouble(), symbol = false)}", "Tentative range") to
                 (if (report.repairMaxInr == 0) GOOD else WATCH),
-            Triple("FAIR VALUE", report.value?.let { "${rupees(it.fair.lowEstimate)}–${rupees(it.fair.highEstimate, symbol = false)}" } ?: "Not set", if (report.value != null) "Before repairs" else "Add ex-showroom price") to
-                (if (report.value != null) INK else GRAY)
+            report.dealerPrice?.let { d ->
+                Triple("DEALER'S PRICE", "${rupees(d.low)}–${rupees(d.high, symbol = false)}", "Set by the dealer") to ORANGE
+            } ?: (Triple("FAIR VALUE", report.value?.let { "${rupees(it.fair.lowEstimate)}–${rupees(it.fair.highEstimate, symbol = false)}" } ?: "Not set", if (report.value != null) "Before repairs" else "Add ex-showroom price") to
+                (if (report.value != null) INK else GRAY))
         )
         val gap = 8f
         val w = (CONTENT_RIGHT - MARGIN - gap * 3) / 4
@@ -285,7 +301,8 @@ object PrePurchaseReportPdfGenerator {
     // ---------- faults, cost, engine, value ----------
 
     private fun drawCostPage(b: ReportBuilder, report: PrePurchaseReport, result: ScanResult) {
-        b.newPage(PAGE_COST)
+        // Continues after the RTO record when there's room, rather than leaving the rest of that page blank.
+        b.ensure(160f, PAGE_COST)
         sectionTitle(
             b, "Major faults & estimated repair cost",
             "Tentative Indian workshop ranges, not quotes — real prices vary by city, workshop and car. Get a quote before you negotiate on them.",
@@ -330,12 +347,16 @@ object PrePurchaseReportPdfGenerator {
 
         val value = report.value
         // Heading, both value boxes and the basis line belong together.
-        b.ensure(if (value != null) 170f else 90f, PAGE_COST)
-        sectionTitle(b, "Fair estimated value", "Based on the IRDAI standard depreciation schedule — a rough estimate, not a verified valuation.", PAGE_COST)
-        if (value == null) {
+        b.ensure(if (value != null || report.dealerPrice != null) 170f else 90f, PAGE_COST)
+        val dealerPrice = report.dealerPrice
+        if (dealerPrice != null) {
+            drawDealerPrice(b, dealerPrice, value)
+        } else if (value == null) {
+            sectionTitle(b, "Fair estimated value", "Based on the IRDAI standard depreciation schedule — a rough estimate, not a verified valuation.", PAGE_COST)
             b.y += drawBanner(b.canvas, b.y, report.valueMissingReason ?: "Fair value not available.", GRAY_LIGHT, BORDER, GRAY)
             b.y += 16f
         } else {
+            sectionTitle(b, "Fair estimated value", "Based on the IRDAI standard depreciation schedule — a rough estimate, not a verified valuation.", PAGE_COST)
             val boxH = 74f
             b.ensure(boxH + 50f, PAGE_COST)
             val half = (CONTENT_RIGHT - MARGIN - 10f) / 2
@@ -365,6 +386,110 @@ object PrePurchaseReportPdfGenerator {
             report.worthAsking.forEach { drawSignalCard(b, it, WATCH, PAGE_COST) }
             b.y += 10f
         }
+    }
+
+    /** The dealer's own range next to GetAutoSure's estimate — both labelled, so the buyer sees where the asking price sits. */
+    private fun drawDealerPrice(b: ReportBuilder, dealer: DealerPrice, value: ValueEstimate?) {
+        sectionTitle(
+            b, "Price",
+            "The dealer's asking range, next to GetAutoSure's independent estimate from the IRDAI depreciation schedule.",
+            PAGE_COST
+        )
+        val boxH = 74f
+        val half = (CONTENT_RIGHT - MARGIN - 10f) / 2
+        listOf(
+            Triple("DEALER'S PRICE", "${rupees(dealer.low)} – ${rupees(dealer.high, symbol = false)}", "Set by ${dealer.dealerName}"),
+            Triple(
+                "GETAUTOSURE ESTIMATE",
+                value?.let { "${rupees(it.fair.lowEstimate)} – ${rupees(it.fair.highEstimate, symbol = false)}" } ?: "Not calculated",
+                dealer.comparedTo(value?.fair) ?: "No ex-showroom price was entered, so there's no estimate to compare with"
+            )
+        ).forEachIndexed { i, (label, amount, note) ->
+            val x = MARGIN + i * (half + 10f)
+            val rect = RectF(x, b.y, x + half, b.y + boxH)
+            b.canvas.drawRoundRect(rect, 8f, 8f, fillPaint(if (i == 0) tint(ORANGE, 22) else GRAY_LIGHT))
+            b.canvas.drawRoundRect(rect, 8f, 8f, strokePaint(if (i == 0) tint(ORANGE, 90) else BORDER, 0.8f))
+            b.canvas.drawText(label, x + 12f, b.y + 18f, textPaint(GRAY, 7.5f, bold = true))
+            b.canvas.drawText(amount, x + 12f, b.y + 42f, textPaint(if (i == 0) ORANGE else if (value == null) GRAY else INK, fitSize(amount, half - 24f, 17f), bold = true))
+            drawWrapped(b.canvas, x + 12f, b.y + 50f, half - 24f, note, textPaint(GRAY, 7.5f))
+        }
+        b.y += boxH + 10f
+        val basis = (value?.let { v ->
+            "Estimate: ${v.fair.depreciationPercent}% depreciation over ${v.fair.ageYears} year${if (v.fair.ageYears == 1) "" else "s"}" +
+                (if (v.fair.beyondPublishedSchedule) " (extrapolated beyond IRDAI's 5-year schedule)" else "") + ". "
+        } ?: "") + "The dealer's price is theirs to set; compare listings for the same model, year and km on CarDekho, Cars24 or OLX."
+        b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, basis, textPaint(GRAY, 8f))
+        b.y += 18f
+    }
+
+    // ---------- photos & condition (dealer photo report) ----------
+
+    private fun drawPhotosPage(b: ReportBuilder, extras: DealerReportExtras, dealerName: String?) {
+        b.newPage(PAGE_PHOTOS)
+        if (extras.photos.isNotEmpty()) {
+            val anyCleaned = extras.photos.any { it.backgroundCleaned }
+            sectionTitle(
+                b, "Car photos",
+                "Taken by ${dealerName ?: "the dealer"}." + if (anyCleaned) " Photos marked \"background cleaned\" had only their background replaced with AI (Gemini) — the car itself isn't edited." else "",
+                PAGE_PHOTOS
+            )
+            // Exterior views get big tiles, two across; anything after the first four is smaller, three across.
+            val big = extras.photos.take(4)
+            val small = extras.photos.drop(4)
+            drawPhotoGrid(b, big, columns = 2, tileH = 150f)
+            if (small.isNotEmpty()) drawPhotoGrid(b, small, columns = 3, tileH = 100f)
+            b.y += 6f
+        }
+        val condition = extras.condition ?: return
+        sectionTitle(b, "Dealer-reported condition", "Reported by ${dealerName ?: "the dealer"}, not checked by GetAutoSure.", PAGE_PHOTOS)
+        listOf("Exterior" to condition.exterior, "Interior" to condition.interior, "Tyres" to condition.tyres).forEach { (label, item) ->
+            val notes = item.options.joinToString(" · ").ifBlank { "No details picked" }
+            val notesPaint = textPaint(if (item.options.isEmpty()) GRAY else INK, 9f)
+            val h = maxOf(24f, measureWrapped(CONTENT_RIGHT - MARGIN - 200f, notes, notesPaint) + 10f)
+            b.ensure(h, PAGE_PHOTOS)
+            b.canvas.drawText(label, MARGIN + 4f, b.y + 15f, textPaint(INK, 9.5f, bold = true))
+            val color = when (item.rating) { "Good" -> GOOD; "Fair" -> WATCH; else -> ATTENTION }
+            val chipW = textPaint(color, 8f, bold = true).measureText(item.rating) + 16f
+            drawChip(b.canvas, MARGIN + 90f + chipW, b.y + 5f, item.rating, color)
+            drawWrapped(b.canvas, MARGIN + 190f, b.y + 4f, CONTENT_RIGHT - MARGIN - 200f, notes, notesPaint)
+            b.canvas.drawLine(MARGIN, b.y + h - 1f, CONTENT_RIGHT, b.y + h - 1f, strokePaint(BORDER, 0.5f))
+            b.y += h
+        }
+        b.y += 16f
+    }
+
+    private fun drawPhotoGrid(b: ReportBuilder, photos: List<ReportPhoto>, columns: Int, tileH: Float) {
+        val gap = 10f
+        val w = (CONTENT_RIGHT - MARGIN - gap * (columns - 1)) / columns
+        val captionH = 16f
+        photos.chunked(columns).forEach { row ->
+            b.ensure(tileH + captionH + gap, PAGE_PHOTOS)
+            row.forEachIndexed { i, photo ->
+                val x = MARGIN + i * (w + gap)
+                val tile = RectF(x, b.y, x + w, b.y + tileH)
+                b.canvas.drawRoundRect(tile, 8f, 8f, fillPaint(GRAY_LIGHT))
+                drawBitmapFit(b.canvas, photo.bitmap, tile)
+                b.canvas.drawRoundRect(tile, 8f, 8f, strokePaint(BORDER, 0.8f))
+                b.canvas.drawText(photo.label, x + 2f, b.y + tileH + 12f, textPaint(INK, 8.5f, bold = true))
+                if (photo.backgroundCleaned) {
+                    val tag = textPaint(GRAY, 7.5f).apply { textAlign = Paint.Align.RIGHT }
+                    b.canvas.drawText("background cleaned", x + w - 2f, b.y + tileH + 12f, tag)
+                }
+            }
+            b.y += tileH + captionH + gap
+        }
+    }
+
+    /** Scales [bitmap] to fit inside [box] (no cropping — a car photo shouldn't lose its bumper), centred, clipped to the rounded tile. */
+    private fun drawBitmapFit(canvas: Canvas, bitmap: Bitmap, box: RectF) {
+        val scale = minOf(box.width() / bitmap.width, box.height() / bitmap.height)
+        val w = bitmap.width * scale
+        val h = bitmap.height * scale
+        val dst = RectF(box.centerX() - w / 2, box.centerY() - h / 2, box.centerX() + w / 2, box.centerY() + h / 2)
+        canvas.save()
+        canvas.clipPath(android.graphics.Path().apply { addRoundRect(box, 8f, 8f, android.graphics.Path.Direction.CW) })
+        canvas.drawBitmap(bitmap, null, dst, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+        canvas.restore()
     }
 
     // ---------- before you pay ----------

@@ -190,6 +190,21 @@ class PrePurchaseReportTest {
         assertTrue(report.worthAsking.none { it.title.startsWith("PUC") })
     }
 
+    @Test
+    fun `a dealer's price is tidied up and compared with the estimate`() {
+        assertNull(DealerPrice.from(null, 400_000.0, "AutoTrust"))
+        assertNull(DealerPrice.from(0.0, 400_000.0, "AutoTrust"))
+        val swapped = DealerPrice.from(420_000.0, 380_000.0, "AutoTrust")!!
+        assertEquals(380_000.0, swapped.low, 0.0)
+        assertEquals(420_000.0, swapped.high, 0.0)
+
+        val estimate = FairPriceEstimate(350_000.0, 410_000.0, 49, 5, false) // midpoint 3,80,000
+        assertEquals("₹20,000 above the GetAutoSure estimate", DealerPrice(390_000.0, 410_000.0, "A").comparedTo(estimate))
+        assertEquals("₹30,000 below the GetAutoSure estimate", DealerPrice(340_000.0, 360_000.0, "A").comparedTo(estimate))
+        assertEquals("In line with the GetAutoSure estimate", DealerPrice(350_000.0, 410_000.0, "A").comparedTo(estimate))
+        assertNull(DealerPrice(1.0, 2.0, "A").comparedTo(null))
+    }
+
     private fun <T> assertNotNullValue(value: T?): T {
         assertNotNull(value)
         return value!!

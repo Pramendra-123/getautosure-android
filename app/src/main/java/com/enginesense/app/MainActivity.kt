@@ -413,7 +413,19 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 DealerScreen(
                     onSetUpDealerProfile = { navController.navigate("dealerProfile") },
                     onOpenPricingCalculator = { navController.navigate("dealerPricing") },
-                    onPublishWebReport = { navController.navigate("publishReport") }
+                    onPublishWebReport = { navController.navigate("publishReport") },
+                    onDealerReport = { navController.navigate("dealerReport/plain") },
+                    onDealerPhotoReport = { navController.navigate("dealerReport/photos") }
+                )
+            }
+            composable(
+                "dealerReport/{kind}",
+                arguments = listOf(navArgument("kind") { type = NavType.StringType })
+            ) { entry ->
+                DealerReportScreen(
+                    viewModel,
+                    withPhotos = entry.arguments?.getString("kind") == "photos",
+                    onSetUpDealerProfile = { navController.navigate("dealerProfile") }
                 )
             }
             composable("dealerProfile") { DealerProfileScreen(onSaved = { navController.popBackStack() }) }
