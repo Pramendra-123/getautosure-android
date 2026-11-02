@@ -186,7 +186,8 @@ class SupabaseExpertRepository(
             bio = json.optString("bio", ""),
             yearsExperience = json.optInt("yearsExperience", 0),
             specializations = json.optJSONArray("specializations")?.let { arr -> (0 until arr.length()).map { arr.getString(it) } } ?: emptyList(),
-            photoUrl = json.optString("photoUrl").takeIf { it.isNotBlank() }
+            photoUrl = json.optString("photoUrl").takeIf { it.isNotBlank() && it != "null" },
+            nextSlotEpochMillis = if (json.has("nextSlotEpochMillis") && !json.isNull("nextSlotEpochMillis")) json.getLong("nextSlotEpochMillis") else null
         )
 
         fun slotFromJson(json: JSONObject): AvailabilitySlot = AvailabilitySlot(

@@ -117,7 +117,7 @@ async function listExperts(supabase: SupabaseClient): Promise<Response> {
     console.error("list_experts query failed", error);
     return jsonError(500, "query_failed", "Could not load experts");
   }
-  const experts = (data ?? []).map((e: any) => ({
+  const experts = await Promise.all((data ?? []).map(async (e: any) => ({
     id: e.id,
     name: e.name,
     title: e.title,
@@ -125,8 +125,28 @@ async function listExperts(supabase: SupabaseClient): Promise<Response> {
     yearsExperience: e.years_experience,
     specializations: e.specializations ?? [],
     photoUrl: e.photo_url,
-  }));
+    nextSlotEpochMillis: await nextBookableSlot(supabase, e.id),
+  })));
   return new Response(JSON.stringify({ experts }), { headers: { "Content-Type": "application/json" } });
+}
+
+/** The start of this mechanic's next slot a customer could book right now, so the list can show it; null when there's none. */
+async function nextBookableSlot(supabase: SupabaseClient, expertId: string): Promise<number | null> {
+  const { error: generateError } = await supabase.rpc("generate_expert_slots", { p_expert_id: expertId });
+  if (generateError) console.error("generate_expert_slots failed", generateError);
+  const { data, error } = await supabase
+    .from("expert_availability_slots")
+    .select("start_time, status, reservation_expires_at")
+    .eq("expert_id", expertId)
+    .gt("start_time", new Date(Date.now() + MIN_BOOKING_NOTICE_MINUTES * 60_000).toISOString())
+    .order("start_time")
+    .limit(20);
+  if (error) {
+    console.error("next slot lookup failed", error);
+    return null;
+  }
+  const next = (data ?? []).find((s: any) => isEffectivelyOpen(s.status, s.reservation_expires_at));
+  return next ? new Date(next.start_time).getTime() : null;
 }
 
 async function listSlots(supabase: SupabaseClient, expertId: unknown): Promise<Response> {

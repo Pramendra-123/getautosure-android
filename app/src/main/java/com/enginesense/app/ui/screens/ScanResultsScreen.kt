@@ -26,6 +26,7 @@ import com.enginesense.app.obd.Severity
 import com.enginesense.app.ui.components.DemoDataBanner
 import com.enginesense.app.ui.components.HealthScoreRing
 import com.enginesense.app.ui.components.SeverityBadge
+import com.enginesense.app.ui.components.TalkToMechanicCard
 import com.enginesense.app.ui.theme.GetAutoSureColors
 import com.enginesense.app.ui.theme.GetAutoSureType
 import com.enginesense.app.vehicle.CategoryState
@@ -44,6 +45,7 @@ fun ScanResultsScreen(
     onOpenIssue: (String) -> Unit,
     onOpenFullReport: () -> Unit,
     onOpenAiMechanic: () -> Unit,
+    onTalkToMechanic: () -> Unit,
     onDone: () -> Unit
 ) {
     val result by viewModel.latestResult.collectAsState()
@@ -139,6 +141,11 @@ fun ScanResultsScreen(
                     }
                 }
             }
+        }
+
+        // A serious fault is exactly when a customer wants a person, not just a report.
+        if (topFinding != null && (topFinding.severity == Severity.CRITICAL || topFinding.severity == Severity.MODERATE)) {
+            item { TalkToMechanicCard("Not sure what to do next? A mechanic can look at this scan with you.", onTalkToMechanic) }
         }
 
         // 6. The two actions this screen exists to lead to

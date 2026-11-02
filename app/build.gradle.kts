@@ -34,6 +34,8 @@ android {
 
     buildFeatures {
         compose = true
+        // BuildConfig.DEBUG hides testing shortcuts (test mode, demo scans, skip sign-in) from release builds.
+        buildConfig = true
     }
 
     composeOptions {

@@ -49,9 +49,9 @@ private val LATEST_SCAN_ITEMS = listOf(
 
 private val DIAGNOSTIC_ITEMS = listOf(
     DiscoverMoreItem("issues", "Fault Codes", "Read & clear diagnostic trouble codes", Icons.Filled.Build),
-    DiscoverMoreItem("allSensors", "All Sensor Readings", "34 known PIDs", Icons.Filled.ListAlt),
-    DiscoverMoreItem("vehicleDetails", "VIN & ECU Information", "VIN details and readiness status", Icons.Filled.Description),
-    DiscoverMoreItem("milStatus", "Emissions Readiness & MIL Status", "Check fault indicator status", Icons.Filled.ReportProblem)
+    DiscoverMoreItem("allSensors", "All Sensor Readings", "Every reading your car shares", Icons.Filled.ListAlt),
+    DiscoverMoreItem("vehicleDetails", "Car ID & Computer", "Chassis number (VIN) and the engine computer", Icons.Filled.Description),
+    DiscoverMoreItem("milStatus", "Check-Engine Light & Emissions", "Is the warning light on, and PUC readiness", Icons.Filled.ReportProblem)
 )
 
 private val PERFORMANCE_ITEMS = listOf(
@@ -130,7 +130,7 @@ fun ReportsScreen(viewModel: GetAutoSureViewModel, onNavigate: (String) -> Unit)
         if (history.isEmpty()) {
             item { Text("No scans yet.", style = GetAutoSureType.Body) }
         } else {
-            items(history) { entry -> HistoryCard(entry, dateFormat) }
+            items(history.sortedByDescending { it.timestampMillis }) { entry -> HistoryCard(entry, dateFormat) }
         }
     }
 }
@@ -178,10 +178,8 @@ private fun HistoryCard(entry: ScanResult, dateFormat: SimpleDateFormat) {
                 Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(dateFormat.format(Date(entry.timestampMillis)), style = GetAutoSureType.Body)
-                    Text(
-                        if (entry.isDemo) "Demo · ${entry.profileLabel}" else entry.profileLabel,
-                        style = GetAutoSureType.Caption
-                    )
+                    val caption = listOfNotNull(if (entry.isDemo) "Example" else null, scanSourceLabel(entry.profileLabel)).joinToString(" · ")
+                    if (caption.isNotEmpty()) Text(caption, style = GetAutoSureType.Caption)
                 }
                 Text(entry.health.score?.toString() ?: "—", style = GetAutoSureType.SectionTitle.copy(color = ringColor))
             }

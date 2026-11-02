@@ -38,7 +38,7 @@ class TemplateAiCarHealthReportService : AiCarHealthReportService {
         val minor = context.findings.filter { it.severity == Severity.MINOR.name }
 
         val headline = when {
-            critical.isNotEmpty() -> "Your car needs attention soon"
+            critical.isNotEmpty() -> "Get this checked before driving further"
             moderate.isNotEmpty() -> "A few things worth getting checked"
             context.findings.isEmpty() -> "No issues detected"
             else -> "Mostly healthy, with minor notes"
@@ -48,7 +48,7 @@ class TemplateAiCarHealthReportService : AiCarHealthReportService {
             if (context.findings.isEmpty()) {
                 append("No stored trouble codes and all readings are within normal range.")
             } else {
-                append("${context.findings.size} finding(s): ")
+                append(if (context.findings.size == 1) "1 problem found: " else "${context.findings.size} problems found: ")
                 append("${critical.size} critical, ${moderate.size} to get checked, ${minor.size} minor.")
             }
         }

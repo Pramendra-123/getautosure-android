@@ -14,7 +14,9 @@ data class Expert(
     val yearsExperience: Int,
     val specializations: List<String>,
     val photoUrl: String?,
-    val active: Boolean = true
+    val active: Boolean = true,
+    /** Start of this mechanic's next bookable slot, or null when they have none this week. */
+    val nextSlotEpochMillis: Long? = null
 )
 
 enum class SlotStatus { OPEN, RESERVED, BOOKED }

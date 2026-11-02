@@ -27,7 +27,7 @@ class MockAiServicesTest {
     fun `template report never claims a finding that is not in the context`() = runBlocking {
         val report = TemplateAiCarHealthReportService().generateReport(contextWithOneCriticalFinding())
 
-        assertEquals("Your car needs attention soon", report.headline)
+        assertEquals("Get this checked before driving further", report.headline)
         assertEquals(1, report.sections.size)
         assertEquals("Code P0301", report.sections[0].heading)
         assertTrue(report.sections[0].body.contains("Cylinder 1 is misfiring."))

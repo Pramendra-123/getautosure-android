@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.enginesense.app.auth.signInWithGoogle
 import com.enginesense.app.consultation.Leave
 import com.enginesense.app.consultation.LoadState
 import com.enginesense.app.consultation.MechanicAccess
@@ -27,6 +28,7 @@ import java.util.Locale
 import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import live.hms.roomkit.ui.HMSPrebuiltOptions
 import live.hms.roomkit.ui.HMSRoomKit
 
@@ -47,6 +49,7 @@ fun MechanicHomeScreen(viewModel: MechanicViewModel, onEditHours: () -> Unit) {
     val context = LocalContext.current
     LaunchedEffect(Unit) { viewModel.load(context) }
     val access by viewModel.access.collectAsState()
+    val scope = rememberCoroutineScope()
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
         Text("Mechanic mode", style = GetAutoSureType.ScreenTitle)
@@ -57,6 +60,13 @@ fun MechanicHomeScreen(viewModel: MechanicViewModel, onEditHours: () -> Unit) {
             is MechanicAccess.Unavailable -> Text("Mechanic mode needs the live GetAutoSure service.", style = GetAutoSureType.Caption)
             is MechanicAccess.Failed -> ErrorRow(a.message, onRetry = { viewModel.load(context) })
             is MechanicAccess.NotLinked -> NotLinkedCard(a.message, onRetry = { viewModel.load(context) })
+            is MechanicAccess.NotSignedIn -> SignInCard(onSignIn = {
+                scope.launch {
+                    // Interactive sign-in; the account picker shows if needed. Then check again either way.
+                    signInWithGoogle(context)
+                    viewModel.load(context)
+                }
+            })
             is MechanicAccess.Ready -> {
                 Text(a.profile.expert.name, style = GetAutoSureType.SectionTitle)
                 Text(a.profile.email, style = GetAutoSureType.Caption)
@@ -67,6 +77,19 @@ fun MechanicHomeScreen(viewModel: MechanicViewModel, onEditHours: () -> Unit) {
                 Spacer(Modifier.height(28.dp))
                 LeaveSection(viewModel)
             }
+        }
+    }
+}
+
+@Composable
+private fun SignInCard(onSignIn: () -> Unit) {
+    Card(colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Sign in to continue", style = GetAutoSureType.SectionTitle)
+            Spacer(Modifier.height(8.dp))
+            Text("Use the Google account GetAutoSure linked to your mechanic profile.", style = GetAutoSureType.Body)
+            Spacer(Modifier.height(14.dp))
+            Button(onClick = onSignIn, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("Sign in with Google") }
         }
     }
 }

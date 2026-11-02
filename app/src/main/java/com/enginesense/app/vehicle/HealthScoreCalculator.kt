@@ -2,6 +2,7 @@ package com.enginesense.app.vehicle
 
 import com.enginesense.app.obd.Severity
 import kotlin.math.max
+import kotlin.math.min
 
 /**
  * Turns the rules engine's already-decided [DiagnosticFinding]s (plus raw PID
@@ -62,6 +63,7 @@ object HealthScoreCalculator {
         val noScoredEvidence = categories.filter { it.category in SCORED_CATEGORIES }
             .all { it.state == CategoryState.UNAVAILABLE }
         val noGenuineEvidence = noScoredEvidence && findings.isEmpty()
+        val hasCritical = findings.any { it.severity == Severity.CRITICAL }
 
         // A verified defect, fixed here: this used to start at 100 and only deduct for
         // findings, so a near-empty scan (almost nothing readable, hence no findings to
@@ -75,10 +77,14 @@ object HealthScoreCalculator {
             for (finding in findings) {
                 s -= deductionFor(finding.severity)
             }
+            // A critical finding means "stop and get this checked"; a score in the 70s next to
+            // that read as fairly healthy, so any critical finding keeps the score below 50.
+            if (hasCritical) s = min(s, CRITICAL_SCORE_CAP)
             max(0, s)
         }
 
         val label = when {
+            hasCritical -> "Get this checked before driving further"
             categories.any { it.state == CategoryState.ATTENTION } -> "Your car needs attention soon"
             categories.any { it.state == CategoryState.WATCH } -> "A few things worth watching"
             noGenuineEvidence -> "Not enough data from this vehicle yet"
@@ -87,6 +93,8 @@ object HealthScoreCalculator {
 
         return HealthScoreResult(score, label, categories, fuelInsight)
     }
+
+    private val CRITICAL_SCORE_CAP = 49
 
     private fun deductionFor(severity: Severity): Int = when (severity) {
         Severity.CRITICAL -> 30

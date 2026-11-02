@@ -6,9 +6,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -43,7 +47,7 @@ fun AllSensorsScreen(viewModel: GetAutoSureViewModel) {
             return@Column
         }
 
-        Text("${PidId.entries.size} known PIDs. A dash means not supported or no data this scan, never a guess.", style = GetAutoSureType.Caption)
+        Text("Every reading your car's computer can share. \"Not supported\" means this car doesn't report it — never a guess.", style = GetAutoSureType.Caption)
         Spacer(Modifier.height(12.dp))
 
         if (result!!.isDemo) {
@@ -51,10 +55,27 @@ fun AllSensorsScreen(viewModel: GetAutoSureViewModel) {
             Spacer(Modifier.height(12.dp))
         }
 
+        // Readings this car actually gives come first; the ones it doesn't report sit folded at
+        // the bottom instead of burying the useful ones.
+        val readings = result!!.snapshot.readings
+        val (reported, notReported) = PidId.entries.partition { readings[it] != null && readings[it]!!.status != PidStatus.UNSUPPORTED }
+        var showNotReported by remember { mutableStateOf(false) }
         LazyColumn {
-            items(PidId.entries) { pid ->
-                SensorRow(pid, result!!.snapshot.readings[pid])
+            items(reported) { pid ->
+                SensorRow(pid, readings[pid])
                 HorizontalDivider(color = GetAutoSureColors.SurfaceRaised)
+            }
+            if (notReported.isNotEmpty()) {
+                item {
+                    TextButton(onClick = { showNotReported = !showNotReported }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                        Text((if (showNotReported) "Hide" else "Show") + " readings this car doesn't report (${notReported.size})")
+                    }
+                }
+                if (showNotReported) {
+                    items(notReported) { pid ->
+                        Text(pid.displayName, style = GetAutoSureType.Caption, modifier = Modifier.padding(vertical = 6.dp))
+                    }
+                }
             }
         }
     }
@@ -77,7 +98,9 @@ private fun SensorRow(pid: PidId, reading: PidReading?) {
                 }
                 Text(pid.displayName, style = GetAutoSureType.Body)
             }
-            Text(formatReading(pid, reading), style = GetAutoSureType.Body.copy(color = GetAutoSureColors.TextSecondary))
+            // A gap so a long sensor name never runs into its value.
+            Spacer(Modifier.width(12.dp))
+            Text(formatReading(pid, reading), style = GetAutoSureType.Body.copy(color = GetAutoSureColors.TextSecondary), maxLines = 1)
         }
         Spacer(Modifier.height(4.dp))
         Text(pid.plainDescription(), style = GetAutoSureType.Caption)

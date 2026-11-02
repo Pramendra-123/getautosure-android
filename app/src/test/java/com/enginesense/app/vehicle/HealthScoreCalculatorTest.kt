@@ -157,7 +157,9 @@ class HealthScoreCalculatorTest {
         )
         val result = HealthScoreCalculator.calculate(snapshot(), findings)
 
-        assertEquals(70, result.score)
+        // 100 - 30 would be 70, but any critical finding keeps the score below 50.
+        assertEquals(49, result.score)
+        assertEquals("Get this checked before driving further", result.label)
         val engine = result.categories.first { it.category == HealthCategory.ENGINE }
         assertEquals(CategoryState.ATTENTION, engine.state)
     }

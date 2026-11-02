@@ -241,7 +241,7 @@ class RuleBasedAiMechanicChatService(
         return when {
             "safe to drive" in q -> when {
                 worst != null -> when (worst.severity) {
-                    "CRITICAL" -> "No — ${worst.title.lowercase()} is flagged critical. Best to stop driving and get it looked at before continuing."
+                    "CRITICAL" -> "No — ${worst.title.replaceFirstChar { it.lowercase() }} is flagged critical. Best to stop driving and get it looked at before continuing."
                     "MODERATE" -> "Probably okay for short trips, but don't put it off: ${worst.title.lowercase()} should get checked soon."
                     "MINOR" -> "Yes — the only thing flagged (${worst.title.lowercase()}) is minor."
                     else -> "Yes, with the usual caution — nothing serious was flagged."

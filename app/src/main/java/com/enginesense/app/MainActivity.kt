@@ -1,12 +1,11 @@
 package com.enginesense.app
 
-import android.Manifest
-import android.os.Build
 import android.os.Bundle
+import androidx.activity.compose.BackHandler
+import androidx.compose.ui.platform.LocalContext
+import com.enginesense.app.storage.OnboardingPrefs
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.layout.*
@@ -38,42 +37,17 @@ class MainActivity : ComponentActivity() {
 
     private val viewModel: GetAutoSureViewModel by viewModels()
 
-    private fun requiredPermissions(): Array<String> =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN)
-        } else {
-            arrayOf(Manifest.permission.BLUETOOTH, Manifest.permission.ACCESS_FINE_LOCATION)
-        }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Bluetooth permission is asked for on the Scan screen, when the user first connects a
+        // scanner, so the app opens straight into onboarding or Home.
         setContent {
-            var hasPermission by remember { mutableStateOf(false) }
-            val launcher = rememberLauncherForActivityResult(
-                ActivityResultContracts.RequestMultiplePermissions()
-            ) { grants -> hasPermission = grants.values.all { it } }
-
-            LaunchedEffect(Unit) { launcher.launch(requiredPermissions()) }
-
             GetAutoSureTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    if (hasPermission) {
-                        GetAutoSureApp(viewModel)
-                    } else {
-                        PermissionRequiredScreen { launcher.launch(requiredPermissions()) }
-                    }
+                    GetAutoSureApp(viewModel)
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun PermissionRequiredScreen(onRequest: () -> Unit) {
-    Column(modifier = Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center) {
-        Text("Bluetooth permission is needed to talk to your OBD2 dongle.")
-        Spacer(Modifier.height(16.dp))
-        Button(onClick = onRequest) { Text("Grant permission") }
     }
 }
 
@@ -95,6 +69,9 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
     val consultationViewModel: ConsultationViewModel = viewModel()
     val mechanicViewModel: MechanicViewModel = viewModel()
     val navController = rememberNavController()
+    val context = LocalContext.current
+    // Chosen once: returning users skip the welcome and sign-in screens.
+    val startDestination = remember { if (OnboardingPrefs.isDone(context)) "home" else "splash" }
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
@@ -123,7 +100,7 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
     ) { padding ->
         NavHost(
             navController = navController,
-            startDestination = "splash",
+            startDestination = startDestination,
             modifier = Modifier.padding(padding)
         ) {
             composable("splash") {
@@ -228,6 +205,7 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 )
             }
             composable("connect") {
+                LaunchedEffect(Unit) { OnboardingPrefs.markDone(context) }
                 ConnectScreen(
                     viewModel,
                     onScanStarted = { navController.navigate("scanning") },
@@ -272,11 +250,19 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 ScanningScreen()
             }
             composable("scanResults") {
+                // Results replace the whole back stack, so without this, back would close the app.
+                BackHandler {
+                    navController.navigate("home") {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
                 ScanResultsScreen(
                     viewModel,
                     onOpenIssue = { id -> navController.navigate("issueDetail/$id") },
                     onOpenFullReport = { navController.navigate("aiReport") },
                     onOpenAiMechanic = { navController.navigate("aiMechanic") },
+                    onTalkToMechanic = { navController.navigate("expertList") },
                     onDone = {
                         navController.navigate("home") {
                             popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
@@ -290,7 +276,10 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 // pre-purchase scan failed and the user navigated away instead of retrying;
                 // without this, the next unrelated "Run a new scan" from Home would
                 // incorrectly land on the pre-purchase result screen.
-                LaunchedEffect(Unit) { viewModel.clearPrePurchaseCheck() }
+                LaunchedEffect(Unit) {
+                    viewModel.clearPrePurchaseCheck()
+                    OnboardingPrefs.markDone(context)
+                }
                 HomeScreen(
                     viewModel,
                     onRunScan = { navController.navigate("connect") },
@@ -392,6 +381,7 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 PrePurchaseResultScreen(
                     viewModel,
                     onOpenDealer = { navController.navigate("dealer") },
+                    onTalkToMechanic = { navController.navigate("expertList") },
                     onDone = {
                         navController.navigate("home") {
                             popUpTo(navController.graph.findStartDestination().id) { inclusive = true }

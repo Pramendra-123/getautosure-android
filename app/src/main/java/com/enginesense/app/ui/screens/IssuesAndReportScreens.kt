@@ -331,11 +331,13 @@ private fun ReportSummaryCard(result: com.enginesense.app.ScanResult) {
                 Text(stateLabel, style = GetAutoSureType.SectionTitle.copy(color = stateColor))
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    if (result.findings.isEmpty()) "Nothing to report" else "$majorCount major · $watchCount to watch",
+                    if (result.findings.isEmpty()) "Nothing to report" else "$majorCount critical · $watchCount to watch",
                     style = GetAutoSureType.Caption
                 )
-                Spacer(Modifier.height(4.dp))
-                Text(result.profileLabel, style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.TextSecondary))
+                scanSourceLabel(result.profileLabel)?.let {
+                    Spacer(Modifier.height(4.dp))
+                    Text(it, style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.TextSecondary))
+                }
             }
         }
     }

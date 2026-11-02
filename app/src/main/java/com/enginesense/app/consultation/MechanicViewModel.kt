@@ -17,6 +17,8 @@ sealed class MechanicAccess {
     /** Signed in, but this account isn't linked to a mechanic profile yet; [message] says which email to give the owner. */
     data class NotLinked(val message: String) : MechanicAccess()
     data class Failed(val message: String) : MechanicAccess()
+    /** No Google account signed in to the app yet. */
+    object NotSignedIn : MechanicAccess()
     /** Mechanic mode needs the live consultation service; the preview build has no mechanics. */
     object Unavailable : MechanicAccess()
 }
@@ -83,6 +85,8 @@ class MechanicViewModel(application: Application) : AndroidViewModel(application
             } catch (e: Exception) {
                 _access.value = if (e.isNotAMechanic()) {
                     MechanicAccess.NotLinked(friendly(e, "This Google account isn't linked to a mechanic profile yet."))
+                } else if (e is ConsultationNotAuthenticatedException) {
+                    MechanicAccess.NotSignedIn
                 } else {
                     MechanicAccess.Failed(friendly(e, "Couldn't check your mechanic account. Check your connection and try again."))
                 }

@@ -1,6 +1,12 @@
 package com.enginesense.app.ui.screens
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import android.bluetooth.BluetoothDevice
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,6 +19,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import com.enginesense.app.BuildConfig
 import androidx.compose.ui.unit.dp
 import com.enginesense.app.ConnectionFlowState
 import com.enginesense.app.GetAutoSureViewModel
@@ -70,6 +79,17 @@ fun modelsFor(make: String): List<String> = listOf(OTHER_MODEL) + (MODELS_BY_MAK
 /** What picking a device/test-profile in [ConnectScreen] actually does — one sheet pair reused for all four flows. */
 private enum class ConnectIntent { SCAN, LIVE_DATA, PERFORMANCE, TRIP_MILEAGE }
 
+/** What Android needs before the app can see or talk to a paired scanner. Asked for only when the user first connects. */
+internal fun bluetoothPermissions(): Array<String> =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN)
+    } else {
+        arrayOf(Manifest.permission.BLUETOOTH, Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+
+private fun hasBluetoothPermission(context: Context): Boolean =
+    bluetoothPermissions().all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }
+
 @Composable
 fun ConnectScreen(
     viewModel: GetAutoSureViewModel,
@@ -78,11 +98,26 @@ fun ConnectScreen(
     onPerformanceTestStarted: () -> Unit,
     onTripMileageStarted: () -> Unit
 ) {
+    val context = LocalContext.current
     val connectionState by viewModel.connectionState.collectAsState()
     val vehicleBrand by viewModel.vehicleBrand.collectAsState()
     var showDeviceSheet by remember { mutableStateOf(false) }
     var showSimSheet by remember { mutableStateOf(false) }
     var intent by remember { mutableStateOf(ConnectIntent.SCAN) }
+    var permissionDenied by remember { mutableStateOf(false) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
+        permissionDenied = !grants.values.all { it }
+        if (!permissionDenied) showDeviceSheet = true
+    }
+    fun connectWithScanner(next: ConnectIntent) {
+        intent = next
+        if (hasBluetoothPermission(context)) showDeviceSheet = true else permissionLauncher.launch(bluetoothPermissions())
+    }
+    fun testMode(next: ConnectIntent) {
+        intent = next
+        showSimSheet = true
+    }
 
     LaunchedEffect(connectionState) {
         if (connectionState is ConnectionFlowState.Connecting || connectionState is ConnectionFlowState.Scanning) {
@@ -91,53 +126,44 @@ fun ConnectScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState())) {
-        Text("Connect your OBD2 adapter", style = GetAutoSureType.ScreenTitle)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "Pair your ELM327 dongle in Android Bluetooth settings first, then connect here.",
-            style = GetAutoSureType.Caption
-        )
-        Spacer(Modifier.height(32.dp))
+        Text("Scan your car", style = GetAutoSureType.ScreenTitle)
+        Spacer(Modifier.height(16.dp))
+        listOf(
+            "Plug the GetAutoSure scanner into the port under the steering wheel.",
+            "Turn the ignition on. The engine can stay off.",
+            "First time? Pair \"GetAutoSure\" in your phone's Bluetooth settings (PIN 1234)."
+        ).forEachIndexed { i, step ->
+            Row(modifier = Modifier.padding(bottom = 10.dp)) {
+                Text("${i + 1}", style = GetAutoSureType.Body.copy(color = GetAutoSureColors.Accent), modifier = Modifier.width(24.dp))
+                Text(step, style = GetAutoSureType.Body)
+            }
+        }
+        Spacer(Modifier.height(16.dp))
 
-        Button(onClick = { intent = ConnectIntent.SCAN; showDeviceSheet = true }, modifier = Modifier.fillMaxWidth()) {
-            Text("Connect to dongle")
+        Button(onClick = { connectWithScanner(ConnectIntent.SCAN) }, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+            Text("Scan my car")
         }
-        Spacer(Modifier.height(12.dp))
-        OutlinedButton(onClick = { intent = ConnectIntent.SCAN; showSimSheet = true }, modifier = Modifier.fillMaxWidth()) {
-            Text("Run in test mode (no hardware)")
-        }
-
-        Spacer(Modifier.height(24.dp))
-        Text("Or watch readings update live while driving:", style = GetAutoSureType.Caption)
-        Spacer(Modifier.height(8.dp))
-        OutlinedButton(onClick = { intent = ConnectIntent.LIVE_DATA; showDeviceSheet = true }, modifier = Modifier.fillMaxWidth()) {
-            Text("Live data from dongle")
-        }
-        Spacer(Modifier.height(8.dp))
-        OutlinedButton(onClick = { intent = ConnectIntent.LIVE_DATA; showSimSheet = true }, modifier = Modifier.fillMaxWidth()) {
-            Text("Live data (test mode)")
+        if (permissionDenied) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "GetAutoSure needs the Nearby devices (Bluetooth) permission to talk to your scanner. Tap Scan my car to allow it.",
+                style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Attention)
+            )
         }
 
-        Spacer(Modifier.height(24.dp))
-        Text("Or time a 0-60, a stop, or a 100m run:", style = GetAutoSureType.Caption)
-        Spacer(Modifier.height(8.dp))
-        OutlinedButton(onClick = { intent = ConnectIntent.PERFORMANCE; showDeviceSheet = true }, modifier = Modifier.fillMaxWidth()) {
-            Text("Performance test from dongle")
+        Spacer(Modifier.height(28.dp))
+        Text("More with your scanner", style = GetAutoSureType.SectionTitle)
+        Spacer(Modifier.height(10.dp))
+        OutlinedButton(onClick = { connectWithScanner(ConnectIntent.LIVE_DATA) }, modifier = Modifier.fillMaxWidth()) {
+            Text("Live readings while driving")
         }
         Spacer(Modifier.height(8.dp))
-        OutlinedButton(onClick = { intent = ConnectIntent.PERFORMANCE; showSimSheet = true }, modifier = Modifier.fillMaxWidth()) {
-            Text("Performance test (test mode)")
-        }
-
-        Spacer(Modifier.height(24.dp))
-        Text("Or estimate fuel economy (km/L) for a drive:", style = GetAutoSureType.Caption)
-        Spacer(Modifier.height(8.dp))
-        OutlinedButton(onClick = { intent = ConnectIntent.TRIP_MILEAGE; showDeviceSheet = true }, modifier = Modifier.fillMaxWidth()) {
-            Text("Trip mileage from dongle")
+        OutlinedButton(onClick = { connectWithScanner(ConnectIntent.PERFORMANCE) }, modifier = Modifier.fillMaxWidth()) {
+            Text("0-60, braking & 100 m timer")
         }
         Spacer(Modifier.height(8.dp))
-        OutlinedButton(onClick = { intent = ConnectIntent.TRIP_MILEAGE; showSimSheet = true }, modifier = Modifier.fillMaxWidth()) {
-            Text("Trip mileage (test mode)")
+        OutlinedButton(onClick = { connectWithScanner(ConnectIntent.TRIP_MILEAGE) }, modifier = Modifier.fillMaxWidth()) {
+            Text("Mileage (km/L) for a drive")
         }
 
         if (connectionState is ConnectionFlowState.Error) {
@@ -148,16 +174,37 @@ fun ConnectScreen(
                 style = GetAutoSureType.Body
             )
         }
+
+        // Simulated cars for testing without a scanner. Debug builds only, so customers never see it.
+        if (BuildConfig.DEBUG) {
+            Spacer(Modifier.height(28.dp))
+            Text("Test mode (debug builds only)", style = GetAutoSureType.Caption)
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                TextButton(onClick = { testMode(ConnectIntent.SCAN) }, modifier = Modifier.weight(1f)) { Text("Scan") }
+                TextButton(onClick = { testMode(ConnectIntent.LIVE_DATA) }, modifier = Modifier.weight(1f)) { Text("Live") }
+                TextButton(onClick = { testMode(ConnectIntent.PERFORMANCE) }, modifier = Modifier.weight(1f)) { Text("0-60") }
+                TextButton(onClick = { testMode(ConnectIntent.TRIP_MILEAGE) }, modifier = Modifier.weight(1f)) { Text("Mileage") }
+            }
+        }
         Spacer(Modifier.height(24.dp))
     }
 
     if (showDeviceSheet) {
-        val devices = viewModel.pairedDevices()
+        // The GetAutoSure scanner (or any OBD adapter) first, so new users don't have to guess.
+        val devices = viewModel.pairedDevices().sortedBy { device ->
+            val name = deviceLabel(device).lowercase()
+            when {
+                "getautosure" in name -> 0
+                "obd" in name || "elm" in name || "vlink" in name -> 1
+                else -> 2
+            }
+        }
         PickerBottomSheet(
-            title = "Paired devices",
+            title = "Choose your scanner",
             items = devices,
             itemLabel = { deviceLabel(it) },
-            emptyText = "No paired Bluetooth devices found. Pair your ELM327 dongle in system Bluetooth settings first, or use test mode.",
+            emptyText = "No paired scanner found. Open your phone's Bluetooth settings, pair \"GetAutoSure\" (PIN 1234), then come back.",
             onDismiss = { showDeviceSheet = false },
             onPick = { device ->
                 showDeviceSheet = false
@@ -191,7 +238,7 @@ fun ConnectScreen(
     }
 }
 
-@SuppressLint("MissingPermission") // BLUETOOTH_CONNECT is already granted before this screen is reachable
+@SuppressLint("MissingPermission") // only called after ConnectScreen has the Bluetooth permission
 private fun deviceLabel(device: BluetoothDevice): String = device.name ?: device.address
 
 /**
@@ -256,6 +303,14 @@ private fun PickerRow(label: String, subtitle: String?, onClick: () -> Unit) {
         }
     }
 }
+
+/**
+ * How a scan's source reads on screen: nothing for a real scanner (that's the normal case), and a
+ * plain "Test: …" name for simulated ones instead of the internal profile name.
+ */
+fun scanSourceLabel(profileLabel: String): String? =
+    if (profileLabel == "Real dongle") null
+    else SimulatedProfile.entries.firstOrNull { it.name == profileLabel }?.let { "Test: ${profileLabel(it)}" } ?: profileLabel
 
 fun profileLabel(profile: SimulatedProfile): String = when (profile) {
     SimulatedProfile.HEALTHY -> "Healthy car"

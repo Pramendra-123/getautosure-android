@@ -31,6 +31,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.enginesense.app.GetAutoSureViewModel
+import com.enginesense.app.ui.components.TalkToMechanicCard
 import com.enginesense.app.ui.theme.GetAutoSureColors
 import com.enginesense.app.ui.theme.GetAutoSureType
 import com.enginesense.app.vehicle.FairPriceEstimator
@@ -74,7 +75,7 @@ fun PrePurchaseCheckScreen(viewModel: GetAutoSureViewModel, onStartScan: () -> U
         listOf(
             "Plug in at the seller's location, same as any scan",
             "Free verdict: good buy, buy with caution, or avoid",
-            "Dealer Pro: itemized talking points for the negotiation"
+            "Dealer Sathi: itemized talking points for the negotiation"
         ).forEach { line ->
             Row(modifier = Modifier.padding(vertical = 4.dp)) {
                 Text("•  ", style = GetAutoSureType.Body)
@@ -184,7 +185,7 @@ private fun formatRupees(value: Double): String =
     if (value >= 100000) "%.2f L".format(value / 100000) else "%,.0f".format(value)
 
 @Composable
-fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onOpenDealer: () -> Unit, onDone: () -> Unit) {
+fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onOpenDealer: () -> Unit, onTalkToMechanic: () -> Unit, onDone: () -> Unit) {
     val result by viewModel.latestResult.collectAsState()
     val context = LocalContext.current
     val r = result
@@ -235,6 +236,12 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onOpenDealer: () ->
             clear = report.checks.count { it.outcome == CheckOutcome.CLEAR }
         )
 
+        // Before paying for a car with red flags, a buyer wants a second pair of eyes.
+        if (report.redFlags.isNotEmpty() || report.worthAsking.isNotEmpty()) {
+            Spacer(Modifier.height(16.dp))
+            TalkToMechanicCard("Unsure about this car? Go through the results with a mechanic before you pay.", onTalkToMechanic)
+        }
+
         if (report.redFlags.isNotEmpty()) {
             SectionHeader("Red flags", "Signs something may have been hidden from you")
             report.redFlags.forEach { SignalCard(it, GetAutoSureColors.Attention) }
@@ -259,10 +266,10 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onOpenDealer: () ->
             Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        if (insight.negotiationPoints.isEmpty()) "No specific talking points from this scan" else "${insight.negotiationPoints.size} thing${if (insight.negotiationPoints.size == 1) "" else "s"} worth raising with the seller",
+                        if (insight.negotiationPoints.isEmpty()) "Nothing to raise beyond the points above" else "${insight.negotiationPoints.size} thing${if (insight.negotiationPoints.size == 1) "" else "s"} worth raising with the seller",
                         style = GetAutoSureType.Body
                     )
-                    Text("Itemized negotiation points — Dealer Pro", style = GetAutoSureType.Caption)
+                    Text("Itemized negotiation points — Dealer Sathi", style = GetAutoSureType.Caption)
                 }
                 if (insight.negotiationPoints.isNotEmpty()) {
                     Box(

@@ -17,7 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import com.enginesense.app.consultation.AvailabilitySlot
 import com.enginesense.app.consultation.ConsultationPricing
 import com.enginesense.app.consultation.ConsultationViewModel
@@ -34,19 +34,11 @@ import java.util.Locale
 fun ExpertProfileScreen(viewModel: ConsultationViewModel, expert: Expert, onSlotSelected: (AvailabilitySlot) -> Unit) {
     LaunchedEffect(expert.id) { viewModel.loadSlots(expert.id) }
     val slotsState by viewModel.slots.collectAsState()
+    val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier.size(72.dp).clip(CircleShape).background(GetAutoSureColors.Surface),
-                contentAlignment = Alignment.Center
-            ) {
-                if (expert.photoUrl != null) {
-                    AsyncImage(model = expert.photoUrl, contentDescription = "${expert.name}'s photo", modifier = Modifier.fillMaxSize())
-                } else {
-                    Icon(Icons.Filled.Person, contentDescription = null, tint = GetAutoSureColors.TextSecondary, modifier = Modifier.size(32.dp))
-                }
-            }
+            ExpertAvatar(expert, 72.dp)
             Spacer(Modifier.width(14.dp))
             Column {
                 Text(expert.name, style = GetAutoSureType.ScreenTitle.copy(fontSize = 22.sp))
@@ -64,13 +56,7 @@ fun ExpertProfileScreen(viewModel: ConsultationViewModel, expert: Expert, onSlot
             Spacer(Modifier.height(14.dp))
             Text("Expertise", style = GetAutoSureType.SectionTitle.copy(fontSize = 16.sp))
             Spacer(Modifier.height(6.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                expert.specializations.forEach { spec ->
-                    Box(modifier = Modifier.background(GetAutoSureColors.Surface, RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 5.dp)) {
-                        Text(spec, style = GetAutoSureType.Caption)
-                    }
-                }
-            }
+            SpecialityChips(expert.specializations)
         }
 
         Spacer(Modifier.height(20.dp))
@@ -87,7 +73,13 @@ fun ExpertProfileScreen(viewModel: ConsultationViewModel, expert: Expert, onSlot
             is LoadState.Error -> ErrorRow(state.message, onRetry = { viewModel.loadSlots(expert.id) })
             is LoadState.Success -> {
                 if (state.data.isEmpty()) {
-                    Text("No upcoming availability for this expert right now.", style = GetAutoSureType.Caption)
+                    Text("No free slots this week", style = GetAutoSureType.Body.copy(fontWeight = FontWeight.SemiBold))
+                    Spacer(Modifier.height(4.dp))
+                    Text("This mechanic hasn't opened any times yet. Another mechanic may be free sooner.", style = GetAutoSureType.Caption)
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedButton(onClick = { backDispatcher?.onBackPressed() }, modifier = Modifier.fillMaxWidth()) {
+                        Text("See other mechanics")
+                    }
                 } else {
                     val grouped = state.data.groupBy { dateLabel(it.startEpochMillis) }
                     grouped.forEach { (date, slotsForDate) ->

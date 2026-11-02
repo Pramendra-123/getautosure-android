@@ -1,3 +1,8 @@
 <resources>
-    <style name="Theme.EngineSense" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Dark window background so the app doesn't flash white before the first screen draws. -->
+    <style name="Theme.EngineSense" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/app_background</item>
+        <item name="android:statusBarColor">@color/app_background</item>
+        <item name="android:navigationBarColor">@color/app_background</item>
+    </style>
 </resources>

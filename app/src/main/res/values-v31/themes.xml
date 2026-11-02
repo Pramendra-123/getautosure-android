@@ -1,0 +1,10 @@
+<resources>
+    <!-- Android 12+ launch splash: the GetAutoSure icon on the app's own dark background. -->
+    <style name="Theme.EngineSense" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/app_background</item>
+        <item name="android:statusBarColor">@color/app_background</item>
+        <item name="android:navigationBarColor">@color/app_background</item>
+        <item name="android:windowSplashScreenBackground">@color/app_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+    </style>
+</resources>

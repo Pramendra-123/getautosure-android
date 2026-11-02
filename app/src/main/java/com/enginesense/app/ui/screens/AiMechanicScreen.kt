@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.enginesense.app.GetAutoSureViewModel
 import com.enginesense.app.ui.components.MarkdownText
+import com.enginesense.app.ui.components.TalkToMechanicCard
 import com.enginesense.app.ui.theme.GetAutoSureColors
 import com.enginesense.app.ui.theme.GetAutoSureType
 import com.enginesense.app.vehicle.ai.AiBackendConfig
@@ -54,19 +55,22 @@ fun AiMechanicScreen(viewModel: GetAutoSureViewModel, advancedMode: Boolean = fa
                 )
             }
         }
-        if (result == null) {
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "No scan yet — I can still answer general car questions. Run a scan for answers tailored to your car.",
-                style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.TextSecondary)
-            )
-        }
         Spacer(Modifier.height(12.dp))
 
         LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Opens with what it already knows instead of a blank screen.
+            if (messages.isEmpty()) {
+                item { IntroBubble(result) }
+            }
             items(messages) { message -> ChatBubble(message) }
             if (loading) {
                 item { ThinkingBubble() }
+            }
+            // After a few questions, offer a person in case the answers haven't settled it.
+            if (messages.size >= 2 && !loading) {
+                item {
+                    TalkToMechanicCard("Still unsure? A mechanic can go through your scan with you.") { onNavigate("expertList") }
+                }
             }
         }
 
@@ -98,6 +102,19 @@ fun AiMechanicScreen(viewModel: GetAutoSureViewModel, advancedMode: Boolean = fa
                 }
             ) { Text("Send") }
         }
+    }
+}
+
+@Composable
+private fun IntroBubble(result: com.enginesense.app.ScanResult?) {
+    val worst = result?.findings?.minByOrNull { it.severity.ordinal }
+    val text = when {
+        result == null -> "Hi! Ask me anything about your car — warning lights, noises, servicing or costs. Run a scan and I can answer for your car specifically."
+        worst == null -> "Hi! Your last scan found no problems. Ask me anything about your car, or what to keep an eye on."
+        else -> "Hi! Your last scan found: ${worst.title}. Ask me what it means, whether it's safe to drive, or what a fix might cost."
+    }
+    Card(colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth()) {
+        Text(text, style = GetAutoSureType.Body, modifier = Modifier.padding(14.dp))
     }
 }
 

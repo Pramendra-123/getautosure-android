@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assessment
@@ -43,6 +45,7 @@ import com.enginesense.app.ui.theme.GetAutoSureType
 import com.enginesense.app.vehicle.CategoryState
 import com.enginesense.app.vehicle.DiagnosticFinding
 import com.enginesense.app.vehicle.HealthCategory
+import com.enginesense.app.vehicle.PidId
 
 /**
  * Home leads with the hero score, next action, and scan button, then a fixed 8-tile "Explore
@@ -68,7 +71,7 @@ fun HomeScreen(
         VehicleStrip(viewModel, onNavigate)
 
         if (result == null) {
-            EmptyHomeState(onRunScan)
+            EmptyHomeState(onRunScan, onNavigate)
         } else {
             FilledHomeState(result!!, onRunScan, onOpenIssues, onNavigate)
         }
@@ -142,17 +145,27 @@ private fun VehicleStrip(viewModel: GetAutoSureViewModel, onNavigate: (String) -
 }
 
 @Composable
-private fun EmptyHomeState(onRunScan: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
-        Spacer(Modifier.height(40.dp))
+private fun EmptyHomeState(onRunScan: () -> Unit, onNavigate: (String) -> Unit) {
+    // Everything except the health score works before a first scan (used-car check, expert
+    // calls, Dealer Sathi), so it's all on show rather than an empty screen.
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)
+    ) {
+        Spacer(Modifier.height(32.dp))
         Text("No scan yet", style = GetAutoSureType.SectionTitle)
         Spacer(Modifier.height(8.dp))
         Text(
-            "Plug your OBD2 adapter into the port under your dashboard, then tap below to run your first scan.",
+            "Plug the GetAutoSure scanner into the port under your steering wheel, then tap below for your first health check.",
             style = GetAutoSureType.Caption
         )
+        Spacer(Modifier.height(20.dp))
+        Button(onClick = onRunScan, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("Scan My Car") }
+        Spacer(Modifier.height(32.dp))
+        Text("Explore your car", style = GetAutoSureType.SectionTitle, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(12.dp))
+        ExploreGrid(onNavigate)
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onRunScan, modifier = Modifier.fillMaxWidth()) { Text("Scan My Car") }
     }
 }
 
@@ -222,7 +235,7 @@ private fun HeroHealthCard(result: ScanResult, onOpenBreakdown: () -> Unit, onOp
                 Spacer(Modifier.height(6.dp))
                 Text(
                     if (result.findings.isEmpty()) "Nothing to report"
-                    else "$majorCount major · $watchCount to watch",
+                    else "$majorCount critical · $watchCount to watch",
                     style = GetAutoSureType.Caption,
                     modifier = if (result.findings.isNotEmpty()) Modifier.clickable(onClick = onOpenIssues) else Modifier
                 )
@@ -233,7 +246,7 @@ private fun HeroHealthCard(result: ScanResult, onOpenBreakdown: () -> Unit, onOp
         // One line signaling scan depth, not a dashboard full of rows — the actual detail
         // still lives in the breakdown/Reports screens, this just answers "is that all it checks?".
         Text(
-            "Monitoring 6 systems · 34 sensors",
+            "Monitoring 6 systems · ${PidId.entries.size} sensors",
             style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.TextSecondary, fontSize = 11.sp),
             modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 14.dp)
         )

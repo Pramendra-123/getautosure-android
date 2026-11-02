@@ -31,6 +31,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.enginesense.app.BuildConfig
 import com.enginesense.app.vehiclelookup.LookupState
 import com.enginesense.app.vehiclelookup.RcLookupResult
 import com.enginesense.app.vehiclelookup.RcPrefill
@@ -60,7 +61,7 @@ private val VALUE_PROPS = listOf(
     "Scan & understand car health",
     "Get AI mechanic guidance",
     "Know repair costs before you pay",
-    "Talk to expert mechanics (Premium)"
+    "Video call a real mechanic (Pro)"
 )
 
 @Composable
@@ -136,10 +137,10 @@ fun LoginScreen(onSignedIn: (displayName: String?) -> Unit, onContinueWithPhone:
         Spacer(Modifier.height(32.dp))
         Text("Let's get you started", style = GetAutoSureType.ScreenTitle)
         Spacer(Modifier.height(8.dp))
-        Text("Create an account or sign in to start scanning your car.", style = GetAutoSureType.Caption)
+        Text("Sign in to save your car, reports and bookings.", style = GetAutoSureType.Caption)
         Spacer(Modifier.height(32.dp))
 
-        OutlinedButton(
+        Button(
             onClick = {
                 errorMessage = null
                 isSigningIn = true
@@ -155,7 +156,7 @@ fun LoginScreen(onSignedIn: (displayName: String?) -> Unit, onContinueWithPhone:
             modifier = Modifier.fillMaxWidth().height(52.dp)
         ) {
             if (isSigningIn) {
-                CircularProgressIndicator(color = GetAutoSureColors.Accent, modifier = Modifier.size(18.dp))
+                CircularProgressIndicator(color = GetAutoSureColors.TextPrimary, modifier = Modifier.size(18.dp))
             } else {
                 Text("Continue with Google")
             }
@@ -164,28 +165,32 @@ fun LoginScreen(onSignedIn: (displayName: String?) -> Unit, onContinueWithPhone:
             Spacer(Modifier.height(8.dp))
             Text(errorMessage!!, style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Attention))
         }
-        Spacer(Modifier.height(12.dp))
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            HorizontalDivider(modifier = Modifier.weight(1f))
-            Text("  or  ", style = GetAutoSureType.Caption)
-            HorizontalDivider(modifier = Modifier.weight(1f))
-        }
-        Spacer(Modifier.height(12.dp))
-        Button(onClick = onContinueWithPhone, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-            Icon(Icons.Filled.Phone, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("Continue with Phone")
+        // Phone sign-in has no real SMS backend yet and Skip bypasses sign-in entirely, so both
+        // exist for testing only and never appear in a release build.
+        if (BuildConfig.DEBUG) {
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                HorizontalDivider(modifier = Modifier.weight(1f))
+                Text("  or  ", style = GetAutoSureType.Caption)
+                HorizontalDivider(modifier = Modifier.weight(1f))
+            }
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(onClick = onContinueWithPhone, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+                Icon(Icons.Filled.Phone, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Continue with Phone (test)")
+            }
         }
 
         Spacer(Modifier.weight(1f))
-        // Temporary while Google Sign-In has no real client ID and phone has no real SMS
-        // backend — lets the rest of the UI be tested end to end. Remove once both are real.
-        Text(
-            "Skip for now (testing)",
-            style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Accent),
-            modifier = Modifier.clickable(onClick = onSkip)
-        )
-        Spacer(Modifier.height(12.dp))
+        if (BuildConfig.DEBUG) {
+            Text(
+                "Skip for now (testing)",
+                style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Accent),
+                modifier = Modifier.clickable(onClick = onSkip)
+            )
+            Spacer(Modifier.height(12.dp))
+        }
         Text(
             "By continuing, you agree to our Terms of Service and Privacy Policy.",
             style = GetAutoSureType.Caption,
@@ -554,7 +559,8 @@ fun AddVehicleDetailsScreen(
 ) {
     var nickname by remember { mutableStateOf("") }
     var engineCc by remember { mutableStateOf(initialEngineCc?.toString().orEmpty()) }
-    var year by remember { mutableStateOf(initialYear?.toString()?.takeIf { it in YEARS } ?: YEARS.first()) }
+    // No default: guessing this year would quietly give most cars the wrong age. Unpicked saves as no year.
+    var year by remember { mutableStateOf(initialYear?.toString()?.takeIf { it in YEARS } ?: "Select") }
     var fuelType by remember { mutableStateOf(initialFuelType?.takeIf { it in FUEL_TYPES } ?: FUEL_TYPES.first()) }
     var odometer by remember { mutableStateOf("") }
     var plate by remember { mutableStateOf(initialPlate.orEmpty()) }
@@ -694,13 +700,13 @@ fun AddVehicleSuccessScreen(
         Text("All set!", style = GetAutoSureType.ScreenTitle, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         Text(
-            "Your $brand $model is added to your account.",
+            "Your $brand $model is saved.",
             style = GetAutoSureType.Caption,
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(32.dp))
         Button(onClick = onConnectObd, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-            Text("Connect OBD Now")
+            Text("Scan my car now")
         }
         Spacer(Modifier.height(10.dp))
         OutlinedButton(onClick = onGoHome, modifier = Modifier.fillMaxWidth().height(52.dp)) {

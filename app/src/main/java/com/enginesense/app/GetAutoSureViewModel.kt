@@ -329,7 +329,8 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
     init {
         viewModelScope.launch {
             loadPersistedHistory()
-            seedDemoHistory()
+            // Example timeline scans help while testing; customers only ever see their own.
+            if (BuildConfig.DEBUG) seedDemoHistory()
             persistedTripMileage = withContext(Dispatchers.IO) { tripMileageStore.load() }
         }
     }

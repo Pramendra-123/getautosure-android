@@ -15,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.enginesense.app.consultation.ConsultationBackendConfig
 import com.enginesense.app.consultation.ConsultationPricing
 import com.enginesense.app.consultation.ConsultationViewModel
@@ -88,39 +87,30 @@ private fun ExpertCard(expert: Expert, onClick: () -> Unit) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier.size(56.dp).clip(CircleShape).background(GetAutoSureColors.SurfaceRaised),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (expert.photoUrl != null) {
-                        AsyncImage(model = expert.photoUrl, contentDescription = "${expert.name}'s photo", modifier = Modifier.fillMaxSize())
-                    } else {
-                        Icon(Icons.Filled.Person, contentDescription = null, tint = GetAutoSureColors.TextSecondary)
-                    }
-                }
+                ExpertAvatar(expert, 56.dp)
                 Spacer(Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(expert.name, style = GetAutoSureType.Body.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold))
-                    Text(expert.title, style = GetAutoSureType.Caption)
-                    if (expert.yearsExperience > 0) {
-                        Text("${expert.yearsExperience} years experience", style = GetAutoSureType.Caption)
-                    }
+                    val subtitle = listOfNotNull(expert.title, expert.yearsExperience.takeIf { it > 0 }?.let { "$it yrs" }).joinToString(" · ")
+                    Text(subtitle, style = GetAutoSureType.Caption)
+                    Text(
+                        expert.nextSlotEpochMillis?.let { "Next free: ${nextSlotLabel(it)}" } ?: "No free slots this week",
+                        style = GetAutoSureType.Caption.copy(
+                            color = if (expert.nextSlotEpochMillis != null) GetAutoSureColors.Good else GetAutoSureColors.TextSecondary
+                        )
+                    )
                 }
             }
             Spacer(Modifier.height(10.dp))
             Text(expert.bio, style = GetAutoSureType.Caption, maxLines = 3)
             if (expert.specializations.isNotEmpty()) {
                 Spacer(Modifier.height(10.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    expert.specializations.take(3).forEach { spec ->
-                        Box(modifier = Modifier.background(GetAutoSureColors.SurfaceRaised, RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 4.dp)) {
-                            Text(spec, style = GetAutoSureType.Caption)
-                        }
-                    }
-                }
+                SpecialityChips(expert.specializations.take(3))
             }
             Spacer(Modifier.height(12.dp))
-            Button(onClick = onClick, modifier = Modifier.fillMaxWidth()) { Text("View Availability") }
+            Button(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+                Text(if (expert.nextSlotEpochMillis != null) "Book a video call" else "View profile")
+            }
         }
     }
 }
