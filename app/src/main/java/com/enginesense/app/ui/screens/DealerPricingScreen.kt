@@ -151,12 +151,6 @@ fun DealerPricingScreen() {
                     placeholder = { Text("e.g. 3000") },
                     modifier = Modifier.fillMaxWidth()
                 )
-
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    "Auto-fill from OBD scan — coming soon",
-                    style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.TextSecondary)
-                )
             }
         }
 
@@ -171,11 +165,6 @@ fun DealerPricingScreen() {
                     label = { Text("Selling price") },
                     placeholder = { Text("e.g. 650000") },
                     modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "Auto-calculated from backend pricing logic — coming soon. Enter manually for now.",
-                    style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.TextSecondary)
                 )
                 Spacer(Modifier.height(10.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {

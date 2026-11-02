@@ -60,10 +60,6 @@ import com.enginesense.app.vehicle.ai.RemoteAiMechanicChatService
 import com.enginesense.app.vehicle.ai.RemoteAiNotAuthenticatedException
 import com.enginesense.app.vehicle.ai.RuleBasedAiMechanicChatService
 import com.enginesense.app.vehicle.ai.TemplateAiCarHealthReportService
-import com.enginesense.app.vehicle.integrations.PlaceholderVehicleInfoService
-import com.enginesense.app.vehicle.integrations.PlaceholderWorkshopBookingService
-import com.enginesense.app.vehicle.integrations.VehicleInfoService
-import com.enginesense.app.vehicle.integrations.WorkshopBookingService
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -202,8 +198,6 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
     // for a stale reference is at most how long one token fetch takes, not the ViewModel's
     // lifetime, and it's nulled out in askAiMechanic's `finally` regardless of outcome.
     private var authUiContext: Context? = null
-    val workshopService: WorkshopBookingService = PlaceholderWorkshopBookingService()
-    val vehicleInfoService: VehicleInfoService = PlaceholderVehicleInfoService()
 
     private var transport: ObdTransport? = null
 

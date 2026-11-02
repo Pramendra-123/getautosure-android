@@ -403,8 +403,6 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
             composable("reports") {
                 ReportsScreen(viewModel, onNavigate = { route -> navController.navigate(route) })
             }
-            composable("workshop") { WorkshopScreen(viewModel) }
-            composable("vehicleInfo") { VehicleInfoScreen(viewModel) }
             composable("allSensors") { AllSensorsScreen(viewModel) }
             composable("milStatus") { MilStatusScreen(viewModel) }
             composable("battery") { BatteryScreen(viewModel) }

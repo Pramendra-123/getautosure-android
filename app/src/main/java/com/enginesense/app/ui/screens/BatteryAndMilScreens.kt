@@ -18,7 +18,7 @@ import com.enginesense.app.vehicle.SensorRating
 import com.enginesense.app.vehicle.benchmark
 import com.enginesense.app.vehicle.rate
 
-/** Battery health from the last scan's real module-voltage reading — "replacement" is a placeholder, voltage is not. */
+/** Battery health from the last scan's real module-voltage reading. */
 @Composable
 fun BatteryScreen(viewModel: GetAutoSureViewModel) {
     val result by viewModel.latestResult.collectAsState()
@@ -47,12 +47,6 @@ fun BatteryScreen(viewModel: GetAutoSureViewModel) {
         }
         Spacer(Modifier.height(6.dp))
         PidId.CONTROL_MODULE_VOLTAGE.benchmark()?.let { Text(it.note, style = GetAutoSureType.Caption) }
-
-        Spacer(Modifier.height(24.dp))
-        Text(
-            "Battery replacement booking isn't connected to a real vendor yet — this is a placeholder for that integration.",
-            style = GetAutoSureType.Caption
-        )
     }
 }
 

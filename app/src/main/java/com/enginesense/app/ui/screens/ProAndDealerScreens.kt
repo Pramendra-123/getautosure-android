@@ -35,7 +35,7 @@ private data class FeaturedPitch(val name: String, val pitch: String, val feasib
 private val FEATURED = listOf(
     FeaturedPitch(
         "Ask a real expert",
-        "Talk to a mechanic on call, over WhatsApp — not a bot. For when you need an actual answer, not another reading.",
+        "A 15-minute video call with a real mechanic — not a bot. For when you need an actual answer, not another reading.",
         Feasibility.AVAILABLE
     ),
     FeaturedPitch(

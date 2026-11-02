@@ -524,7 +524,7 @@ object PrePurchaseReportPdfGenerator {
         b.ensure(50f, PAGE_BEFORE_YOU_PAY)
         b.y += drawBanner(
             b.canvas, b.y,
-            "Not sure about something in this report? Talk to a real mechanic on WhatsApp from the GetAutoSure app, with this report in hand.",
+            "Not sure about something in this report? Book a 15-minute video call with a real mechanic in the GetAutoSure app, with this report in hand.",
             Color.parseColor("#FFF8EC"), AMBER_BORDER, Color.parseColor("#412402")
         )
         b.y += 16f
