@@ -1,0 +1,29 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>GetAutoSure card and sticker</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap">
+<style>@page{size:115mm 200mm;margin:0}html,body{margin:0;background:#fff}svg{display:block}</style>
+<div id="out"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="art.js"></script>
+<script>
+// One sheet: card front, card back (95 x 58 mm each) and the 50 mm sticker, with 3 mm bleed shown by the fills.
+const A = ART;
+const cardBack = `<rect width="95" height="58" rx="2.5" fill="#fff" stroke="#DDD8D2" stroke-width="0.3"/>
+  <text x="6" y="10" font-family="Sora" font-weight="700" font-size="4" fill="${A.INK}">Where's my OBD port?</text>
+  <g fill="none" stroke="${A.INK}" stroke-width="0.5" stroke-linecap="round">
+    <path d="M6 28 q22 -9 44 0"/><circle cx="37" cy="29" r="7"/><circle cx="37" cy="29" r="1.6"/><path d="M37 36 v6"/><path d="M30 45 h4 M40 45 h4"/></g>
+  <rect x="40" y="36.5" width="7" height="4.2" rx="0.8" fill="${A.ORANGE}"/><path d="M50 38.5 h4" stroke="${A.ORANGE}" stroke-width="0.5"/>
+  <text x="55" y="39.4" font-family="IBM Plex Sans" font-size="2" fill="${A.INK}">Usually here</text>
+  <g font-family="IBM Plex Sans" font-size="2.3" fill="#3B4048">
+    <text x="57" y="18">Under the dashboard,</text><text x="57" y="22">near your right knee.</text>
+    <text x="57" y="28">Sometimes behind a</text><text x="57" y="32">small cover or fuse lid.</text></g>
+  <line x1="6" y1="49" x2="89" y2="49" stroke="#E2DED8" stroke-width="0.3"/>
+  <text x="6" y="54" font-family="IBM Plex Sans" font-size="2.1" fill="#3B4048">Help: getautosure.com/help · WhatsApp [number]</text>`;
+const cap = (y, t) => `<text x="10" y="${y}" font-family="IBM Plex Mono" font-size="2.4" fill="#777">${t}</text>`;
+document.getElementById("out").innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="115mm" height="200mm" viewBox="0 0 115 200">
+  ${cap(8, "CARD FRONT · 95 × 58 mm · 300 g · matte")}<g transform="translate(10 11)">${A.cardFront()}</g>
+  ${cap(78, "CARD BACK")}<g transform="translate(10 81)">${cardBack}</g>
+  ${cap(148, "STICKER · Ø 50 mm · clear static cling, reverse print for inside glass")}<g transform="translate(32.5 151)">${A.sticker()}</g>
+</svg>`;
+</script>

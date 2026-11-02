@@ -1,0 +1,47 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>GetAutoSure box artwork</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap">
+<style>@page{size:205mm 205mm;margin:0}html,body{margin:0;background:#fff}svg{display:block}</style>
+<div id="out"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="art.js"></script>
+<script>
+// Flat net of the vendor's upright tuck-end carton (100 x 63 x 25.5 mm), drawn in mm.
+const A = ART, INK = A.INK;
+const X = { s1: 5, f: 30.5, s2: 93.5, b: 119, g: 182, end: 194 }, Y = { top: 45, bot: 145 };
+const shapes = [
+  // [path, printed?]
+  [`M${X.s1} ${Y.top} H${X.g} V${Y.bot} H${X.s1} Z`, true],                                   // body
+  [`M${X.g} ${Y.top} L${X.end} ${Y.top + 4} V${Y.bot - 4} L${X.g} ${Y.bot} Z`, false],        // glue flap
+  [`M${X.f} ${Y.top} V19.5 H${X.s2} V${Y.top} Z`, true],                                      // top lid
+  [`M${X.f + 1} 19.5 V9 Q${X.f + 1} 5.5 ${X.f + 5} 5.5 H${X.s2 - 5} Q${X.s2 - 1} 5.5 ${X.s2 - 1} 9 V19.5 Z`, true], // top tuck
+  [`M${X.s1} ${Y.top} L${X.s1 + 2} 31 H${X.f - 4} L${X.f} ${Y.top} Z`, true],                 // dust flaps
+  [`M${X.s2} ${Y.top} L${X.s2 + 4} 31 H${X.b - 2} L${X.b} ${Y.top} Z`, true],
+  [`M${X.s1} ${Y.bot} L${X.s1 + 2} 159 H${X.f - 4} L${X.f} ${Y.bot} Z`, true],
+  [`M${X.s2} ${Y.bot} L${X.s2 + 4} 159 H${X.b - 2} L${X.b} ${Y.bot} Z`, true],
+  [`M${X.b} ${Y.bot} V170.5 H${X.g} V${Y.bot} Z`, true],                                      // bottom lid
+  [`M${X.b + 1} 170.5 V181 Q${X.b + 1} 184.5 ${X.b + 5} 184.5 H${X.g - 5} Q${X.g - 1} 184.5 ${X.g - 1} 181 V170.5 Z`, true],
+];
+const folds = [
+  [X.f, Y.top, X.f, Y.bot], [X.s2, Y.top, X.s2, Y.bot], [X.b, Y.top, X.b, Y.bot], [X.g, Y.top, X.g, Y.bot],
+  [X.s1, Y.top, X.g, Y.top], [X.s1, Y.bot, X.g, Y.bot], [X.f, 19.5, X.s2, 19.5], [X.b, 170.5, X.g, 170.5],
+];
+const at = (x, y, body) => `<g transform="translate(${x} ${y})">${body}</g>`;
+const bleed = shapes.filter(s => s[1]).map(s => `<path d="${s[0]}" fill="${INK}" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/>`).join("");
+const art =
+  at(X.f, Y.top, A.panels.front()) +
+  at(X.f, 19.5, A.panels.top()) +
+  at(X.s1, Y.top, A.panels.sideLeft()) +
+  at(X.s2, Y.top, A.panels.sideRight()) +
+  at(X.b, Y.top, A.panels.back()) +
+  // bottom lid folds down from the back panel, so its text is upside down in the flat
+  `<g transform="translate(${X.g} 170.5) rotate(180)">${A.panels.bottom()}</g>`;
+const glue = `<path d="${shapes[1][0]}" fill="#fff"/><text x="188" y="95" font-family="IBM Plex Mono" font-size="2" fill="#999" text-anchor="middle" transform="rotate(-90 188 95)">GLUE · NO PRINT</text>`;
+const die = shapes.map(s => `<path d="${s[0]}" fill="none" stroke="#EC008C" stroke-width="0.25"/>`).join("") +
+  folds.map(f => `<line x1="${f[0]}" y1="${f[1]}" x2="${f[2]}" y2="${f[3]}" stroke="#00AEEF" stroke-width="0.3" stroke-dasharray="1.5 1"/>`).join("");
+const legend = `<text x="5" y="197" font-family="IBM Plex Mono" font-size="2.4" fill="#555">GetAutoSure OBD-II · tuck-end 100 × 63 × 25.5 mm · 350 g · 4-colour + matte lamination · NO window · 3 mm bleed</text>
+  <text x="5" y="201" font-family="IBM Plex Mono" font-size="2.4" fill="#555">Magenta = cut, cyan dashed = fold. Lines are for position only: place this artwork on your own die. Artwork v1 · 1 Nov 2026</text>`;
+document.getElementById("out").innerHTML =
+  `<svg xmlns="http://www.w3.org/2000/svg" width="205mm" height="205mm" viewBox="0 0 205 205">${bleed}${glue}${art}${die}${legend}</svg>`;
+</script>

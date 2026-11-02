@@ -1,0 +1,93 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>GetAutoSure inside the box</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap">
+<style>
+  html,body{margin:0;width:1600px;height:1000px;overflow:hidden}
+  body{background:radial-gradient(ellipse 70% 60% at 50% 42%, #F1EEEA 0%, #DCD7D0 55%, #C4BEB6 100%)}
+  .stage{position:absolute;inset:0;perspective:2600px;perspective-origin:50% 25%}
+  .world{position:absolute;left:50%;top:50%;transform-style:preserve-3d;transform:rotateX(-18deg) rotateY(-26deg) scale3d(1.12,1.12,1.12)}
+  .obj{position:absolute;left:0;top:0;transform-style:preserve-3d}
+  .f{position:absolute;left:0;top:0;overflow:hidden}
+  .f svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .f i{position:absolute;inset:0;pointer-events:none}
+  .shadow{position:absolute;left:0;top:0;border-radius:50%;filter:blur(14px)}
+  .tag{position:absolute;font:600 17px/1.25 "IBM Plex Sans",sans-serif;color:#14171C;display:flex;gap:10px;align-items:center}
+  .tag b{font:700 14px/1 "IBM Plex Mono",monospace;color:#fff;background:#FF6B2C;border-radius:50%;width:26px;height:26px;display:grid;place-items:center;flex:none}
+  .tag span{font-weight:400;color:#5E636B;font-size:14px;display:block}
+  h1{position:absolute;left:56px;top:40px;margin:0;font:700 34px/1.1 Sora,sans-serif;color:#14171C}
+  h1 small{display:block;font:400 16px/1.4 "IBM Plex Sans",sans-serif;color:#5E636B;margin-top:8px}
+</style>
+<h1>What's inside<small>Lift the top flap, pull the orange tab, and everything comes out in one piece.</small></h1>
+<div class="stage"><div class="world" id="world"></div></div>
+<div id="tags"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="art.js"></script>
+<script>
+const A = ART, k = 3.4, OR = A.ORANGE, OR_SIDE = "#E2581C", OR_DARK = "#C94C17";
+const svg = (w, h, body) => `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${body}</svg>`;
+function face(w, h, t, content, bg, shade = "transparent", radius = 0, origin = "50% 50%") {
+  return `<div class="f" style="width:${w}px;height:${h}px;margin:${-h / 2}px 0 0 ${-w / 2}px;transform-origin:${origin};transform:${t};background:${bg};border-radius:${radius}px">${content}<i style="background:${shade}"></i></div>`;
+}
+function cuboid(W, H, D, f, bg, r = 0, sides = {}) {
+  return face(W, H, `translateZ(${D / 2}px)`, f.front || "", bg, "linear-gradient(160deg, rgba(255,255,255,.08), rgba(0,0,0,.16))", r) +
+    face(D, H, `rotateY(90deg) translateZ(${W / 2}px)`, f.right || "", sides.right || bg, "rgba(0,0,0,.34)", r) +
+    face(D, H, `rotateY(-90deg) translateZ(${W / 2}px)`, f.left || "", sides.left || bg, "rgba(0,0,0,.45)", r) +
+    (f.noTop ? "" : face(W, D, `rotateX(90deg) translateZ(${H / 2}px)`, f.top || "", sides.top || bg, "rgba(255,255,255,.12)", r));
+}
+const place = (x, y, z, extra, html) => `<div class="obj" style="transform:translate3d(${x}px,${y}px,${z}px) ${extra || ""}">${html}</div>`;
+const shadow = (w, h, a) => `<div class="shadow" style="width:${w}px;height:${h}px;margin:${-h / 2}px 0 0 ${-w / 2}px;transform:rotateX(90deg);background:rgba(40,30,20,${a})"></div>`;
+const floor = 50 * k;
+const INK = A.INK, INSIDE = "#D8D4CD";   // uncoated inner side of the 350 g card
+
+// ---- Open box: 63 x 100 x 25.5, top flap open, interior visible ----
+const W = 63 * k, H = 100 * k, D = 25.5 * k;
+const box =
+  face(W, H, `translateZ(${-D / 2 + 1}px)`, "", INSIDE, "linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.65))") +   // inner back wall
+  face(D, H, `rotateY(90deg) translateZ(${-W / 2 + 1}px)`, "", INSIDE, "rgba(0,0,0,.55)") +                             // inner left wall
+  cuboid(W, H, D, {
+    front: svg(63, 100, A.panels.front()), right: svg(25.5, 100, A.panels.sideRight()), left: svg(25.5, 100, A.panels.sideLeft()), noTop: true,
+  }, INK) +
+  // top flap, hinged on the front edge and folded open toward the viewer: we see its uncoated inner side
+  place(0, -H / 2, D / 2, "", face(W, 39.5 * k, "rotateX(-28deg)", svg(63, 39.5, `<g transform="translate(0 14)">${A.panels.top()}</g>`), INK, "linear-gradient(0deg, rgba(255,255,255,.04), rgba(0,0,0,.25))", 0, "50% 100%").replace("margin:", `margin-top:${-39.5 * k}px;margin-left:${-W / 2}px;x:`));
+
+// ---- Orange insert pulled out: back wall + pull tab + riser block, dongle seated in the riser ----
+const iW = 62 * k, wallH = 86 * k, rH = 26 * k, rD = 23 * k;
+const tab = `<div style="position:absolute;left:50%;top:${-9 * k}px;width:${22 * k}px;height:${10 * k}px;margin-left:${-11 * k}px;background:${OR};border-radius:${11 * k}px ${11 * k}px 0 0;display:grid;place-items:center;font:700 ${2.6 * k}px Sora,sans-serif;color:${INK};letter-spacing:.08em">PULL</div>`;
+const tabFace = place(0, floor - wallH - 4.5 * k, -rD / 2 - 3, "", face(22 * k, 9 * k, "", `<div style="position:absolute;inset:0;display:grid;place-items:center;font:700 ${2.6 * k}px Sora,sans-serif;color:${INK};letter-spacing:.08em">PULL</div>`, OR, "rgba(255,255,255,.08)", 0).replace("border-radius:0px", `border-radius:${11 * k}px ${11 * k}px 0 0`));
+const wall = place(0, floor - wallH / 2, -rD / 2 - 3, "", face(iW, wallH, "", "", OR, "linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,.10))").replace('style="width:', 'style="overflow:visible;width:'));
+const riser = place(0, floor - rH / 2, 0, "", cuboid(iW, rH, rD, {
+  top: `<div style="position:absolute;left:${8 * k}px;top:0;width:${46 * k}px;height:100%;background:${OR_DARK}"></div>`,
+}, OR, 0, { right: OR_SIDE, left: OR_SIDE }));
+// card standing against the back wall (card art turned to portrait), behind the dongle
+const cardArt = `<div style="position:absolute;width:${95 * k}px;height:${58 * k}px;left:${-(95 - 58) / 2 * k}px;top:${(95 - 58) / 2 * k}px;transform:rotate(-90deg)">${svg(95, 58, A.cardFront())}</div>`;
+const card = place(0, floor - 95 * k / 2, -rD / 2 - 5, "", face(58 * k, 95 * k, "", cardArt, "transparent", "rgba(0,0,0,.12)", 6));
+// dongle: body sits 8 mm deep in the riser cut-out
+const bW = 46 * k, bH = 56 * k, bD = 23 * k;
+const label = `<div style="position:absolute;left:${2 * k}px;top:${2.7 * k}px;width:${42 * k}px;height:${50.6 * k}px">${A.label().replace('width="42mm" height="50.6mm"', 'width="100%" height="100%"')}</div>`;
+const dongleY = floor - (rH - 8 * k) - bH / 2;
+const dongle = place(0, dongleY, 0.5 * k, "", cuboid(bW, bH, bD, { front: label }, "#17191D", 10) +
+  place(0, -(bH / 2 + 7 * k), 0, "", cuboid(39 * k, 14 * k, 16 * k, {
+    front: `<div style="position:absolute;inset:18% 8% 18% 8%;border-radius:4px;background:#0B0C0E"></div>` }, "#121418", 6)));
+const sticker = face(50 * k, 50 * k, "rotateX(-12deg)", svg(50, 50, A.sticker()), "transparent", "transparent", 50 * k);
+
+const BX = -250, IX = 70;
+document.getElementById("world").innerHTML =
+  place(BX, floor - 1, 0, "", shadow(W * 1.25, D * 2.2, .36)) +
+  place(IX, floor - 1, 0, "rotateY(10deg)", shadow(iW * 1.3, rD * 2.6, .34)) +
+  place(BX, 0, 0, "", box) +
+  place(IX, 0, 0, "rotateY(10deg)", tabFace + wall + card + riser + dongle) +
+  place(-75, floor - 25 * k, 120, "rotateY(8deg)", sticker);
+
+// numbered callouts (screen space)
+const tags = [
+  [190, 640, 1, "Box", "Black outside, plain inside"],
+  [1090, 250, 2, "Pull tab", "Lifts the whole insert out"],
+  [1090, 360, 5, "Card", "Behind the orange wall"],
+  [1090, 470, 3, "Dongle", "Stands upright, label facing you"],
+  [1090, 690, 4, "Orange insert", "One die-cut card, folded"],
+  [560, 740, 6, "Sticker", "Sits behind the dongle"],
+];
+document.getElementById("tags").innerHTML = tags.map(t =>
+  `<div class="tag" style="left:${t[0]}px;top:${t[1]}px"><b>${t[2]}</b><div>${t[3]}<span>${t[4]}</span></div></div>`).join("");
+</script>

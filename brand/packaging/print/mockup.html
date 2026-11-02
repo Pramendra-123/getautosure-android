@@ -1,0 +1,66 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>GetAutoSure sample render</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap">
+<style>
+  html,body{margin:0;width:1600px;height:1000px;overflow:hidden}
+  body{background:radial-gradient(ellipse 70% 60% at 50% 42%, #F1EEEA 0%, #DCD7D0 55%, #C4BEB6 100%)}
+  .stage{position:absolute;inset:0;perspective:2600px;perspective-origin:50% 30%}
+  .world{position:absolute;left:50%;top:40%;transform-style:preserve-3d;transform:rotateX(-16deg) rotateY(-32deg) scale3d(1.4,1.4,1.4)}
+  .obj{position:absolute;left:0;top:0;transform-style:preserve-3d}
+  .f{position:absolute;left:0;top:0;overflow:hidden;backface-visibility:hidden}
+  .f svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .f i{position:absolute;inset:0;pointer-events:none}
+  .shadow{position:absolute;left:0;top:0;border-radius:50%;filter:blur(14px)}
+</style>
+<div class="stage"><div class="world" id="world"></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="art.js"></script>
+<script>
+const A = ART, k = 3.4;                       // px per mm
+const svg = (w, h, body, rot) => `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"${rot ? ' style="transform:rotate(180deg)"' : ""}>${body}</svg>`;
+function face(w, h, t, content, bg, shade, radius = 0) {
+  return `<div class="f" style="width:${w}px;height:${h}px;margin:${-h / 2}px 0 0 ${-w / 2}px;transform:${t};background:${bg};border-radius:${radius}px">${content}<i style="background:${shade}"></i></div>`;
+}
+// Cuboid centred on its own origin; faces = {front, right, top, left} HTML.
+function cuboid(W, H, D, faces, bg, r = 0) {
+  return face(W, H, `translateZ(${D / 2}px)`, faces.front || "", bg, "linear-gradient(160deg, rgba(255,255,255,.07), rgba(0,0,0,.18))", r) +
+    face(D, H, `rotateY(90deg) translateZ(${W / 2}px)`, faces.right || "", bg, "linear-gradient(90deg, rgba(0,0,0,.42), rgba(0,0,0,.30))", r) +
+    face(D, H, `rotateY(-90deg) translateZ(${W / 2}px)`, faces.left || "", bg, "rgba(0,0,0,.5)", r) +
+    face(W, D, `rotateX(90deg) translateZ(${H / 2}px)`, faces.top || "", bg, "linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.05))", r);
+}
+const place = (x, y, z, extra, html) => `<div class="obj" style="transform:translate3d(${x}px,${y}px,${z}px) ${extra || ""}">${html}</div>`;
+const floorY = 50 * k;                       // box is 100 mm tall, centred on y = 0
+const flat = (w, h, html, bg) => face(w, h, "rotateX(90deg)", html, bg, "linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,.06))");
+const shadow = (w, h, a) => `<div class="shadow" style="width:${w}px;height:${h}px;margin:${-h / 2}px 0 0 ${-w / 2}px;transform:rotateX(90deg);background:rgba(40,30,20,${a})"></div>`;
+
+// Box: 63 x 100 x 25.5 mm
+const W = 63 * k, H = 100 * k, D = 25.5 * k, INK = A.INK;
+const box = cuboid(W, H, D, {
+  front: svg(63, 100, A.panels.front()),
+  right: svg(25.5, 100, A.panels.sideRight()),
+  left: svg(25.5, 100, A.panels.sideLeft()),
+  top: svg(63, 25.5, A.panels.top()),
+}, INK);
+
+// Dongle: body 46 x 56 x 24 mm, OBD plug 39 x 16 x 14 mm on top
+const bW = 46 * k, bH = 56 * k, bD = 24 * k, BODY = "#17191D";
+const label = `<div style="position:absolute;left:${2 * k}px;top:${2.7 * k}px;width:${42 * k}px;height:${50.6 * k}px">${A.label().replace('width="42mm" height="50.6mm"', 'width="100%" height="100%"')}</div>`;
+const dongle = cuboid(bW, bH, bD, { front: label }, BODY, 10) +
+  place(0, -(bH / 2 + 7 * k), 0, "", cuboid(39 * k, 14 * k, 16 * k, {
+    front: `<div style="position:absolute;inset:18% 8% 18% 8%;border-radius:4px;background:#0B0C0E;box-shadow:inset 0 2px 6px rgba(0,0,0,.8)"></div>`,
+  }, "#121418", 6));
+
+// Card and sticker lying on the table
+const card = flat(95 * k, 58 * k, svg(95, 58, A.cardFront()), "transparent");
+const stick = `<div style="position:absolute;left:0;top:0;transform:rotateX(90deg)"><div style="position:absolute;width:${50 * k}px;height:${50 * k}px;margin:${-25 * k}px 0 0 ${-25 * k}px">${svg(50, 50, A.sticker())}</div></div>`;
+
+document.getElementById("world").innerHTML =
+  place(-10, floorY - 1, 0, "", shadow(W * 1.25, D * 2.2, .38)) +
+  place(268, floorY - 1, 20, "", shadow(bW * 1.4, bD * 2.4, .34)) +
+  place(-60, floorY - 0.5, 250, "rotateY(-14deg)", shadow(95 * k * 1.04, 58 * k * 1.06, .22)) +
+  place(0, 0, 0, "", box) +
+  place(268, floorY - bH / 2, 20, "rotateY(18deg)", dongle) +
+  place(-60, floorY - 1, 250, "rotateY(-14deg)", card) +
+  place(300, floorY - 1, 250, "", stick);
+</script>

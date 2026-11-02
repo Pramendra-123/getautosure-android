@@ -1,0 +1,405 @@
+<title>GetAutoSure Box Brief</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a print-shop brief — one narrow reading column, mockups drawn to scale in mm, a spec table per part */
+:root{
+  --bg:#F6F4F1; --surface:#FFFFFF; --ink:#14171C; --muted:#5E636B; --line:#E2DED8;
+  --accent:#E85A1C; --accent-soft:#FDE9DE; --stage:#E9E5DF;
+  --display:"Sora", "Segoe UI", system-ui, sans-serif;
+  --body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1013; --surface:#16191E; --ink:#ECEDEF; --muted:#9AA0A8; --line:#272B32;
+  --accent:#FF7A3D; --accent-soft:#2A1A12; --stage:#1B1F25; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1013; --surface:#16191E; --ink:#ECEDEF; --muted:#9AA0A8; --line:#272B32;
+  --accent:#FF7A3D; --accent-soft:#2A1A12; --stage:#1B1F25; color-scheme:dark}
+
+body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--body)}
+.wrap{max-width:980px;margin:0 auto;padding-block:40px 80px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.2}
+h1{font-size:clamp(30px,5vw,44px);font-weight:800;letter-spacing:-.02em}
+h2{font-size:24px;font-weight:700;letter-spacing:-.01em}
+h3{font-size:17px;font-weight:600}
+p{margin:0;max-width:66ch}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.meta{color:var(--muted);font-size:14px}
+header{display:grid;gap:14px;padding-bottom:28px;border-bottom:1px solid var(--line)}
+section{display:grid;gap:18px;padding-block:40px;border-bottom:1px solid var(--line)}
+.lede{font-size:18px}
+.stage{background:var(--stage);border-radius:14px;padding:clamp(16px,4vw,36px);display:grid;gap:18px;justify-items:center}
+.stage svg{width:100%;height:auto;display:block}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;width:100%}
+.pair > figure{margin:0;display:grid;gap:8px;min-width:0}
+figcaption{font:13px/1.4 var(--mono);color:var(--muted);text-align:center}
+.photo{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;background:#000}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14.5px}
+th,td{text-align:left;vertical-align:top;padding:11px 14px;border-bottom:1px solid var(--line)}
+th{font:500 12px/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.mono{font-family:var(--mono);font-size:13px;white-space:nowrap}
+.tag{display:inline-block;font:500 11.5px/1 var(--mono);padding:5px 7px;border-radius:6px;white-space:nowrap}
+.same{background:var(--stage);color:var(--muted)}
+.new{background:var(--accent-soft);color:var(--accent)}
+ul.clean{margin:0;padding-left:20px;display:grid;gap:6px;max-width:66ch}
+.callout{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;display:grid;gap:8px}
+.callout.hot{border-color:var(--accent)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+.cols > *{min-width:0}
+ol.qs{margin:0;padding-left:22px;display:grid;gap:8px;max-width:70ch}
+code{font-family:var(--mono);font-size:.92em;background:var(--stage);padding:1px 5px;border-radius:4px}
+
+/* mockup type */
+.w{font-family:var(--display);font-weight:700}
+.s{font-family:var(--body)}
+.m{font-family:var(--mono)}
+.dim{font-family:var(--mono);fill:var(--muted)}
+.dimline{stroke:var(--muted);stroke-width:.25}
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">Packaging brief · v1 · 1 Nov 2026</span>
+  <h1>GetAutoSure box, insert, card and sticker</h1>
+  <p class="lede">A premium-looking retail box for the GetAutoSure OBD-II scanner. It is built on the vendor's own spec (100 × 63 × 25.5 mm, 350 GSM, matte lamination, orange die-cut insert), so the main change is artwork, not cost.</p>
+  <p class="meta">Selling price ₹999 on Amazon · suggested MRP ₹1,499 · one box for all buyers (no separate Dealer Sathi box) · drawings are in millimetres</p>
+</header>
+
+<section>
+  <span class="eyebrow">What's in the box</span>
+  <h2>Four printed parts and the dongle</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Part</th><th>Spec</th><th>vs. vendor's current pack</th><th>Cost impact</th></tr></thead>
+    <tbody>
+      <tr><td><b>Box</b></td><td class="mono">100×63×25.5 mm · 350 GSM · matte lam</td><td>Same size, board and finish. New artwork, no PET window.</td><td><span class="tag same">same or less</span></td></tr>
+      <tr><td><b>Insert</b></td><td class="mono">Die-cut card · orange · thumb notch</td><td>Vendor already offered it</td><td><span class="tag same">as quoted</span></td></tr>
+      <tr><td><b>Dongle print</b></td><td class="mono">One front label or 2-colour pad print</td><td>Fewer prints than today (see below)</td><td><span class="tag same">same or less</span></td></tr>
+      <tr><td><b>Card</b></td><td class="mono">95×58 mm · 300 GSM · 4/4 colour</td><td>New. Upgrade offer on the front, port finder on the back.</td><td><span class="tag new">new · small</span></td></tr>
+      <tr><td><b>Windscreen sticker</b></td><td class="mono">Ø 50 mm · clear static cling</td><td>New. "Checked by GetAutoSure".</td><td><span class="tag new">new · small</span></td></tr>
+    </tbody>
+  </table></div>
+  <p class="meta">The card and sticker can be printed together on one sheet, which keeps setup cost to a single job.</p>
+</section>
+
+<section>
+  <span class="eyebrow">The box · option B (recommended)</span>
+  <h2>Flip-lid opening, same size and board</h2>
+  <p>The lid opens on the long edge like the Carly reference. The quick-start steps and QR code are printed inside the lid, so the buyer sees them first and no separate manual is needed. The vendor only needs a new cutting die. Board, size, lamination and insert stay the same.</p>
+  <div class="stage">
+    <svg viewBox="0 0 120 142" role="img" aria-label="Open box: lid inside with three quick-start steps and a QR code, orange insert holding the dongle">
+      <!-- lid inside -->
+      <rect x="10" y="4" width="100" height="63" rx="1.5" fill="#14171C" stroke="#2B3038" stroke-width=".3"/>
+      <text x="60" y="13.5" text-anchor="middle" class="w" font-size="4.4" fill="#fff">Plug in. Be sure.</text>
+      <g class="s" fill="#C9CDD3" font-size="2.15" text-anchor="middle">
+        <g transform="translate(19 26)">
+          <circle r="5.2" fill="none" stroke="#FF6B2C" stroke-width=".45"/>
+          <rect x="-2.1" y="-3.2" width="4.2" height="6.4" rx=".7" fill="none" stroke="#fff" stroke-width=".4"/>
+          <text y="-6.6" class="m" font-size="1.8" fill="#FF6B2C">01</text>
+          <text y="9.2" class="w" font-size="2.4" fill="#fff">Get the app</text>
+          <text y="12.2">Scan the QR</text>
+        </g>
+        <g transform="translate(41 26)">
+          <circle r="5.2" fill="none" stroke="#FF6B2C" stroke-width=".45"/>
+          <path d="M-2.6 -1.4 h5.2 l-.8 3.2 h-3.6 z" fill="none" stroke="#fff" stroke-width=".4" stroke-linejoin="round"/>
+          <path d="M-1.2 -1.4 v-1.6 M1.2 -1.4 v-1.6" stroke="#fff" stroke-width=".4"/>
+          <text y="-6.6" class="m" font-size="1.8" fill="#FF6B2C">02</text>
+          <text y="9.2" class="w" font-size="2.4" fill="#fff">Plug it in</text>
+          <text y="12.2">Under the steering</text>
+        </g>
+        <g transform="translate(63 26)">
+          <circle r="5.2" fill="none" stroke="#FF6B2C" stroke-width=".45"/>
+          <path d="M-2 0 l1.4 1.6 l2.8 -3.4" fill="none" stroke="#fff" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round"/>
+          <text y="-6.6" class="m" font-size="1.8" fill="#FF6B2C">03</text>
+          <text y="9.2" class="w" font-size="2.4" fill="#fff">Ignition on</text>
+          <text y="12.2">Tap Scan</text>
+        </g>
+      </g>
+      <rect x="79" y="17" width="23" height="23" rx="1.6" fill="#fff"/>
+      <g class="qr" data-url="https://getautosure.com/app" data-x="80.5" data-y="18.5" data-size="20" data-fill="#14171C"></g>
+      <text x="90.5" y="44" text-anchor="middle" class="m" font-size="1.9" fill="#C9CDD3">getautosure.com/app</text>
+      <text x="60" y="60" text-anchor="middle" class="w" font-size="3.6"><tspan fill="#fff">GetAuto</tspan><tspan fill="#FF6B2C">Sure</tspan></text>
+      <!-- hinge -->
+      <line x1="10" y1="67.5" x2="110" y2="67.5" stroke="#000" stroke-width=".6" opacity=".5"/>
+      <!-- tray + insert -->
+      <rect x="10" y="68" width="100" height="63" rx="1.5" fill="#101215"/>
+      <rect x="12.5" y="70.5" width="95" height="58" rx="1" fill="#FF6B2C"/>
+      <rect x="29" y="78" width="62" height="43" rx="3" fill="#B9461A"/>
+      <path d="M53 128.5 a7 7 0 0 1 14 0 z" fill="#B9461A"/>
+      <!-- dongle, lying face up, connector to the left -->
+      <g transform="translate(31 80)">
+        <rect x="0" y="9" width="13" height="21" rx="1.5" fill="#0C0D10"/>
+        <g class="m" fill="#2E323A"><rect x="2" y="12" width="9" height="15" rx=".8"/></g>
+        <use href="#face" x="12" y="0" width="46" height="39"/>
+      </g>
+      <!-- dimensions -->
+      <g class="dimline"><line x1="10" y1="137" x2="110" y2="137"/><line x1="10" y1="135.5" x2="10" y2="138.5"/><line x1="110" y1="135.5" x2="110" y2="138.5"/></g>
+      <text x="60" y="141" text-anchor="middle" class="dim" font-size="2.6">100 mm</text>
+      <g class="dimline"><line x1="115" y1="68" x2="115" y2="131"/><line x1="113.5" y1="68" x2="116.5" y2="68"/><line x1="113.5" y1="131" x2="116.5" y2="131"/></g>
+      <text x="117.5" y="99.5" class="dim" font-size="2.6" transform="rotate(90 117.5 99.5)" text-anchor="middle">63 mm</text>
+
+      <defs>
+        <!-- dongle face, landscape view of the front panel -->
+        <symbol id="face" viewBox="0 0 46 39">
+          <rect width="46" height="39" rx="3" fill="#16181C"/>
+          <rect x="2" y="2" width="42" height="35" rx="1.6" fill="#1C1F24"/>
+          <text x="23" y="9" text-anchor="middle" class="w" font-size="5"><tspan fill="#E9EBEE">GetAuto</tspan><tspan fill="#FF6B2C">Sure</tspan></text>
+          <rect x="9" y="11.5" width="28" height="7.5" rx="1.3" fill="#0F1114" stroke="#D5D8DD" stroke-width=".45"/>
+          <circle cx="15" cy="14.2" r="1" fill="#FF3B30"/><circle cx="15" cy="14.2" r="1.9" fill="#FF3B30" opacity=".25"/>
+          <circle cx="23" cy="14.2" r=".9" fill="#5A5F67"/><circle cx="31" cy="14.2" r=".9" fill="#5A5F67"/>
+          <g class="s" font-size="1.7" fill="#D5D8DD" text-anchor="middle"><text x="15" y="17.9">Power</text><text x="23" y="17.9">PC</text><text x="31" y="17.9">OBD</text></g>
+          <rect x="19.5" y="21" width="7" height="7" rx="1.7" fill="#FF6B2C"/>
+          <g transform="translate(19.5 21) scale(.109)" fill="none" stroke="#12151A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 32 A22 22 0 0 1 54 32"/><path d="M22 28 L29 36 L44 16"/>
+            <circle cx="10" cy="46" r="7" fill="#12151A" stroke="none"/><circle cx="54" cy="46" r="7" fill="#12151A" stroke="none"/>
+          </g>
+          <text x="23" y="32" text-anchor="middle" class="w" font-size="2.5" fill="#F1F2F4">OBD-II Car Scanner</text>
+          <text x="23" y="35.2" text-anchor="middle" class="s" font-size="1.65" fill="#B9BDC4">Bluetooth · getautosure.com</text>
+        </symbol>
+        <symbol id="mark" viewBox="0 0 64 64">
+          <path d="M10 32 A22 22 0 0 1 54 32" fill="none" stroke="#FF6B2C" stroke-width="5" stroke-linecap="round"/>
+          <path d="M22 28 L29 36 L44 16" fill="none" stroke="#FF6B2C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="10" cy="46" r="8" fill="#F3F4F6"/><circle cx="54" cy="46" r="8" fill="#F3F4F6"/>
+        </symbol>
+      </defs>
+    </svg>
+    <figcaption>Open box, flat view. The darker orange is the cut-out depth, and the half-circle is a thumb notch for lifting the dongle out.</figcaption>
+  </div>
+
+  <div class="stage">
+    <div class="pair">
+      <figure>
+        <svg viewBox="0 0 106 70" role="img" aria-label="Closed lid, top face">
+          <rect x="3" y="3" width="100" height="63" rx="1.5" fill="#14171C"/>
+          <use href="#mark" x="44" y="10" width="18" height="18"/>
+          <text x="53" y="38" text-anchor="middle" class="w" font-size="8"><tspan fill="#fff">GetAuto</tspan><tspan fill="#FF6B2C">Sure</tspan></text>
+          <text x="53" y="45" text-anchor="middle" class="s" font-size="3" fill="#B9BDC4" letter-spacing=".25">OBD-II CAR SCANNER · BLUETOOTH</text>
+          <rect x="3" y="63.2" width="100" height="2.8" fill="#FF6B2C"/>
+        </svg>
+        <figcaption>Option B lid · 100 × 63 · spot gloss on the mark if budget allows</figcaption>
+      </figure>
+      <figure>
+        <svg viewBox="0 0 106 70" role="img" aria-label="Front edge of the box">
+          <rect x="3" y="22" width="100" height="25.5" rx="1" fill="#14171C"/>
+          <text x="8" y="37.5" class="w" font-size="5" fill="#fff">Plug in. Be sure.</text>
+          <text x="98" y="37" text-anchor="end" class="m" font-size="2.6" fill="#FF6B2C">getautosure.com</text>
+          <rect x="3" y="44.7" width="100" height="2.8" fill="#FF6B2C"/>
+        </svg>
+        <figcaption>Front edge · 100 × 25.5 · the orange band wraps all four sides</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">The box · option A (fallback)</span>
+  <h2>Keep the vendor's tuck-end carton, change the artwork</h2>
+  <p>If the vendor won't make a new die, keep their current upright tuck-end box and only replace the print. Drop the window, because the dongle is ugly through plastic and removing it saves a step. Use the same black, orange band and mark. The quick-start steps and QR code move to the back panel.</p>
+  <div class="stage">
+    <div class="pair">
+      <figure>
+        <svg viewBox="0 0 70 106" role="img" aria-label="Upright box, front panel">
+          <rect x="3" y="3" width="63" height="100" rx="1.2" fill="#14171C"/>
+          <use href="#mark" x="22" y="18" width="25" height="25"/>
+          <text x="34.5" y="56" text-anchor="middle" class="w" font-size="8.2"><tspan fill="#fff">GetAuto</tspan><tspan fill="#FF6B2C">Sure</tspan></text>
+          <text x="34.5" y="63" text-anchor="middle" class="s" font-size="3" fill="#B9BDC4" letter-spacing=".25">OBD-II CAR SCANNER</text>
+          <text x="34.5" y="86" text-anchor="middle" class="w" font-size="4.2" fill="#fff">Plug in. Be sure.</text>
+          <rect x="3" y="96" width="63" height="3" fill="#FF6B2C"/>
+        </svg>
+        <figcaption>Front · 63 × 100</figcaption>
+      </figure>
+      <figure>
+        <svg viewBox="0 0 70 106" role="img" aria-label="Upright box, back panel with steps and legal block">
+          <rect x="3" y="3" width="63" height="100" rx="1.2" fill="#14171C"/>
+          <text x="8" y="12" class="w" font-size="3.6" fill="#fff">Start in 3 steps</text>
+          <g class="s" font-size="2.3" fill="#D5D8DD">
+            <text x="8" y="19"><tspan class="m" fill="#FF6B2C">01 </tspan>Scan the QR, get the app</text>
+            <text x="8" y="24"><tspan class="m" fill="#FF6B2C">02 </tspan>Plug into the OBD port</text>
+            <text x="8" y="29"><tspan class="m" fill="#FF6B2C">03 </tspan>Ignition on, tap Scan</text>
+          </g>
+          <rect x="44" y="9" width="17" height="17" rx="1.2" fill="#fff"/>
+          <g class="qr" data-url="https://getautosure.com/app" data-x="45" data-y="10" data-size="15" data-fill="#14171C"></g>
+          <line x1="8" y1="35" x2="61" y2="35" stroke="#2E333B" stroke-width=".3"/>
+          <g class="s" font-size="1.9" fill="#AEB3BA">
+            <text x="8" y="41">Contents: 1 OBD-II scanner, 1 card, 1 sticker</text>
+            <text x="8" y="45">Works with: Android · cars with an OBD-II port</text>
+            <text x="8" y="52" class="w" font-size="2.6" fill="#fff">MRP ₹1,499 (incl. of all taxes)</text>
+            <text x="8" y="57">Net quantity: 1 N · Mfd: MM/YYYY</text>
+            <text x="8" y="61">Marketed by: [name, full address]</text>
+            <text x="8" y="65">Manufactured / imported by: [vendor, address]</text>
+            <text x="8" y="69">Country of origin: [country]</text>
+            <text x="8" y="73">Customer care: [phone] · [email]</text>
+          </g>
+          <g transform="translate(8 80)" stroke="#AEB3BA" stroke-width=".35" fill="none">
+            <path d="M1 1.5 h5 l-.6 6 h-3.8 z"/><path d="M.5 1.5 h6"/><path d="M0 0 l7 8.5 M7 0 l-7 8.5"/>
+          </g>
+          <text x="17" y="86" class="s" font-size="1.8" fill="#AEB3BA">Do not dispose with household waste</text>
+          <rect x="3" y="96" width="63" height="3" fill="#FF6B2C"/>
+        </svg>
+        <figcaption>Back · steps, QR and the legally required details</figcaption>
+      </figure>
+    </div>
+  </div>
+  <div class="callout hot">
+    <h3>CE and FCC logos</h3>
+    <p>The current box prints CE and FC marks. Only print them if the vendor gives you the test reports for this exact model. If they can't, leave the marks off. The same applies to any Bluetooth (WPC) approval Amazon may ask for.</p>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">The dongle</span>
+  <h2>One clean face, matching the homepage video</h2>
+  <p>Today's shell has five separate prints. The target is the face from the website video: wordmark, LED window, app icon and two lines of text. Ask the vendor to apply it as <b>one printed label</b> in the recessed front panel. That is the easiest change for them, and the label can be printed in the same job as the card and sticker.</p>
+  <div class="stage">
+    <div class="pair">
+      <figure><img class="photo" src="dongle-current.png" alt="Current dongle with OBD Advanced, check engine and gauge prints"><figcaption>Now · remove these prints</figcaption></figure>
+      <figure><img class="photo" src="dongle-target.jpg" alt="GetAutoSure dongle face from the homepage video"><figcaption>Target · from the homepage video</figcaption></figure>
+    </div>
+  </div>
+  <div class="cols">
+    <div class="callout"><h3>Remove</h3>
+      <ul class="clean">
+        <li>"OBD Advanced" heading</li>
+        <li>Yellow engine icon and "CHECK Fault Codes"</li>
+        <li>Gauge drawing and "Realtime Information"</li>
+        <li>Green "Bluetooth Scan tool" line</li>
+        <li>"VN:" serial on the front (move it to the back or underside)</li>
+      </ul></div>
+    <div class="callout"><h3>Keep or add</h3>
+      <ul class="clean">
+        <li>Wordmark: "GetAuto" in white, "Sure" in orange</li>
+        <li>LED window with Power / PC / OBD labels</li>
+        <li>Orange app icon, centred</li>
+        <li>"OBD-II Car Scanner" and "Bluetooth · getautosure.com"</li>
+        <li>Matte black shell, no gloss</li>
+      </ul></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">The card · 95 × 58 mm</span>
+  <h2>Upgrade offer on the front, port finder on the back</h2>
+  <p>People throw away cards that only sell something. The useful back side means this one stays in the glovebox, and the upgrade offer stays with it.</p>
+  <div class="stage">
+    <div class="pair">
+      <figure>
+        <svg viewBox="0 0 101 64" role="img" aria-label="Card front: upgrade offer">
+          <rect x="3" y="3" width="95" height="58" rx="2.5" fill="#14171C"/>
+          <text x="9" y="12" class="m" font-size="2.3" fill="#FF6B2C" letter-spacing=".3">GETAUTOSURE PRO</text>
+          <text x="9" y="20" class="w" font-size="4.4" fill="#fff">Buying a used car?</text>
+          <text x="9" y="25.5" class="w" font-size="4.4" fill="#fff">Check it properly.</text>
+          <g class="s" font-size="2.4" fill="#D5D8DD">
+            <text x="9" y="33"><tspan fill="#FF6B2C">✓ </tspan>Pre-purchase report as PDF</text>
+            <text x="9" y="37.5"><tspan fill="#FF6B2C">✓ </tspan>Tamper and odometer checks</text>
+            <text x="9" y="42"><tspan fill="#FF6B2C">✓ </tspan>RTO record check</text>
+          </g>
+          <rect x="70" y="14" width="22" height="22" rx="1.5" fill="#fff"/>
+          <g class="qr" data-url="https://getautosure.com/pro" data-x="71.5" data-y="15.5" data-size="19" data-fill="#14171C"></g>
+          <text x="81" y="40" text-anchor="middle" class="m" font-size="1.9" fill="#AEB3BA">getautosure.com/pro</text>
+          <line x1="9" y1="48" x2="92" y2="48" stroke="#2E333B" stroke-width=".3"/>
+          <text x="9" y="54" class="s" font-size="2.2" fill="#D5D8DD"><tspan class="w" fill="#fff">Car dealer? </tspan>Dealer Sathi puts your name on every report.</text>
+        </svg>
+        <figcaption>Front · confirm the Pro feature list before print</figcaption>
+      </figure>
+      <figure>
+        <svg viewBox="0 0 101 64" role="img" aria-label="Card back: where to find the OBD port">
+          <rect x="3" y="3" width="95" height="58" rx="2.5" fill="#FFFFFF" stroke="#DDD8D2" stroke-width=".3"/>
+          <text x="9" y="12" class="w" font-size="4" fill="#14171C">Where's my OBD port?</text>
+          <!-- dashboard sketch, right-hand drive -->
+          <g fill="none" stroke="#14171C" stroke-width=".5" stroke-linecap="round">
+            <path d="M9 30 q22 -9 44 0"/>
+            <circle cx="40" cy="31" r="7"/><circle cx="40" cy="31" r="1.6"/>
+            <path d="M40 38 v6"/>
+            <path d="M33 47 h4 M43 47 h4"/>
+          </g>
+          <rect x="43" y="38.5" width="7" height="4.2" rx=".8" fill="#FF6B2C"/>
+          <path d="M53 40.5 h4" stroke="#FF6B2C" stroke-width=".5"/>
+          <text x="58" y="41.4" class="s" font-size="2" fill="#14171C">Usually here</text>
+          <g class="s" font-size="2.3" fill="#3B4048">
+            <text x="60" y="20">Under the dashboard,</text>
+            <text x="60" y="24">near your right knee.</text>
+            <text x="60" y="30">Sometimes behind a</text>
+            <text x="60" y="34">small cover or fuse lid.</text>
+          </g>
+          <line x1="9" y1="51" x2="92" y2="51" stroke="#E2DED8" stroke-width=".3"/>
+          <text x="9" y="56" class="s" font-size="2.1" fill="#3B4048">Help: getautosure.com/help · WhatsApp [number]</text>
+        </svg>
+        <figcaption>Back · white keeps it cheap and easy to read</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">The sticker · Ø 50 mm</span>
+  <h2>"Checked by GetAutoSure"</h2>
+  <div class="cols">
+    <div class="stage">
+      <svg viewBox="0 0 60 60" style="max-width:260px" role="img" aria-label="Round windscreen sticker">
+        <circle cx="30" cy="30" r="25" fill="#14171C"/>
+        <circle cx="30" cy="30" r="23.2" fill="none" stroke="#FF6B2C" stroke-width="1"/>
+        <use href="#mark" x="22" y="11" width="16" height="16"/>
+        <text x="30" y="32" text-anchor="middle" class="m" font-size="2.6" fill="#B9BDC4" letter-spacing=".5">CHECKED BY</text>
+        <text x="30" y="38.5" text-anchor="middle" class="w" font-size="5.4"><tspan fill="#fff">GetAuto</tspan><tspan fill="#FF6B2C">Sure</tspan></text>
+        <text x="30" y="44" text-anchor="middle" class="s" font-size="2.2" fill="#B9BDC4">getautosure.com</text>
+      </svg>
+    </div>
+    <div class="callout">
+      <p>One sticker goes in every box. Owners put it on their own car. Dealers stick it on cars they have scanned, and buyers on the lot see your brand for free.</p>
+      <ul class="clean">
+        <li><b>Material:</b> clear static cling, so it sticks to the inside of the glass with no glue and can be moved from car to car. Ask the vendor to print it in reverse for the inside of the glass.</li>
+        <li><b>Cheaper fallback:</b> a plain vinyl sticker for the outside of the glass.</li>
+        <li><b>Dealers:</b> sell extra stickers in packs of 20 later. They don't need their own box.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Decisions</span>
+  <h2>Price, QR codes and open questions</h2>
+  <div class="cols">
+    <div class="callout">
+      <h3>MRP: ₹1,499</h3>
+      <p>At ₹999 this shows as 33% off, which looks believable. ₹1,999 shows as 50% off, which buyers often read as an inflated MRP on a ₹999 product. The MRP is printed on the box, so decide before the print run.</p>
+    </div>
+    <div class="callout">
+      <h3>QR codes that never change</h3>
+      <p>Print <code>getautosure.com/app</code> and <code>getautosure.com/pro</code>. Until the app is live, <code>/app</code> shows a coming-soon page. After launch, point it at the Play Store link. The printed boxes never need to change.</p>
+      <p class="meta">Print QR codes dark on a white square, at least 15 mm wide, and test-scan the printer's proof.</p>
+    </div>
+  </div>
+  <div class="callout">
+    <h3>Ask the vendor</h3>
+    <ol class="qs">
+      <li>Exact dongle size (L × W × H). At 25.5 mm the box is tight, so the insert needs a full-depth cut-out, not a raised tray.</li>
+      <li>One-time cost for a flip-lid cutting die (option B) vs. reusing their tuck-end die (option A).</li>
+      <li>Extra cost per box for printing inside the lid.</li>
+      <li>Can they apply a front label to the dongle instead of their current prints?</li>
+      <li>Price for the card and the static-cling sticker at your order quantity, and the MOQ.</li>
+      <li>Test reports for CE, FCC and Bluetooth (WPC) for this model, or confirmation to leave the marks off.</li>
+      <li>A printed physical proof of the orange before the full run. Aim close to Pantone 1585 C.</li>
+    </ol>
+  </div>
+</section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+(function(){
+  var NS="http://www.w3.org/2000/svg";
+  document.querySelectorAll("g.qr").forEach(function(g){
+    try{
+      var qr=qrcode(0,"M"); qr.addData(g.dataset.url); qr.make();
+      var n=qr.getModuleCount(), size=+g.dataset.size, s=size/n, x0=+g.dataset.x, y0=+g.dataset.y, d="";
+      for(var r=0;r<n;r++)for(var c=0;c<n;c++)if(qr.isDark(r,c))
+        d+="M"+(x0+c*s).toFixed(3)+" "+(y0+r*s).toFixed(3)+"h"+s.toFixed(3)+"v"+s.toFixed(3)+"h-"+s.toFixed(3)+"z";
+      var p=document.createElementNS(NS,"path"); p.setAttribute("d",d); p.setAttribute("fill",g.dataset.fill); g.appendChild(p);
+    }catch(e){}
+  });
+})();
+</script>

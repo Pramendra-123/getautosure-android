@@ -1,0 +1,101 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>GetAutoSure quiet box render</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap">
+<style>
+  html,body{margin:0;width:1600px;height:1000px;overflow:hidden}
+  body{background:radial-gradient(ellipse 70% 60% at 50% 45%, #EDEBE8 0%, #D6D2CC 55%, #BDB7AF 100%)}
+  .stage{position:absolute;inset:0;perspective:2400px;perspective-origin:50% 20%}
+  .world{position:absolute;left:50%;top:58%;transform-style:preserve-3d}
+  .obj{position:absolute;left:0;top:0;transform-style:preserve-3d}
+  .f{position:absolute;left:0;top:0;overflow:hidden}
+  .f svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .f i{position:absolute;inset:0;pointer-events:none}
+  .shadow{position:absolute;left:0;top:0;border-radius:40px;filter:blur(18px)}
+</style>
+<div class="stage"><div class="world" id="world"></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="art.js"></script>
+<script>
+// Final box: 104 x 86 x 30 mm, soft-touch black, brand colours kept small, orange tray inside a black frame.
+// The dongle lies face up, plug toward the hinge, so its vertical silk-screen reads straight when the lid opens.
+const A = ART, Q = A.quiet, k = 4, BOX = "#17191D", INNER = "#0C0D0F", OR = A.ORANGE, OR_WALL = "#C24A15", NOTCH = "#A9431A";
+const view = location.hash.slice(1) || "open";
+const svg = (w, h, body) => `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${body}</svg>`;
+// 104 x 80 and 80 x 30 artwork centred on the 86 mm depth
+const lid86 = body => svg(104, 86, `<g transform="translate(0 3)">${body}</g>`);
+const side86 = body => svg(86, 30, `<g transform="translate(3 0)">${body}</g>`);
+function face(w, h, t, content, bg, shade = "transparent", origin = "50% 50%", anchorBottom = false) {
+  const m = anchorBottom ? `margin:${-h}px 0 0 ${-w / 2}px` : `margin:${-h / 2}px 0 0 ${-w / 2}px`;
+  return `<div class="f" style="width:${w}px;height:${h}px;${m};transform-origin:${origin};transform:${t};background:${bg}">${content}<i style="background:${shade}"></i></div>`;
+}
+const place = (x, y, z, html, extra = "") => `<div class="obj" style="transform:translate3d(${x}px,${y}px,${z}px) ${extra}">${html}</div>`;
+const flatPlane = (w, d, content, bg, shade) => face(w, d, "rotateX(90deg)", content, bg, shade);
+const SOFT = "linear-gradient(165deg, rgba(255,255,255,.06), rgba(0,0,0,.18))";
+function cuboid(W, H, D, f, bg) {
+  return face(W, H, `translateZ(${D / 2}px)`, f.front || "", bg, SOFT) +
+    face(D, H, `rotateY(90deg) translateZ(${W / 2}px)`, f.right || "", bg, "rgba(0,0,0,.36)") +
+    face(D, H, `rotateY(-90deg) translateZ(${W / 2}px)`, f.left || "", bg, "rgba(0,0,0,.5)") +
+    (f.noTop ? "" : face(W, D, `rotateX(90deg) translateZ(${H / 2}px)`, f.top || "", f.topBg || bg, f.topShade || "linear-gradient(170deg, rgba(255,255,255,.07), rgba(0,0,0,.12))"));
+}
+
+const W = 104 * k, H = 30 * k, D = 86 * k, rimY = -15 * k, floor = 15 * k;
+const shadow = `<div class="shadow" style="width:${W * 1.12}px;height:${D * 1.12}px;margin:${-D * .56}px 0 0 ${-W * .56}px;transform:rotateX(90deg);background:rgba(40,30,20,.42)"></div>`;
+const walls = { front: svg(104, 30, Q.frontWall()), right: side86(Q.rightWall()), left: side86(Q.leftWall()) };
+
+let scene;
+if (view !== "open") {
+  scene = (view === "bottom" ? "" : place(0, floor + 1, 0, shadow)) +
+    cuboid(W, H, D, { ...walls, top: lid86(Q.lidTop()) }, BOX) +
+    face(W, H, `rotateY(180deg) translateZ(${D / 2}px)`, svg(104, 30, Q.backWall()), BOX, SOFT) +
+    face(W, D, `rotateX(-90deg) translateZ(${H / 2}px)`, lid86(A.flat.bottom()), BOX, "rgba(255,255,255,.03)");
+} else {
+  const tray = cuboid(W, H, D, { ...walls, noTop: true }, BOX) +
+    face(W, H, `translateZ(${-D / 2 + 2}px)`, "", INNER, "linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.3))") +
+    face(D, H, `rotateY(90deg) translateZ(${-W / 2 + 2}px)`, "", INNER, "rgba(0,0,0,.2)") +
+    face(D, H, `rotateY(-90deg) translateZ(${-W / 2 + 2}px)`, "", INNER, "rgba(0,0,0,.2)") +
+    place(0, 0, D / 2 - 2, face(W, H, "", "", INNER, "rgba(255,255,255,.03)"));
+
+  // insert 4 mm below the rim: 5 mm black border, orange field, 47 x 67 pocket, thumb notch on the right
+  const iy = rimY + 4 * k, hx = 23.5, hz = 33.5, ex = 45, ez = 36, bx = 50, bz = 41;
+  const ISH = "linear-gradient(170deg, rgba(255,255,255,.10), rgba(0,0,0,.08))";
+  const FR = "linear-gradient(170deg, rgba(255,255,255,.05), rgba(0,0,0,.1))";
+  const notch = `<div style="position:absolute;width:${12 * k}px;height:${12 * k}px;border-radius:50%;background:${NOTCH};left:${-6 * k}px;top:${(ez + 6 - 6) * k}px;box-shadow:inset 0 0 ${2.5 * k}px rgba(0,0,0,.5)"></div>`;
+  const insert =
+    place(-(bx + ex) / 2 * k, iy, 0, flatPlane((bx - ex) * k, 2 * bz * k, "", INNER, FR)) +
+    place((bx + ex) / 2 * k, iy, 0, flatPlane((bx - ex) * k, 2 * bz * k, "", INNER, FR)) +
+    place(0, iy, (bz + ez) / 2 * k, flatPlane(2 * ex * k, (bz - ez) * k, "", INNER, FR)) +
+    place(0, iy, -(bz + ez) / 2 * k, flatPlane(2 * ex * k, (bz - ez) * k, "", INNER, FR)) +
+    place(-(ex + hx) / 2 * k, iy, 0, flatPlane((ex - hx) * k, 2 * ez * k, "", OR, ISH)) +
+    place((ex + hx) / 2 * k, iy, 0, flatPlane((ex - hx) * k, 2 * ez * k, notch, OR, ISH)) +
+    place(0, iy, (hz + ez) / 2 * k, flatPlane(2 * hx * k, (ez - hz) * k, "", OR, ISH)) +
+    place(0, iy, -(hz + ez) / 2 * k, flatPlane(2 * hx * k, (ez - hz) * k, "", OR, ISH)) +
+    place(0, iy + 13 * k, -hz * k, face(2 * hx * k, 26 * k, "", "", OR_WALL, "linear-gradient(180deg, rgba(0,0,0,.1), rgba(0,0,0,.5))")) +
+    place(-hx * k, iy + 13 * k, 0, face(2 * hz * k, 26 * k, "rotateY(90deg)", "", OR_WALL, "rgba(0,0,0,.4)"));
+
+  // dongle: body 46 (x) x 25 (y) x 50 (z), plug 39 x 16 x 15 toward the hinge
+  const lbl = `<div style="position:absolute;inset:${0.6 * k}px ${2 * k}px">${A.labelMinimal().replace('width="42mm" height="50.6mm"', 'width="100%" height="100%" preserveAspectRatio="xMidYMid meet"')}</div>`;
+  const dy = floor - 1 * k - 12.5 * k;
+  const dongle =
+    place(0, dy, 8 * k, cuboid(46 * k, 25 * k, 50 * k, { top: lbl, topBg: "#141619", topShade: "linear-gradient(170deg, rgba(255,255,255,.06), rgba(0,0,0,.14))" }, "#141619")) +
+    place(0, dy, -24.5 * k, cuboid(39 * k, 16 * k, 15 * k, {}, "#0F1013"));
+
+  const lid = place(0, rimY, -D / 2, face(W, D, "rotateX(14deg)", lid86(Q.lidInside()), BOX,
+    "linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.14))", "50% 100%", true));
+
+  scene = place(0, floor + 1, 0, shadow) + tray + insert + dongle + lid;
+}
+const VIEWS = {
+  open: "rotateX(-38deg) rotateY(-18deg) scale3d(1.2,1.2,1.2)",
+  top: "rotateX(-62deg) rotateY(-12deg) scale3d(1.55,1.55,1.55)",
+  front: "rotateX(-16deg) rotateY(-16deg) scale3d(2,2,2)",
+  back: "rotateX(-16deg) rotateY(196deg) scale3d(2,2,2)",
+  left: "rotateX(-16deg) rotateY(70deg) scale3d(2,2,2)",
+  right: "rotateX(-16deg) rotateY(-70deg) scale3d(2,2,2)",
+  bottom: "rotateX(88deg) scale3d(1.6,1.6,1.6)",
+};
+const world = document.getElementById("world");
+world.style.transform = VIEWS[view];
+world.style.top = view === "open" ? "68%" : (["front", "back", "left", "right"].includes(view) ? "50%" : "55%");
+world.innerHTML = scene;
+</script>
