@@ -100,6 +100,12 @@ dependencies {
     // Coil 2's long-stable release, compatible with this project's existing toolchain as-is.
     implementation("io.coil-kt:coil-compose:2.7.0")
 
+    // 100ms Room Kit: the ready-made video-call screen for expert consultations. The app only
+    // fetches a short-lived token from the consultations backend and hands it to
+    // HMSRoomKit.launchPrebuiltUsingAuthToken; the call UI, camera/mic handling and permissions
+    // are all Room Kit's.
+    implementation("live.100ms:room-kit:1.3.10")
+
     val composeBom = platform("androidx.compose:compose-bom:2024.06.00")
     implementation(composeBom)
     implementation("androidx.compose.ui:ui")

@@ -29,6 +29,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import com.enginesense.app.consultation.ConsultationViewModel
+import com.enginesense.app.consultation.MechanicViewModel
 import com.enginesense.app.ui.screens.*
 import com.enginesense.app.vehicle.HealthCategory
 import com.enginesense.app.ui.theme.GetAutoSureTheme
@@ -92,6 +93,7 @@ private val BOTTOM_TABS = listOf(
 @Composable
 fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
     val consultationViewModel: ConsultationViewModel = viewModel()
+    val mechanicViewModel: MechanicViewModel = viewModel()
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -436,8 +438,17 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 ExpertListScreen(
                     consultationViewModel,
                     onSelectExpert = { expertId -> navController.navigate("expertProfile/${encodeRouteArg(expertId)}") },
-                    onMyConsultations = { navController.navigate("myConsultations") }
+                    onMyConsultations = { navController.navigate("myConsultations") },
+                    onMechanicMode = { navController.navigate("mechanic") }
                 )
+            }
+            // Mechanic mode: a mechanic signed in with their linked Google account manages their own
+            // hours, leave and calls.
+            composable("mechanic") {
+                MechanicHomeScreen(mechanicViewModel, onEditHours = { navController.navigate("mechanicHours") })
+            }
+            composable("mechanicHours") {
+                MechanicHoursScreen(mechanicViewModel, onSaved = { navController.popBackStack() })
             }
             composable(
                 "expertProfile/{expertId}",
@@ -481,7 +492,6 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 booking?.let {
                     BookingConfirmationScreen(
                         consultationViewModel, it,
-                        onJoin = { /* Phase 5: real 100ms join flow — no-op until then */ },
                         onViewMyConsultations = { navController.navigate("myConsultations") { popUpTo("expertList") } }
                     )
                 } ?: LaunchedEffect(Unit) { navController.popBackStack() }

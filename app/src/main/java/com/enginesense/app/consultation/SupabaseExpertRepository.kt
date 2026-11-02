@@ -36,7 +36,7 @@ class SupabaseExpertRepository(
     private val idTokenProvider: suspend () -> String,
     timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS,
     private val httpClient: OkHttpClient = defaultHttpClient(timeoutMillis)
-) : ExpertRepository {
+) : ExpertRepository, MechanicRepository {
 
     override suspend fun listActiveExperts(): List<Expert> {
         val json = postAction(action = "list_experts", requiresAuth = false)
@@ -72,6 +72,43 @@ class SupabaseExpertRepository(
         postAction(action = "cancel_booking", requiresAuth = true) { put("consultationId", bookingId) }
         Unit
     }
+
+    override suspend fun videoJoinToken(bookingId: String): Result<String> = runCatchingApi {
+        postAction(action = "join_video", requiresAuth = true) { put("consultationId", bookingId) }.getString("authToken")
+    }
+
+    // ---- Mechanic mode: throws ConsultationApiException subtypes rather than wrapping in Result,
+    // since MechanicViewModel handles every call's failure the same way.
+
+    override suspend fun me(): MechanicProfile {
+        val json = postAction(action = "expert_me", requiresAuth = true)
+        return MechanicProfile(expertFromJson(json.getJSONObject("expert")), json.getString("email"))
+    }
+
+    override suspend fun schedule(): MechanicSchedule =
+        MechanicJson.schedule(postAction(action = "expert_get_schedule", requiresAuth = true))
+
+    override suspend fun setWeeklyHours(hours: List<WeeklyHours>): MechanicSchedule =
+        MechanicJson.schedule(postAction(action = "expert_set_weekly_hours", requiresAuth = true) {
+            put("hours", JSONArray(hours.map { JSONObject().put("weekday", it.weekday).put("start", it.start).put("end", it.end) }))
+        })
+
+    override suspend fun addLeave(startDate: String, endDate: String): MechanicSchedule =
+        MechanicJson.schedule(postAction(action = "expert_add_leave", requiresAuth = true) {
+            put("startDate", startDate)
+            put("endDate", endDate)
+        })
+
+    override suspend fun removeLeave(leaveId: String): MechanicSchedule =
+        MechanicJson.schedule(postAction(action = "expert_remove_leave", requiresAuth = true) { put("leaveId", leaveId) })
+
+    override suspend fun bookings(): List<MechanicBooking> {
+        val array = postAction(action = "expert_bookings", requiresAuth = true).getJSONArray("bookings")
+        return (0 until array.length()).map { MechanicJson.booking(array.getJSONObject(it)) }
+    }
+
+    override suspend fun mechanicJoinToken(bookingId: String): String =
+        postAction(action = "expert_join_video", requiresAuth = true) { put("consultationId", bookingId) }.getString("authToken")
 
     private suspend fun postAction(action: String, requiresAuth: Boolean, extra: JSONObject.() -> Unit = {}): JSONObject {
         val body = JSONObject().apply {

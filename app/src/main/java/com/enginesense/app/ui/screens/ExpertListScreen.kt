@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.enginesense.app.consultation.ConsultationBackendConfig
 import com.enginesense.app.consultation.ConsultationPricing
 import com.enginesense.app.consultation.ConsultationViewModel
 import com.enginesense.app.consultation.Expert
@@ -25,7 +26,7 @@ import com.enginesense.app.ui.theme.GetAutoSureType
 
 /** Header, pricing, and the expert card list — everything here currently comes from [com.enginesense.app.consultation.MockExpertRepository], see that class's doc for why the visible preview banner matters. */
 @Composable
-fun ExpertListScreen(viewModel: ConsultationViewModel, onSelectExpert: (String) -> Unit, onMyConsultations: () -> Unit) {
+fun ExpertListScreen(viewModel: ConsultationViewModel, onSelectExpert: (String) -> Unit, onMyConsultations: () -> Unit, onMechanicMode: () -> Unit) {
     val expertsState by viewModel.experts.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
@@ -60,14 +61,21 @@ fun ExpertListScreen(viewModel: ConsultationViewModel, onSelectExpert: (String) 
                 if (state.data.isEmpty()) {
                     Text("No experts available right now — check back soon.", style = GetAutoSureType.Caption)
                 } else {
-                    Text(
-                        "Preview data — these are illustrative profiles for testing, not real experts yet.",
-                        style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Attention)
-                    )
-                    Spacer(Modifier.height(12.dp))
+                    if (!ConsultationBackendConfig.isConfigured) {
+                        Text(
+                            "Preview data — these are illustrative profiles for testing, not real experts yet.",
+                            style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Attention)
+                        )
+                        Spacer(Modifier.height(12.dp))
+                    }
                     state.data.forEach { expert -> ExpertCard(expert, onClick = { onSelectExpert(expert.id) }) }
                 }
             }
+        }
+
+        Spacer(Modifier.height(24.dp))
+        TextButton(onClick = onMechanicMode, modifier = Modifier.fillMaxWidth()) {
+            Text("Are you a GetAutoSure mechanic? Open Mechanic mode")
         }
     }
 }

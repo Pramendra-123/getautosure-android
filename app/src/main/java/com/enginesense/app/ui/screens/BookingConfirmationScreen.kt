@@ -1,5 +1,8 @@
 package com.enginesense.app.ui.screens
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -21,15 +24,38 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.delay
+import live.hms.roomkit.ui.HMSPrebuiltOptions
+import live.hms.roomkit.ui.HMSRoomKit
 
 /** How long before a slot's start time the Join button becomes available — matches typical video-consultation UX (early enough to not feel late, not so early it's pointless). */
 private val JOIN_WINDOW_OPENS_BEFORE_MILLIS = TimeUnit.MINUTES.toMillis(5)
 
+/** Matches the backend's overrun allowance (OVERRUN_MINUTES in the consultations function's video.ts), so a call running a little long can still be rejoined. */
+private val JOIN_WINDOW_CLOSES_AFTER_MILLIS = TimeUnit.MINUTES.toMillis(10)
+
+internal tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
 @Composable
-fun BookingConfirmationScreen(viewModel: ConsultationViewModel, booking: ConsultationBooking, onJoin: () -> Unit, onViewMyConsultations: () -> Unit) {
+fun BookingConfirmationScreen(viewModel: ConsultationViewModel, booking: ConsultationBooking, onViewMyConsultations: () -> Unit) {
     val context = LocalContext.current
-    val now = remember { System.currentTimeMillis() }
-    val canJoin = now in (booking.slotStartEpochMillis - JOIN_WINDOW_OPENS_BEFORE_MILLIS)..booking.slotEndEpochMillis
+    // Ticks so the Join button switches on by itself when the window opens while this screen is up.
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(15_000)
+            now = System.currentTimeMillis()
+        }
+    }
+    val inJoinWindow = now in (booking.slotStartEpochMillis - JOIN_WINDOW_OPENS_BEFORE_MILLIS)..(booking.slotEndEpochMillis + JOIN_WINDOW_CLOSES_AFTER_MILLIS)
+    // The backend checks all of this again before issuing a token; this only keeps the button honest.
+    val canJoin = booking.status == BookingStatus.CONFIRMED && inJoinWindow
+    var joining by remember { mutableStateOf(false) }
+    var joinError by remember { mutableStateOf<String?>(null) }
     // Mirrors the Edge Function's own enforcement (cancel_booking action) — this is a UX
     // convenience so the button visibly disables itself, not the real guarantee; the backend
     // checks this independently and is the actual authority, same "never trust the client"
@@ -64,18 +90,36 @@ fun BookingConfirmationScreen(viewModel: ConsultationViewModel, booking: Consult
         if (booking.status != BookingStatus.CANCELLED) {
             Spacer(Modifier.height(20.dp))
             Button(
-                onClick = onJoin,
-                enabled = canJoin,
+                onClick = {
+                    val activity = context.findActivity() ?: return@Button
+                    joining = true
+                    joinError = null
+                    viewModel.requestVideoJoinToken(booking.id, context) { result ->
+                        joining = false
+                        result
+                            .onSuccess { token -> HMSRoomKit.launchPrebuiltUsingAuthToken(token, activity, HMSPrebuiltOptions(userName = "Customer")) }
+                            .onFailure { e -> joinError = e.message ?: "Couldn't join the call" }
+                    }
+                },
+                enabled = canJoin && !joining,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(Icons.Filled.Videocam, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Join Consultation")
+                Text(if (joining) "Connecting…" else "Join video call")
+            }
+            joinError?.let {
+                Spacer(Modifier.height(6.dp))
+                Text(it, style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Attention))
             }
             if (!canJoin) {
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    "The Join button becomes active 5 minutes before your consultation starts.",
+                    when {
+                        booking.status == BookingStatus.PENDING_PAYMENT -> "You can join once your booking is confirmed."
+                        now > booking.slotEndEpochMillis + JOIN_WINDOW_CLOSES_AFTER_MILLIS -> "This consultation's time has passed."
+                        else -> "The Join button becomes active 5 minutes before your consultation starts."
+                    },
                     style = GetAutoSureType.Caption
                 )
             }

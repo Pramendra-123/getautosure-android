@@ -163,6 +163,21 @@ class ConsultationViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
+    /** Fetches the 100ms token for [bookingId]; the screen launches the call with it. Errors carry the backend's own message (e.g. "too early to join") when it sent one. */
+    fun requestVideoJoinToken(bookingId: String, uiContext: Context, onResult: (Result<String>) -> Unit) {
+        authUiContext = uiContext
+        viewModelScope.launch {
+            try {
+                val result = repository.videoJoinToken(bookingId)
+                onResult(result.recoverCatching { e ->
+                    throw IllegalStateException((e as? ConsultationHttpException)?.serverMessage ?: e.message ?: "Couldn't join the call", e)
+                })
+            } finally {
+                authUiContext = null
+            }
+        }
+    }
+
     fun clearActiveBooking() {
         _activeBooking.value = null
     }

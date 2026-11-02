@@ -30,6 +30,13 @@ interface ExpertRepository {
     suspend fun confirmBookingAfterPayment(bookingId: String): Result<ConsultationBooking>
 
     suspend fun cancelBooking(bookingId: String): Result<Unit>
+
+    /**
+     * A short-lived 100ms auth token for joining this booking's video call. The backend only
+     * issues one for the customer's own confirmed booking, inside the join window, and it expires
+     * when the window closes.
+     */
+    suspend fun videoJoinToken(bookingId: String): Result<String>
 }
 
 /**
@@ -123,4 +130,8 @@ class MockExpertRepository : ExpertRepository {
         bookings[bookingId] = existing.copy(status = BookingStatus.CANCELLED)
         return Result.success(Unit)
     }
+
+    /** Preview data has no real room to join. */
+    override suspend fun videoJoinToken(bookingId: String): Result<String> =
+        Result.failure(IllegalStateException("Video calls need the live consultation service."))
 }
