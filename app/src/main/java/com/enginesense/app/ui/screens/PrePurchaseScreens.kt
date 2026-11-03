@@ -115,8 +115,7 @@ private fun PriceCard(
     model: String?, onModel: (String) -> Unit,
     variant: Variant, onVariant: (Variant) -> Unit,
     yearInput: String, onYear: (String) -> Unit, autoYear: Int?, autoYearSource: String?,
-    exactPrice: String, onExactPrice: (String) -> Unit,
-    newPriceUsed: Double?, newPriceFromTable: Boolean
+    newPriceUsed: Double?
 ) {
     Card(colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -147,14 +146,6 @@ private fun PriceCard(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(
-                value = exactPrice,
-                onValueChange = { onExactPrice(it.filter(Char::isDigit)) },
-                label = { Text("Exact ex-showroom price (optional, ₹)") },
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
 
             Spacer(Modifier.height(12.dp))
             val value = report.value
@@ -181,7 +172,7 @@ private fun PriceCard(
                 newPriceUsed?.let {
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        "New price used: ₹${formatRupees(it)}" + if (newPriceFromTable) " (approx. ex-showroom, ${variant.label.lowercase()} variant)" else " (as entered)",
+                        "New price used: ₹${formatRupees(it)} (approx. ex-showroom, ${variant.label.lowercase()} variant)",
                         style = GetAutoSureType.Caption
                     )
                 }
@@ -249,7 +240,6 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: (
     val rcViewModel: PurchaseRcCheckViewModel = viewModel()
     val rcState by rcViewModel.state.collectAsState()
     var dashboardInput by remember { mutableStateOf("") }
-    var exactPriceInput by remember { mutableStateOf("") }
     var yearInput by remember { mutableStateOf("") }
     var make by remember { mutableStateOf<String?>(null) }
     var model by remember { mutableStateOf<String?>(null) }
@@ -276,9 +266,9 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: (
         }
         val vinYear = VinHints.modelYear(r.vehicleId.vin, currentYear)
         val autoYear = rcPrefill?.year ?: vinYear
-        val autoYearSource = if (rcPrefill?.year != null) "RTO record" else "chassis number"
+        val autoYearSource = if (rcPrefill?.year != null) "RTO record" else "car's computer"
         val tableRange = ExShowroomPrices.lookup(make, model)
-        val newPrice = exactPriceInput.toDoubleOrNull()?.takeIf { it > 0 } ?: tableRange?.priceFor(variant)
+        val newPrice = tableRange?.priceFor(variant)
 
         val report = PrePurchaseReportBuilder.build(
             findings = r.findings, healthScore = r.health.score, readiness = r.readiness, snapshot = r.snapshot,
@@ -287,7 +277,7 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: (
             currentYear = currentYear,
             exteriorCounts = exteriorCounts.toMap()
         )
-        // The report's verdict also counts the buyer's own checks (odometer, chassis), so the screen uses it too.
+        // The report's verdict also counts the buyer's own checks (odometer, RTO record), so the screen uses it too.
         val (color, emoji) = when (report.verdict) {
             PurchaseVerdict.GOOD_BUY -> GetAutoSureColors.Good to "🟢"
             PurchaseVerdict.BUY_WITH_CAUTION -> GetAutoSureColors.Watch to "🟡"
@@ -363,25 +353,8 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: (
             model = model, onModel = { model = it },
             variant = variant, onVariant = { variant = it },
             yearInput = yearInput, onYear = { yearInput = it }, autoYear = autoYear, autoYearSource = autoYearSource,
-            exactPrice = exactPriceInput, onExactPrice = { exactPriceInput = it },
-            newPriceUsed = newPrice, newPriceFromTable = exactPriceInput.toDoubleOrNull() == null && tableRange != null
+            newPriceUsed = newPrice
         )
-
-        Spacer(Modifier.height(16.dp))
-        Text(
-            "Second opinion: these sites also look at local listings.",
-            style = GetAutoSureType.Caption
-        )
-        Spacer(Modifier.height(8.dp))
-        OutlinedButton(
-            onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.cardekho.com/used-car-valuation.htm"))) },
-            modifier = Modifier.fillMaxWidth()
-        ) { Text("CarDekho SmartPrice →") }
-        Spacer(Modifier.height(8.dp))
-        OutlinedButton(
-            onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.cars24.com/used-car-valuation/"))) },
-            modifier = Modifier.fillMaxWidth()
-        ) { Text("Cars24 Valuation →") }
 
         SectionHeader("Pre-purchase report", "A PDF of everything above — red flags, odometer, RTO record, repair costs and value")
         PrePurchaseReportActions(r, report, onViewPdf)
@@ -508,11 +481,7 @@ private fun ChecksCard(checks: List<PurchaseCheck>) {
     }
 }
 
-/**
- * Official RTO record for the car being bought (via the vehicle-lookup function), plus whether
- * the VIN its computer reports matches the RC's chassis number. The match is decided server-side
- * and comes back as yes/no/can't-tell — customer mode never sees the chassis number itself.
- */
+/** Official RTO record for the car being bought (via the vehicle-lookup function), shown in full. */
 @Composable
 internal fun VehicleIdentityCard(vin: String?, isDemo: Boolean) {
     if (isDemo) return
@@ -526,7 +495,7 @@ internal fun VehicleIdentityCard(vin: String?, isDemo: Boolean) {
             Text("Check against RTO records", style = GetAutoSureType.Body)
             Spacer(Modifier.height(4.dp))
             Text(
-                "See the official manufacturing year and whether this car's computer matches the chassis number on its RC.",
+                "Get the car's official record: make and model, year, fuel, engine, insurance, PUC, fitness and road tax.",
                 style = GetAutoSureType.Caption
             )
             Spacer(Modifier.height(8.dp))
@@ -545,7 +514,7 @@ internal fun VehicleIdentityCard(vin: String?, isDemo: Boolean) {
             ) { Text(if (state == PurchaseRcState.Looking) "Checking RTO records…" else "Check RTO records") }
 
             when (val s = state) {
-                is PurchaseRcState.Found -> RcCheckResult(s.result, vinReported = vin != null)
+                is PurchaseRcState.Found -> RcCheckResult(s.result)
                 is PurchaseRcState.Failed -> {
                     Spacer(Modifier.height(8.dp))
                     Text(s.message, style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Attention))
@@ -558,30 +527,39 @@ internal fun VehicleIdentityCard(vin: String?, isDemo: Boolean) {
 }
 
 @Composable
-private fun RcCheckResult(rc: RcLookupResult, vinReported: Boolean) {
+private fun RcCheckResult(rc: RcLookupResult) {
     Spacer(Modifier.height(12.dp))
-    val car = listOfNotNull(rc.make, rc.model).joinToString(" ")
-    if (car.isNotBlank()) Text("RTO record: $car", style = GetAutoSureType.Body)
-    listOfNotNull(
-        PurchaseRcCheckViewModel.formatMonth(rc.manufacturingMonth)?.let { "Manufactured: $it" },
-        rc.registrationDate?.let { "Registered: $it" },
-        rc.insuranceUpto?.let { "Insurance valid until: $it" },
-        rc.puccUpto?.let { "PUC valid until: $it" }
-    ).forEach { Text(it, style = GetAutoSureType.Caption) }
-    Text("Compare these with what the seller told you.", style = GetAutoSureType.Caption)
-
+    Text("RTO record", style = GetAutoSureType.Body)
+    Spacer(Modifier.height(4.dp))
+    // Everything the record has, the same rows the PDF prints. Chassis and engine numbers are left out.
+    com.enginesense.app.vehiclelookup.RtoRecord.vehicleRows(rc).forEach { RcRow(it.label, it.value, if (it.concern) GetAutoSureColors.Attention else null) }
+    com.enginesense.app.vehiclelookup.RtoRecord.dealerRows(rc)
+        .filterNot { it.label.startsWith("Chassis") || it.label.startsWith("Engine no") }
+        .forEach { RcRow(it.label, it.value, if (it.concern) GetAutoSureColors.Attention else null) }
     Spacer(Modifier.height(8.dp))
-    val (text, color) = when {
-        !vinReported -> "This car's computer didn't report a VIN, so the chassis couldn't be checked automatically. Check that the chassis number stamped on the body matches the RC." to GetAutoSureColors.Watch
-        rc.chassisMatch == true -> "🟢 This car's computer matches the chassis number on the RC." to GetAutoSureColors.Good
-        rc.chassisMatch == false -> ("🔴 This car's computer doesn't match the chassis number on the RC. Ask the seller — the engine computer may have been replaced, " +
-            "or the car may not match its papers. Check the chassis number stamped on the body.") to GetAutoSureColors.Attention
-        else -> "The RTO record doesn't show enough of the chassis number to compare. Check that the number stamped on the body matches the RC." to GetAutoSureColors.Watch
+    Text("Valid until", style = GetAutoSureType.Caption.copy(fontWeight = FontWeight.SemiBold))
+    com.enginesense.app.vehiclelookup.RtoRecord.validity(rc, java.time.LocalDate.now()).forEach { line ->
+        val color = when (line.status) {
+            com.enginesense.app.vehiclelookup.ValidityStatus.VALID, com.enginesense.app.vehiclelookup.ValidityStatus.LIFETIME -> GetAutoSureColors.Good
+            com.enginesense.app.vehiclelookup.ValidityStatus.EXPIRES_SOON -> GetAutoSureColors.Watch
+            com.enginesense.app.vehiclelookup.ValidityStatus.EXPIRED -> GetAutoSureColors.Attention
+            com.enginesense.app.vehiclelookup.ValidityStatus.UNKNOWN -> null
+        }
+        RcRow(line.label, line.display, color)
     }
-    Text(text, style = GetAutoSureType.Caption.copy(color = color))
+    Spacer(Modifier.height(6.dp))
+    Text("Compare these with what the seller told you and the RC they hand over.", style = GetAutoSureType.Caption)
     if (rc.partial) {
         Spacer(Modifier.height(4.dp))
         Text("Some details aren't available from the RTO for this car.", style = GetAutoSureType.Caption)
+    }
+}
+
+@Composable
+private fun RcRow(label: String, value: String, valueColor: Color?) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+        Text(label, style = GetAutoSureType.Caption, modifier = Modifier.weight(0.42f))
+        Text(value, style = GetAutoSureType.Caption.copy(color = valueColor ?: GetAutoSureColors.TextPrimary), modifier = Modifier.weight(0.58f))
     }
 }
 

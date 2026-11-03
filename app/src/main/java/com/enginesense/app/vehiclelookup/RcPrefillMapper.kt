@@ -55,6 +55,7 @@ object RcPrefillMapper {
         "Isuzu" to listOf("ISUZU"),
         "Fiat" to listOf("FIAT", "FCA"),
         "Mitsubishi" to listOf("MITSUBISHI"),
+        "Chevrolet" to listOf("CHEVROLET", "GENERAL MOTORS"),
     )
 
     /** Upper-case letters and digits only — "Grand i10 Nios" and "GRAND I10 NIOS SPORTZ" compare cleanly. */

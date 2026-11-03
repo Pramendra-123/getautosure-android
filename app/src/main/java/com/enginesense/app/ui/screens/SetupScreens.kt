@@ -38,23 +38,23 @@ val VEHICLE_MAKES = listOf(
     "Maruti Suzuki", "Hyundai", "Tata", "Mahindra", "Kia", "Honda", "Toyota",
     "Volkswagen", "Skoda", "Renault", "Nissan", "Ford", "MG Motor", "Jeep",
     "Citroen", "BYD", "Mercedes-Benz", "BMW", "Audi", "Volvo", "Land Rover",
-    "Jaguar", "Lexus", "Isuzu", "Fiat", "Mitsubishi", "Datsun"
+    "Jaguar", "Lexus", "Isuzu", "Fiat", "Mitsubishi", "Chevrolet", "Datsun"
 )
 
-/** Common current/recent models per make — a dropdown instead of free text, per feedback. Not exhaustive; "Other / not sure" always available. */
+/** Common models per make — current ones first, then older and discontinued ones, since used cars are mostly older. Not exhaustive; "Other / not sure" always available. */
 val MODELS_BY_MAKE: Map<String, List<String>> = mapOf(
-    "Maruti Suzuki" to listOf("Swift", "Baleno", "Dzire", "WagonR", "Alto", "Celerio", "Ertiga", "Brezza", "Ignis", "S-Presso", "XL6", "Fronx", "Jimny", "Grand Vitara", "Invicto"),
-    "Hyundai" to listOf("Grand i10 Nios", "i20", "Venue", "Creta", "Verna", "Alcazar", "Exter", "Aura", "Tucson", "Ioniq 5"),
-    "Tata" to listOf("Nexon", "Punch", "Tiago", "Tigor", "Altroz", "Harrier", "Safari", "Curvv"),
-    "Mahindra" to listOf("XUV300", "XUV700", "Scorpio Classic", "Scorpio-N", "Thar", "Bolero", "XUV400", "Marazzo"),
+    "Maruti Suzuki" to listOf("Swift", "Baleno", "Dzire", "WagonR", "Alto", "Celerio", "Ertiga", "Brezza", "Ignis", "S-Presso", "XL6", "Fronx", "Jimny", "Grand Vitara", "Invicto", "Omni", "Eeco", "Gypsy", "Zen Estilo", "A-Star", "Ritz", "SX4", "Ciaz", "S-Cross", "Esteem", "Maruti 800"),
+    "Hyundai" to listOf("Grand i10 Nios", "i20", "Venue", "Creta", "Verna", "Alcazar", "Exter", "Aura", "Tucson", "Ioniq 5", "Santro", "Grand i10", "i10", "Eon", "Xcent", "Getz", "Accent", "Elantra", "Santa Fe"),
+    "Tata" to listOf("Nexon", "Punch", "Tiago", "Tigor", "Altroz", "Harrier", "Safari", "Curvv", "Indica", "Indigo", "Nano", "Zest", "Bolt", "Hexa", "Sumo"),
+    "Mahindra" to listOf("XUV300", "XUV700", "Scorpio Classic", "Scorpio-N", "Thar", "Bolero", "XUV400", "Marazzo", "XUV 3XO", "Scorpio", "XUV500", "KUV100", "TUV300", "Xylo", "Quanto"),
     "Kia" to listOf("Seltos", "Sonet", "Carens", "Carnival", "EV6"),
-    "Honda" to listOf("City", "Amaze", "Elevate", "WR-V", "Jazz"),
-    "Toyota" to listOf("Innova Crysta", "Fortuner", "Glanza", "Urban Cruiser Hyryder", "Camry", "Rumion", "Hilux"),
-    "Volkswagen" to listOf("Polo", "Vento", "Taigun", "Virtus", "Tiguan"),
-    "Skoda" to listOf("Slavia", "Kushaq", "Octavia", "Superb", "Kodiaq"),
-    "Renault" to listOf("Kwid", "Triber", "Kiger"),
-    "Nissan" to listOf("Magnite", "Kicks"),
-    "Ford" to listOf("EcoSport", "Figo", "Endeavour", "Aspire"),
+    "Honda" to listOf("City", "Amaze", "Elevate", "WR-V", "Jazz", "Brio", "Mobilio", "BR-V", "Civic", "Accord", "CR-V"),
+    "Toyota" to listOf("Innova Crysta", "Fortuner", "Glanza", "Urban Cruiser Hyryder", "Camry", "Rumion", "Hilux", "Innova", "Innova Hycross", "Etios", "Etios Liva", "Corolla Altis"),
+    "Volkswagen" to listOf("Polo", "Vento", "Taigun", "Virtus", "Tiguan", "Ameo", "Jetta", "Passat"),
+    "Skoda" to listOf("Slavia", "Kushaq", "Octavia", "Superb", "Kodiaq", "Rapid", "Fabia", "Laura"),
+    "Renault" to listOf("Kwid", "Triber", "Kiger", "Duster", "Pulse", "Scala", "Lodgy"),
+    "Nissan" to listOf("Magnite", "Kicks", "Micra", "Sunny", "Terrano"),
+    "Ford" to listOf("EcoSport", "Figo", "Endeavour", "Aspire", "Fiesta", "Freestyle", "Ikon"),
     "MG Motor" to listOf("Hector", "Astor", "ZS EV", "Comet", "Gloster"),
     "Jeep" to listOf("Compass", "Meridian", "Wrangler"),
     "Citroen" to listOf("C3", "C3 Aircross", "eC3", "Basalt"),
@@ -67,9 +67,10 @@ val MODELS_BY_MAKE: Map<String, List<String>> = mapOf(
     "Jaguar" to listOf("XF", "F-Pace"),
     "Lexus" to listOf("ES", "NX", "RX"),
     "Isuzu" to listOf("D-Max", "MU-X", "V-Cross"),
-    "Fiat" to listOf("Punto", "Linea"),
-    "Mitsubishi" to listOf("Pajero Sport"),
-    "Datsun" to listOf("GO", "GO+")
+    "Fiat" to listOf("Punto", "Linea", "Palio"),
+    "Mitsubishi" to listOf("Pajero Sport", "Lancer", "Outlander"),
+    "Chevrolet" to listOf("Beat", "Spark", "Sail", "Cruze", "Enjoy", "Tavera", "Aveo"),
+    "Datsun" to listOf("GO", "GO+", "redi-GO")
 )
 
 const val OTHER_MODEL = "Other / not sure"

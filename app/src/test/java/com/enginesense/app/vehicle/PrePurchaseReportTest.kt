@@ -39,14 +39,14 @@ class PrePurchaseReportTest {
     )
 
     @Test
-    fun `a clean car with matching odometer and chassis is a good buy with nothing to pay for`() {
+    fun `a clean car with matching odometer is a good buy with nothing to pay for`() {
         val report = build(dashboardKm = 60_100.0, rc = rc())
         assertEquals(PurchaseVerdict.GOOD_BUY, report.verdict)
         assertTrue(report.redFlags.isEmpty())
         assertTrue(report.faults.isEmpty())
         assertEquals(0, report.repairMaxInr)
         assertEquals(CheckOutcome.CLEAR, report.checks.first { it.label.startsWith("Odometer") }.outcome)
-        assertEquals(CheckOutcome.CLEAR, report.checks.first { it.label.startsWith("Chassis") }.outcome)
+        assertTrue(report.checks.none { it.label.startsWith("Chassis") })
         assertEquals("MH12AB1234", report.registration)
     }
 
@@ -62,14 +62,10 @@ class PrePurchaseReportTest {
     }
 
     @Test
-    fun `a chassis mismatch is a red flag, and an unknown one is not reported rather than passed`() {
+    fun `the chassis number isn't checked, so a mismatch reported by the server raises nothing`() {
         val mismatch = build(rc = rc(chassisMatch = false))
-        assertTrue(mismatch.redFlags.any { it.title.contains("RC") })
-        assertEquals(CheckOutcome.FLAGGED, mismatch.checks.first { it.label.startsWith("Chassis") }.outcome)
-
-        val unknown = build(rc = rc(chassisMatch = null))
-        assertTrue(unknown.redFlags.isEmpty())
-        assertEquals(CheckOutcome.NOT_AVAILABLE, unknown.checks.first { it.label.startsWith("Chassis") }.outcome)
+        assertTrue(mismatch.redFlags.isEmpty())
+        assertTrue(mismatch.checks.none { it.label.startsWith("Chassis") })
         assertEquals(CheckOutcome.NOT_AVAILABLE, build().checks.first { it.label.startsWith("Odometer") }.outcome)
     }
 
@@ -114,16 +110,11 @@ class PrePurchaseReportTest {
     fun `fair value is never guessed without a price or a year`() {
         val noPrice = build(year = 2019)
         assertNull(noPrice.value)
-        assertTrue(noPrice.valueMissingReason!!.contains("ex-showroom"))
+        assertTrue(noPrice.valueMissingReason!!.contains("make and model"))
 
         val noYear = build(price = 800_000.0)
         assertNull(noYear.value)
         assertTrue(noYear.valueMissingReason!!.contains("year"))
-    }
-
-    @Test
-    fun `a chassis mismatch means avoid`() {
-        assertEquals(PurchaseVerdict.AVOID, build(rc = rc(chassisMatch = false)).verdict)
     }
 
     @Test
@@ -167,7 +158,7 @@ class PrePurchaseReportTest {
         assertEquals(PurchaseVerdict.GOOD_BUY, report.verdict)
         assertEquals(
             listOf("Warning light off", "Codes last cleared 10,921 km ago", "All 2 self-tests complete", "Charging 14.1 V",
-                "Dashboard km matches the computer", "Chassis matches the RC"),
+                "Dashboard km matches the computer"),
             report.evidence
         )
     }

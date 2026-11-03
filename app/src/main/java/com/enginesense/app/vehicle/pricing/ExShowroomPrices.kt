@@ -31,42 +31,69 @@ object ExShowroomPrices {
             "Swift" to lakh(6.5, 9.6), "Baleno" to lakh(6.7, 9.9), "Dzire" to lakh(6.8, 10.2), "WagonR" to lakh(5.6, 7.5),
             "Alto" to lakh(4.2, 6.1), "Celerio" to lakh(5.6, 7.4), "Ertiga" to lakh(8.8, 13.0), "Brezza" to lakh(8.7, 14.1),
             "Ignis" to lakh(5.9, 8.3), "S-Presso" to lakh(4.3, 6.1), "XL6" to lakh(11.6, 14.8), "Fronx" to lakh(7.5, 13.0),
-            "Jimny" to lakh(12.8, 15.0), "Grand Vitara" to lakh(11.4, 20.1), "Invicto" to lakh(25.5, 29.2)
+            "Jimny" to lakh(12.8, 15.0), "Grand Vitara" to lakh(11.4, 20.1), "Invicto" to lakh(25.5, 29.2),
+            "Omni" to lakh(2.8, 3.0), "Eeco" to lakh(5.3, 6.6), "Gypsy" to lakh(6.2, 6.5), "Zen Estilo" to lakh(3.4, 4.0),
+            "A-Star" to lakh(3.9, 4.6), "Ritz" to lakh(4.5, 6.8), "SX4" to lakh(7.5, 10.0), "Ciaz" to lakh(9.4, 12.3),
+            "S-Cross" to lakh(8.9, 12.9), "Esteem" to lakh(4.8, 5.5), "Maruti 800" to lakh(2.1, 2.4)
         ),
         "Hyundai" to mapOf(
             "Grand i10 Nios" to lakh(5.9, 8.6), "i20" to lakh(7.0, 11.2), "Venue" to lakh(7.9, 13.5), "Creta" to lakh(11.1, 20.5),
             "Verna" to lakh(11.1, 17.5), "Alcazar" to lakh(15.0, 21.7), "Exter" to lakh(6.0, 10.5), "Aura" to lakh(6.5, 9.1),
-            "Tucson" to lakh(29.0, 36.0), "Ioniq 5" to lakh(46.0, 46.0)
+            "Tucson" to lakh(29.0, 36.0), "Ioniq 5" to lakh(46.0, 46.0),
+            "Santro" to lakh(4.2, 5.8), "Grand i10" to lakh(5.0, 7.0), "i10" to lakh(4.3, 5.9), "Eon" to lakh(3.3, 4.1),
+            "Xcent" to lakh(5.8, 8.1), "Getz" to lakh(4.0, 5.2), "Accent" to lakh(5.5, 7.0), "Elantra" to lakh(17.9, 21.3), "Santa Fe" to lakh(26.0, 30.0)
         ),
         "Tata" to mapOf(
             "Nexon" to lakh(8.0, 15.6), "Punch" to lakh(6.0, 10.3), "Tiago" to lakh(5.0, 8.5), "Tigor" to lakh(6.0, 9.5),
-            "Altroz" to lakh(6.9, 11.3), "Harrier" to lakh(15.0, 26.5), "Safari" to lakh(15.5, 27.0), "Curvv" to lakh(10.0, 19.5)
+            "Altroz" to lakh(6.9, 11.3), "Harrier" to lakh(15.0, 26.5), "Safari" to lakh(15.5, 27.0), "Curvv" to lakh(10.0, 19.5),
+            "Indica" to lakh(3.5, 5.0), "Indigo" to lakh(4.8, 6.0), "Nano" to lakh(2.4, 3.2), "Zest" to lakh(5.6, 9.3),
+            "Bolt" to lakh(5.0, 7.8), "Hexa" to lakh(13.7, 19.3), "Sumo" to lakh(7.4, 8.6)
         ),
         "Mahindra" to mapOf(
             "XUV300" to lakh(7.9, 14.8), "XUV700" to lakh(13.9, 25.9), "Scorpio Classic" to lakh(13.6, 17.4),
             "Scorpio-N" to lakh(13.9, 24.9), "Thar" to lakh(11.5, 17.6), "Bolero" to lakh(9.8, 10.9),
-            "XUV400" to lakh(15.5, 17.7), "Marazzo" to lakh(14.4, 16.8)
+            "XUV400" to lakh(15.5, 17.7), "Marazzo" to lakh(14.4, 16.8),
+            "XUV 3XO" to lakh(7.5, 15.5), "Scorpio" to lakh(10.0, 16.5), "XUV500" to lakh(13.0, 17.7), "KUV100" to lakh(5.9, 7.6),
+            "TUV300" to lakh(8.5, 10.6), "Xylo" to lakh(9.0, 12.0), "Quanto" to lakh(6.9, 8.0)
         ),
         "Kia" to mapOf(
             "Seltos" to lakh(11.0, 20.5), "Sonet" to lakh(8.0, 15.7), "Carens" to lakh(10.6, 19.7),
             "Carnival" to lakh(63.9, 63.9), "EV6" to lakh(61.0, 66.0)
         ),
         "Honda" to mapOf(
-            "City" to lakh(11.9, 16.1), "Amaze" to lakh(8.0, 11.2), "Elevate" to lakh(11.9, 16.7), "WR-V" to lakh(8.5, 11.0), "Jazz" to lakh(7.6, 9.9)
+            "City" to lakh(11.9, 16.1), "Amaze" to lakh(8.0, 11.2), "Elevate" to lakh(11.9, 16.7), "WR-V" to lakh(8.5, 11.0), "Jazz" to lakh(7.6, 9.9),
+            "Brio" to lakh(4.7, 6.8), "Mobilio" to lakh(7.6, 11.5), "BR-V" to lakh(9.5, 13.0), "Civic" to lakh(17.9, 22.4),
+            "Accord" to lakh(39.0, 43.0), "CR-V" to lakh(28.0, 33.0)
         ),
         "Toyota" to mapOf(
             "Innova Crysta" to lakh(19.9, 26.8), "Fortuner" to lakh(33.4, 51.9), "Glanza" to lakh(6.9, 10.0),
-            "Urban Cruiser Hyryder" to lakh(11.1, 20.0), "Camry" to lakh(48.0, 48.0), "Rumion" to lakh(10.4, 13.7), "Hilux" to lakh(30.4, 37.9)
+            "Urban Cruiser Hyryder" to lakh(11.1, 20.0), "Camry" to lakh(48.0, 48.0), "Rumion" to lakh(10.4, 13.7), "Hilux" to lakh(30.4, 37.9),
+            "Innova" to lakh(13.0, 21.0), "Innova Hycross" to lakh(19.8, 31.3), "Etios" to lakh(6.5, 9.0), "Etios Liva" to lakh(5.4, 7.6),
+            "Corolla Altis" to lakh(16.5, 20.5)
         ),
         "Volkswagen" to mapOf(
-            "Polo" to lakh(6.5, 10.0), "Vento" to lakh(9.0, 14.0), "Taigun" to lakh(11.7, 19.8), "Virtus" to lakh(11.6, 19.4), "Tiguan" to lakh(35.2, 38.2)
+            "Polo" to lakh(6.5, 10.0), "Vento" to lakh(9.0, 14.0), "Taigun" to lakh(11.7, 19.8), "Virtus" to lakh(11.6, 19.4), "Tiguan" to lakh(35.2, 38.2),
+            "Ameo" to lakh(5.9, 9.9), "Jetta" to lakh(15.0, 21.0), "Passat" to lakh(30.0, 32.0)
         ),
         "Skoda" to mapOf(
-            "Slavia" to lakh(10.7, 18.7), "Kushaq" to lakh(10.9, 19.0), "Octavia" to lakh(27.4, 30.5), "Superb" to lakh(54.0, 54.0), "Kodiaq" to lakh(40.0, 45.0)
+            "Slavia" to lakh(10.7, 18.7), "Kushaq" to lakh(10.9, 19.0), "Octavia" to lakh(27.4, 30.5), "Superb" to lakh(54.0, 54.0), "Kodiaq" to lakh(40.0, 45.0),
+            "Rapid" to lakh(8.0, 13.7), "Fabia" to lakh(5.5, 8.0), "Laura" to lakh(13.0, 17.0)
         ),
-        "Renault" to mapOf("Kwid" to lakh(4.7, 6.5), "Triber" to lakh(6.1, 8.9), "Kiger" to lakh(6.1, 11.2)),
-        "Nissan" to mapOf("Magnite" to lakh(6.1, 11.8), "Kicks" to lakh(9.5, 14.9)),
-        "Ford" to mapOf("EcoSport" to lakh(8.2, 11.7), "Figo" to lakh(5.8, 8.4), "Endeavour" to lakh(33.8, 36.3), "Aspire" to lakh(6.4, 8.4)),
+        "Renault" to mapOf(
+            "Kwid" to lakh(4.7, 6.5), "Triber" to lakh(6.1, 8.9), "Kiger" to lakh(6.1, 11.2),
+            "Duster" to lakh(8.5, 14.0), "Pulse" to lakh(4.5, 6.3), "Scala" to lakh(7.0, 9.5), "Lodgy" to lakh(8.6, 12.0)
+        ),
+        "Nissan" to mapOf(
+            "Magnite" to lakh(6.1, 11.8), "Kicks" to lakh(9.5, 14.9), "Micra" to lakh(5.0, 7.5), "Sunny" to lakh(7.0, 10.0), "Terrano" to lakh(10.0, 14.6)
+        ),
+        "Ford" to mapOf(
+            "EcoSport" to lakh(8.2, 11.7), "Figo" to lakh(5.8, 8.4), "Endeavour" to lakh(33.8, 36.3), "Aspire" to lakh(6.4, 8.4),
+            "Fiesta" to lakh(8.0, 10.8), "Freestyle" to lakh(5.9, 8.3), "Ikon" to lakh(4.5, 6.5)
+        ),
+        "Chevrolet" to mapOf(
+            "Beat" to lakh(4.2, 5.5), "Spark" to lakh(3.0, 3.8), "Sail" to lakh(5.2, 7.5), "Cruze" to lakh(14.0, 17.0),
+            "Enjoy" to lakh(5.9, 7.9), "Tavera" to lakh(8.0, 10.0), "Aveo" to lakh(5.0, 7.0)
+        ),
         "MG Motor" to mapOf(
             "Hector" to lakh(14.0, 22.9), "Astor" to lakh(10.0, 18.4), "ZS EV" to lakh(18.9, 26.6), "Comet" to lakh(7.0, 9.8), "Gloster" to lakh(38.8, 43.9)
         ),
@@ -85,9 +112,9 @@ object ExShowroomPrices {
         "Jaguar" to mapOf("XF" to lakh(72.9, 76.0), "F-Pace" to lakh(80.0, 83.0)),
         "Lexus" to mapOf("ES" to lakh(64.0, 69.7), "NX" to lakh(67.4, 72.2), "RX" to lakh(99.0, 118.0)),
         "Isuzu" to mapOf("D-Max" to lakh(10.6, 11.6), "MU-X" to lakh(37.0, 40.7), "V-Cross" to lakh(21.0, 31.5)),
-        "Fiat" to mapOf("Punto" to lakh(5.5, 8.5), "Linea" to lakh(8.0, 11.0)),
-        "Mitsubishi" to mapOf("Pajero Sport" to lakh(28.0, 31.5)),
-        "Datsun" to mapOf("GO" to lakh(4.0, 6.5), "GO+" to lakh(4.3, 7.0))
+        "Fiat" to mapOf("Punto" to lakh(5.5, 8.5), "Linea" to lakh(8.0, 11.0), "Palio" to lakh(4.0, 5.0)),
+        "Mitsubishi" to mapOf("Pajero Sport" to lakh(28.0, 31.5), "Lancer" to lakh(7.0, 9.0), "Outlander" to lakh(25.0, 31.0)),
+        "Datsun" to mapOf("GO" to lakh(4.0, 6.5), "GO+" to lakh(4.3, 7.0), "redi-GO" to lakh(2.9, 4.9))
     )
 
     /** Null for a make or model not in the table — the screen then asks for the price instead. */

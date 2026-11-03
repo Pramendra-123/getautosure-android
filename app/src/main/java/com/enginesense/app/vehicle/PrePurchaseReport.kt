@@ -70,13 +70,13 @@ data class DealerPrice(val low: Double, val high: Double, val dealerName: String
 
 /**
  * Everything the pre-purchase PDF shows, worked out once from the scan plus what the buyer added
- * on the Used Car Check screen (dashboard km, RTO lookup, ex-showroom price). Kept free of Android
+ * on the Used Car Check screen (dashboard km, RTO lookup, make and model). Kept free of Android
  * so it can be unit-tested; [com.enginesense.app.report.PrePurchaseReportPdfGenerator] only draws it.
  */
 data class PrePurchaseReport(
     val verdict: PurchaseVerdict,
     val headline: String,
-    /** The analyzer's red flags plus any from the buyer's own checks (odometer, chassis). */
+    /** The analyzer's red flags plus any from the buyer's own checks (odometer, RTO record). */
     val redFlags: List<BuyerSignal>,
     val worthAsking: List<BuyerSignal>,
     val checks: List<PurchaseCheck>,
@@ -140,11 +140,6 @@ object PrePurchaseReportBuilder {
                 "or that the instrument cluster or engine computer was replaced.",
             advice = "Ask why, and ask for service records and invoices showing the km over the years."
         ) else null
-        val chassisFlag = if (rc?.chassisMatch == false && vin != null) BuyerSignal(
-            title = "Car's computer doesn't match the RC",
-            evidence = "The VIN this car's engine computer reports doesn't match the chassis number on its RTO record.",
-            advice = "Ask whether the engine computer was replaced, and check the chassis number stamped on the body against the RC."
-        ) else null
         // Dealer-mode RC details (null in customer mode, so these never fire for a regular buyer).
         val blacklistFlag = rc?.blacklistStatus?.takeIf { RtoRecord.isBlacklisted(it) }?.let { status ->
             BuyerSignal(
@@ -166,7 +161,7 @@ object PrePurchaseReportBuilder {
             advice = "Ask for the lender's NOC and a signed Form 35, and make sure the loan is closed before you pay."
         ) else null
         // These mean the car's papers or history don't add up — on their own they rule the car out.
-        val seriousFlags = listOfNotNull(odometerFlag, chassisFlag, blacklistFlag, rcStatusFlag)
+        val seriousFlags = listOfNotNull(odometerFlag, blacklistFlag, rcStatusFlag)
         val redFlags = insight.fraudRiskFlags + seriousFlags + listOfNotNull(loanFlag)
 
         val checks = insight.checks + listOf(
@@ -176,14 +171,6 @@ object PrePurchaseReportBuilder {
                     OdometerMatch.MATCHES -> CheckOutcome.CLEAR
                     OdometerMatch.MISMATCH -> CheckOutcome.FLAGGED
                     null -> CheckOutcome.NOT_AVAILABLE
-                }
-            ),
-            PurchaseCheck(
-                "Chassis number matches RC",
-                when {
-                    vin == null || rc == null || rc.chassisMatch == null -> CheckOutcome.NOT_AVAILABLE
-                    rc.chassisMatch -> CheckOutcome.CLEAR
-                    else -> CheckOutcome.FLAGGED
                 }
             )
         ) + if (rc?.hasDealerDetails != true) emptyList() else listOf(
@@ -238,7 +225,7 @@ object PrePurchaseReportBuilder {
         val km = (dashboardKm ?: ecuKm)?.toInt()
         val (value, valueMissing) = when {
             exShowroomPriceInr == null || exShowroomPriceInr <= 0 ->
-                null to "Pick the car's make and model (or add its ex-showroom price) on the Used Car Check screen to see a tentative price."
+                null to "Pick the car's make and model on the Used Car Check screen to see a tentative price."
             manufactureYear == null ->
                 null to "Add the year of manufacture (or check RTO records) to see a fair value."
             else -> {
@@ -283,7 +270,6 @@ object PrePurchaseReportBuilder {
         }
         snapshot?.verifiedValue(PidId.CONTROL_MODULE_VOLTAGE)?.takeIf { it in 13.5..14.8 }?.let { add("Charging ${"%.1f".format(it)} V") }
         if (odometer.match == OdometerMatch.MATCHES) add("Dashboard km matches the computer")
-        if (rc?.chassisMatch == true) add("Chassis matches the RC")
     }
 
     private fun faultLines(findings: List<DiagnosticFinding>, snapshot: VehicleSnapshot?): List<FaultCostLine> {

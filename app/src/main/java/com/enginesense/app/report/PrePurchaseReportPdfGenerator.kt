@@ -290,12 +290,7 @@ object PrePurchaseReportPdfGenerator {
             b.y += 16f
             return
         }
-        val chassis = when (rc.chassisMatch) {
-            true -> "✓ The VIN from the car's computer matches the chassis number on the RC." to GOOD
-            false -> "! The VIN from the car's computer does NOT match the chassis number on the RC." to ATTENTION
-            null -> "The VIN couldn't be compared with the RC — check the chassis number stamped on the body yourself." to GRAY
-        }
-        drawRtoSection(b, rc, today, PAGE_FRAUD, footnote = chassis.first, footnoteColor = chassis.second)
+        drawRtoSection(b, rc, today, PAGE_FRAUD)
     }
 
     // ---------- faults, cost, engine, value ----------
@@ -375,8 +370,7 @@ object PrePurchaseReportPdfGenerator {
             b.y += boxH + 10f
             val basis = "${value.fair.depreciationPercent}% depreciation over ${value.fair.ageYears} year${if (value.fair.ageYears == 1) "" else "s"}" +
                 (report.odometer.dashboardKm ?: report.odometer.ecuKm)?.let { ", adjusted for ${km(it)}" }.orEmpty() + "." +
-                (if (value.fair.beyondPublishedSchedule) " Cars over 10 years old vary a lot, so treat this as a loose guide." else "") +
-                " Compare listings for the same model, year and km on CarDekho, Cars24 or OLX — they reflect your local market, this doesn't."
+                (if (value.fair.beyondPublishedSchedule) " Cars over 10 years old vary a lot, so treat this as a loose guide." else "")
             b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, basis, textPaint(GRAY, 8f))
             b.y += 18f
         }
@@ -417,7 +411,7 @@ object PrePurchaseReportPdfGenerator {
         val basis = (value?.let { v ->
             "Estimate: ${v.fair.depreciationPercent}% depreciation over ${v.fair.ageYears} year${if (v.fair.ageYears == 1) "" else "s"}" +
                 (if (v.fair.beyondPublishedSchedule) " (over 10 years old, a loose guide)" else "") + ". "
-        } ?: "") + "The dealer's price is theirs to set; compare listings for the same model, year and km on CarDekho, Cars24 or OLX."
+        } ?: "") + "The dealer's price is theirs to set."
         b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, basis, textPaint(GRAY, 8f))
         b.y += 18f
     }
@@ -496,7 +490,7 @@ object PrePurchaseReportPdfGenerator {
 
     private fun drawBeforeYouPay(b: ReportBuilder, result: ScanResult) {
         val items = listOf(
-            "Chassis and engine numbers stamped on the car match the RC",
+            "The RC's make, model and colour match the car in front of you",
             "Service book and invoices support the odometer reading",
             "No loan on the car — the RC shows no hypothecation, or the bank's NOC and Form 35 are handed over",
             "No pending traffic challans (check on the Parivahan e-challan site)",

@@ -52,7 +52,8 @@ class RcPrefillMapperTest {
         assertEquals("Grand i10 Nios", RcPrefillMapper.matchModel("Hyundai", "GRAND I10 NIOS SPORTZ"))
         assertEquals("Scorpio-N", RcPrefillMapper.matchModel("Mahindra", "SCORPIO-N Z8"))
         assertEquals("Urban Cruiser Hyryder", RcPrefillMapper.matchModel("Toyota", "URBAN CRUISER HYRYDER V"))
-        assertNull(RcPrefillMapper.matchModel("Hyundai", "SANTRO XING"))
+        assertEquals("Santro", RcPrefillMapper.matchModel("Hyundai", "SANTRO XING"))
+        assertNull(RcPrefillMapper.matchModel("Hyundai", "TRAJET CRDI"))
         assertNull(RcPrefillMapper.matchModel("Hyundai", null))
     }
 
