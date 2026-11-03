@@ -111,6 +111,10 @@ fun RepairGuidanceDetailScreen(
 
         Section(5, "Repair paths") {
             Text("Do it yourself", style = GetAutoSureType.Caption.copy(fontWeight = FontWeight.SemiBold))
+            g.diyGuides.forEach { guide ->
+                Spacer(Modifier.height(6.dp))
+                DiyGuideCard(guide)
+            }
             TextButton(
                 onClick = { ask("Give me a step-by-step DIY guide for $subject: tools and parts needed, skill level, safety precautions, and clearly say when it should be left to a mechanic instead.") },
                 contentPadding = PaddingValues(0.dp)
@@ -182,4 +186,50 @@ private fun Bullet(text: String, marker: String = "•") {
 @Composable
 private fun NotInLibrary(what: String) {
     Text("Our reference library doesn't cover $what yet.", style = GetAutoSureType.Caption)
+}
+
+/** One do-it-yourself job: how hard it is, how long, what it needs, and its video once one is linked in [com.enginesense.app.vehicle.DiyGuides]. */
+@Composable
+private fun DiyGuideCard(guide: com.enginesense.app.vehicle.DiyGuide) {
+    val context = LocalContext.current
+    val (chipColor, dot) = when (guide.rating) {
+        com.enginesense.app.vehicle.DiyRating.EASY -> GetAutoSureColors.Good to "🟢"
+        com.enginesense.app.vehicle.DiyRating.MEDIUM -> GetAutoSureColors.Watch to "🟡"
+        com.enginesense.app.vehicle.DiyRating.WORKSHOP -> GetAutoSureColors.Attention to "🔴"
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+            .background(GetAutoSureColors.SurfaceRaised)
+            .padding(12.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(guide.title, style = GetAutoSureType.Body, modifier = Modifier.weight(1f))
+            Text("$dot ${guide.rating.label}", style = GetAutoSureType.Caption.copy(color = chipColor, fontWeight = FontWeight.SemiBold))
+        }
+        val details = listOfNotNull(
+            guide.time?.let { "About $it" },
+            guide.tools?.let { "Tools: $it" },
+            guide.partCost?.let { "Cost: $it" }
+        ).joinToString(" · ")
+        if (details.isNotEmpty()) {
+            Spacer(Modifier.height(4.dp))
+            Text(details, style = GetAutoSureType.Caption)
+        }
+        guide.why?.let {
+            Spacer(Modifier.height(4.dp))
+            Text("Why not DIY: $it", style = GetAutoSureType.Caption)
+        }
+        val url = guide.videoUrl
+        if (url != null) {
+            TextButton(
+                onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))) },
+                contentPadding = PaddingValues(0.dp)
+            ) { Text("▶ Watch the video") }
+        } else {
+            Spacer(Modifier.height(4.dp))
+            Text("Video coming soon", style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.TextSecondary))
+        }
+    }
 }

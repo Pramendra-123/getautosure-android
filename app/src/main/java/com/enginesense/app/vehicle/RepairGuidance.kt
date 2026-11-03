@@ -32,6 +32,8 @@ data class RepairGuidance(
     val checks: String?,
     /** 5. Repair paths */
     val costEstimates: List<RepairCostEntry>,
+    /** Do-it-yourself jobs for this fault, easiest first — see [DiyGuides]. Empty when there's nothing an owner can try. */
+    val diyGuides: List<DiyGuide> = emptyList(),
     val mechanicNote: String,
     /** 6. After repair */
     val afterRepair: List<String>,
@@ -77,6 +79,7 @@ object RepairGuidanceBuilder {
             checks = ref?.diagnosticSteps ?: finding.recommendedAction.takeIf { code == null },
             // Always a tentative range: a specific part when we know one, else the usual cost for that system.
             costEstimates = RepairCostReference.findAllByText(costText).ifEmpty { listOf(RepairCostReference.fallbackFor(code)) },
+            diyGuides = DiyGuides.forFinding(code, costText),
             mechanicNote = mechanicNote(finding, code, ref?.meaning, ref?.symptoms, scanDateLabel),
             afterRepair = afterRepairSteps(code),
             hasDetailedReference = ref != null,
