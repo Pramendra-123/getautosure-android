@@ -30,6 +30,10 @@ import androidx.navigation.NavType
 import com.enginesense.app.consultation.ConsultationViewModel
 import com.enginesense.app.consultation.LoadState
 import com.enginesense.app.ui.components.LocalMechanicAvailable
+import com.enginesense.app.ui.components.AiAssistantButton
+import com.enginesense.app.ui.components.AiAssistantSheet
+import com.enginesense.app.ui.components.aiContextFor
+import com.enginesense.app.ui.components.showsAssistant
 import com.enginesense.app.consultation.MechanicViewModel
 import com.enginesense.app.ui.screens.*
 import com.enginesense.app.vehicle.HealthCategory
@@ -85,8 +89,25 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
     val experts by consultationViewModel.experts.collectAsState()
     val mechanicAvailable = (experts as? LoadState.Success)?.data?.any { it.nextSlotEpochMillis != null } ?: true
 
+    // The AI Mechanic button in the corner of every screen; its sheet knows which screen it was opened from.
+    var assistantOpen by remember { mutableStateOf(false) }
+    val latestResult by viewModel.latestResult.collectAsState()
+    val screenFindingId = backStackEntry?.arguments?.let { it.getString("issueId") ?: it.getString("findingId")?.let(::decodeRouteArg) }
+    val screenFinding = latestResult?.findings?.firstOrNull { it.id == screenFindingId }
+
     CompositionLocalProvider(LocalMechanicAvailable provides mechanicAvailable) {
+    if (assistantOpen) {
+        AiAssistantSheet(
+            viewModel = viewModel,
+            screenContext = aiContextFor(currentRoute, screenFinding?.title),
+            onDismiss = { assistantOpen = false },
+            onOpenFullChat = { assistantOpen = false; navController.navigate("aiMechanic") }
+        )
+    }
     Scaffold(
+        floatingActionButton = {
+            if (showsAssistant(currentRoute)) AiAssistantButton(onClick = { assistantOpen = true })
+        },
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar {

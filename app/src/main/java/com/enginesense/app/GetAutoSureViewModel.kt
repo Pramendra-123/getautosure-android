@@ -845,8 +845,10 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         )
     }
 
-    fun askAiMechanic(question: String, uiContext: Context) {
-        val context = _latestResult.value?.aiContext ?: AiVehicleContext.NO_SCAN
+    /** [aboutUsedCar]: answer from the seller's car being checked (the Used Car Check), not the user's own. */
+    fun askAiMechanic(question: String, uiContext: Context, aboutUsedCar: Boolean = false) {
+        val scan = if (aboutUsedCar) _prePurchaseResult.value else _latestResult.value
+        val context = scan?.aiContext ?: AiVehicleContext.NO_SCAN
         // History must be the conversation BEFORE this question, not including it — passing
         // the just-asked question as its own "history" confused the follow-up/clarification
         // resolution logic, which walks history looking for what was already discussed.

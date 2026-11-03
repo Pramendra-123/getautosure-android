@@ -132,7 +132,7 @@ private fun ThinkingBubble() {
 }
 
 @Composable
-private fun ChatBubble(message: ChatMessage) {
+internal fun ChatBubble(message: ChatMessage) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (message.fromUser) Arrangement.End else Arrangement.Start
