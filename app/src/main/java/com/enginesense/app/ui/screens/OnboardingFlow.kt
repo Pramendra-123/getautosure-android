@@ -30,6 +30,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.enginesense.app.BuildConfig
 import com.enginesense.app.vehiclelookup.LookupState
@@ -196,6 +200,14 @@ fun LoginScreen(onSignedIn: (displayName: String?) -> Unit, onContinueWithPhone:
             style = GetAutoSureType.Caption,
             modifier = Modifier.fillMaxWidth()
         )
+        // Only the privacy policy is linked: getautosure.com has no terms page yet.
+        Text(
+            "Read the Privacy Policy",
+            style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Accent),
+            modifier = Modifier.padding(top = 4.dp).clickable {
+                context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://getautosure.com/privacy")))
+            }
+        )
     }
 }
 
@@ -302,7 +314,8 @@ fun PhoneOtpScreen(onBack: () -> Unit, onVerified: () -> Unit, onSkip: () -> Uni
 @Composable
 fun EnterRegistrationScreen(
     onConfirmed: (RcPrefill, RcLookupResult) -> Unit,
-    onEnterManually: () -> Unit,
+    /** Gets whatever plate was typed, so the manual form doesn't ask for it again. */
+    onEnterManually: (String) -> Unit,
     onSkip: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -310,7 +323,7 @@ fun EnterRegistrationScreen(
     val state by lookupViewModel.state.collectAsState()
     var plate by rememberSaveable { mutableStateOf("") }
 
-    Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+    Column(modifier = Modifier.fillMaxSize().imePadding().padding(24.dp)) {
         StepProgressIndicator(current = 3, total = FLOW_STEPS)
         Spacer(Modifier.height(16.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -328,19 +341,20 @@ fun EnterRegistrationScreen(
                 onConfirm = { onConfirmed(s.prefill, s.result) },
                 onNotMine = {
                     lookupViewModel.reset()
-                    onEnterManually()
+                    onEnterManually("")
                 }
             )
             else -> {
                 OutlinedTextField(
                     value = plate,
-                    onValueChange = { plate = it.uppercase().take(15); if (s is LookupState.Failed) lookupViewModel.reset() },
+                    onValueChange = { plate = it.take(15); if (s is LookupState.Failed) lookupViewModel.reset() },
+                    visualTransformation = UppercaseTransformation,
                     label = { Text("Registration number") },
                     placeholder = { Text("MH12AB1234") },
                     singleLine = true,
                     enabled = s != LookupState.Looking,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters, imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = { lookupViewModel.lookup(context, plate) }),
+                    keyboardActions = KeyboardActions(onSearch = { lookupViewModel.lookup(context, plate.uppercase()) }),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(12.dp))
@@ -355,7 +369,7 @@ fun EnterRegistrationScreen(
                 }
                 Spacer(Modifier.weight(1f))
                 Button(
-                    onClick = { lookupViewModel.lookup(context, plate) },
+                    onClick = { lookupViewModel.lookup(context, plate.uppercase()) },
                     enabled = plate.isNotBlank() && s != LookupState.Looking,
                     modifier = Modifier.fillMaxWidth().height(52.dp)
                 ) {
@@ -366,7 +380,7 @@ fun EnterRegistrationScreen(
                     }
                 }
                 Spacer(Modifier.height(8.dp))
-                TextButton(onClick = onEnterManually, modifier = Modifier.fillMaxWidth()) {
+                TextButton(onClick = { onEnterManually(plate.uppercase().trim()) }, modifier = Modifier.fillMaxWidth()) {
                     Text("Enter details manually instead")
                 }
             }
@@ -430,6 +444,11 @@ private fun FoundRow(label: String, value: String?) {
 }
 
 // ---------------------------------------------------------------------------------------
+/** Shows a plate in capitals without changing what was typed — rewriting the text itself fights the keyboard and drops letters. */
+private object UppercaseTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString) = TransformedText(AnnotatedString(text.text.uppercase()), OffsetMapping.Identity)
+}
+
 // 5b. Manual fallback — brand grid. Generic colored initials, not real logos (see BrandAvatar).
 // ---------------------------------------------------------------------------------------
 
@@ -597,7 +616,7 @@ fun AddVehicleDetailsScreen(
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Year", style = GetAutoSureType.Caption)
+                Text("Year (optional)", style = GetAutoSureType.Caption)
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(onClick = { showYearSheet = true }, modifier = Modifier.fillMaxWidth()) { Text(year) }
             }
@@ -623,7 +642,9 @@ fun AddVehicleDetailsScreen(
 
         OutlinedTextField(
             value = plate,
-            onValueChange = { plate = it.uppercase() },
+            onValueChange = { plate = it.take(15) },
+            visualTransformation = UppercaseTransformation,
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
             label = { Text("Registration number (optional)") },
             placeholder = { Text("HR26AB1234") },
             singleLine = true,
@@ -637,7 +658,7 @@ fun AddVehicleDetailsScreen(
             label = { Text("Engine size (optional)") },
             placeholder = { Text("1197") },
             suffix = { Text("cc") },
-            supportingText = { Text("Lets Live Data estimate mileage on cars without an air-flow sensor.") },
+            supportingText = { Text("Helps Live Data work out mileage on cars that need it.") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
@@ -648,7 +669,7 @@ fun AddVehicleDetailsScreen(
             onClick = {
                 viewModel.setVehicle(brand.takeUnless { it == VEHICLE_MAKES.first() }, nickname, model.takeUnless { it == OTHER_MODEL } ?: "")
                 viewModel.setVehicleDetails(
-                    year.toIntOrNull(), fuelType, odometer.toIntOrNull(), plate.takeIf { it.isNotBlank() },
+                    year.toIntOrNull(), fuelType, odometer.toIntOrNull(), plate.uppercase().trim().takeIf { it.isNotBlank() },
                     engineCc = engineCc.toIntOrNull()?.takeIf { it in RcPrefillMapper.ENGINE_CC_RANGE }
                 )
                 onContinue()

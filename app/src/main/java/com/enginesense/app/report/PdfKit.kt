@@ -377,7 +377,7 @@ private val KEY_READING_NAMES = mapOf(
     PidId.COOLANT_TEMP_C to "Coolant temperature",
     PidId.SHORT_TERM_FUEL_TRIM_1 to "Fuel mixture (short-term)",
     PidId.LONG_TERM_FUEL_TRIM_1 to "Fuel mixture (long-term)",
-    PidId.RPM to "Idle speed",
+    PidId.RPM to "Engine speed",
     PidId.ENGINE_LOAD to "Engine load",
     PidId.INTAKE_MANIFOLD_PRESSURE to "Intake pressure",
     PidId.ENGINE_OIL_TEMP_C to "Oil temperature"
@@ -424,7 +424,7 @@ internal fun drawKeyReadings(b: ReportBuilder, snapshot: VehicleSnapshot, pageTi
     if (rows.isEmpty()) return
     drawSectionTitle(
         b, title,
-        "Taken with the engine running during the scan. \"Normal\" is the range for a warmed-up, healthy engine; idle speed, load and intake pressure change with how the car is being driven.",
+        "Taken with the engine running during the scan. \"Normal\" is the range for a warmed-up, healthy engine; engine speed, load and intake pressure change with how the car is being driven.",
         pageTitle
     )
     val colX = floatArrayOf(MARGIN, MARGIN + 175f, MARGIN + 265f)

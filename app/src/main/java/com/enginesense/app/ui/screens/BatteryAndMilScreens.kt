@@ -58,7 +58,7 @@ fun MilStatusScreen(viewModel: GetAutoSureViewModel) {
     Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
         Text("Check-engine light", style = GetAutoSureType.ScreenTitle)
         Spacer(Modifier.height(4.dp))
-        Text("The check-engine light, straight from the ECU.", style = GetAutoSureType.Caption)
+        Text("The check-engine light, as your car's computer reports it.", style = GetAutoSureType.Caption)
         Spacer(Modifier.height(20.dp))
 
         val readiness = result?.readiness

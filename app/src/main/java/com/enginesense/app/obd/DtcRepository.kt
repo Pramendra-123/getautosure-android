@@ -105,7 +105,8 @@ class DtcRepository(context: Context) {
     private fun toPlainLanguage(code: String, description: String): String {
         val d = description.lowercase()
         return when {
-            "misfire" in d -> "One or more engine cylinders aren't firing correctly — this can cause rough running and, over time, damage the catalytic converter."
+            "misfire" in d -> (Regex("cylinder (\\d+)").find(d)?.let { "Cylinder ${it.groupValues[1]} isn't" } ?: "One or more engine cylinders aren't") +
+                " firing correctly — this can cause rough running and, over time, damage the catalytic converter."
             "catalyst" in d || "catalytic" in d -> "The catalytic converter isn't cleaning exhaust gases as efficiently as it should."
             "oxygen sensor" in d || "o2 sensor" in d -> "An oxygen sensor reading looks off, which can hurt fuel economy and emissions."
             "evap" in d || "purge" in d || "vapor" in d -> "There's a small leak or fault in the fuel vapor (EVAP) system — usually not urgent, often just a loose gas cap."
@@ -115,7 +116,7 @@ class DtcRepository(context: Context) {
             "fuel trim" in d || "lean" in d || "rich" in d -> "The engine's air-fuel mixture is off balance."
             "circuit" in d -> "A sensor or its wiring circuit is reporting a fault — could be the sensor, a connector, or a wiring issue."
             else -> description
-        } + "  ($code)"
+        }
     }
 
     /** Heuristic severity bucket based on keywords — not an authoritative safety rating. */

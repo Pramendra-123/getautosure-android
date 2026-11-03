@@ -37,15 +37,15 @@ class FallbackAiMechanicChatService(
         } catch (e: CancellationException) {
             throw e
         } catch (e: RemoteAiNotAuthenticatedException) {
-            withNotice(AUTH_FALLBACK_NOTICE, local.ask(context, history, question))
+            withNotice(AUTH_FALLBACK_NOTICE, history, local.ask(context, history, question))
         } catch (e: RemoteAiHttpException) {
             when (e.statusCode) {
-                401, 403 -> withNotice(AUTH_FALLBACK_NOTICE, local.ask(context, history, question))
-                429 -> withNotice(RATE_LIMITED_FALLBACK_NOTICE, local.ask(context, history, question))
-                else -> withNotice(GENERIC_FALLBACK_NOTICE, local.ask(context, history, question))
+                401, 403 -> withNotice(AUTH_FALLBACK_NOTICE, history, local.ask(context, history, question))
+                429 -> withNotice(RATE_LIMITED_FALLBACK_NOTICE, history, local.ask(context, history, question))
+                else -> withNotice(GENERIC_FALLBACK_NOTICE, history, local.ask(context, history, question))
             }
         } catch (e: Exception) {
-            withNotice(GENERIC_FALLBACK_NOTICE, local.ask(context, history, question))
+            withNotice(GENERIC_FALLBACK_NOTICE, history, local.ask(context, history, question))
         }
     }
 
@@ -75,14 +75,15 @@ class FallbackAiMechanicChatService(
         }
     }
 
-    private fun withNotice(notice: String, reply: ChatMessage): ChatMessage =
-        reply.copy(text = "$notice\n\n${reply.text}")
+    /** Said once per conversation: the same notice above every answer buries the answers. */
+    private fun withNotice(notice: String, history: List<ChatMessage>, reply: ChatMessage): ChatMessage =
+        if (history.any { !it.fromUser && it.text.startsWith(notice) }) reply else reply.copy(text = "$notice\n\n${reply.text}")
 
     companion object {
         private const val RETRY_DELAY_MILLIS = 400L
 
         const val AUTH_FALLBACK_NOTICE =
-            "You're signed out (or your session expired), so this is a general answer, not a personalized one from the AI Mechanic. Sign in again for the full experience."
+            "You're not signed in with Google, so these are general answers rather than ones from the AI Mechanic."
         const val RATE_LIMITED_FALLBACK_NOTICE =
             "You've sent a lot of questions quickly, so here's a general answer for now — try again in a moment for a personalized one."
         const val GENERIC_FALLBACK_NOTICE =

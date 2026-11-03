@@ -321,14 +321,14 @@ private fun CategoryPillsRow(result: ScanResult, onNavigate: (String) -> Unit) {
         }
     }
 
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         scored.forEach { cat ->
             CategoryPill(
                 cat.category.displayName,
                 cat.score?.let { "$it" } ?: stateLabel(cat.state),
                 GetAutoSureColors.forCategoryState(cat.state),
                 onClick = { onNavigate("categoryDetail/${cat.category.name}") },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).fillMaxHeight()
             )
         }
         CategoryPill(
@@ -336,7 +336,7 @@ private fun CategoryPillsRow(result: ScanResult, onNavigate: (String) -> Unit) {
             stateLabel(electricalState),
             GetAutoSureColors.forCategoryState(electricalState),
             onClick = { onNavigate("healthBreakdown") },
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f).fillMaxHeight()
         )
     }
 }
@@ -380,7 +380,7 @@ private data class ExploreItem(
  * not production-complete yet. Dealer Sathi reuses the existing (still preview-only) DealerScreen.
  */
 private val EXPLORE_ITEMS = listOf(
-    ExploreItem("aiReport", "Advanced reports", "View, save & share your full PDF report", Icons.Filled.Assessment),
+    ExploreItem("aiReport", "Full report", "View, save & share your PDF report", Icons.Filled.Assessment),
     ExploreItem("aiMechanic", "AI mechanic", "Ask any car question", Icons.Filled.Chat),
     ExploreItem("connect", "Live data", "Readings, 0-60 & trip mileage", Icons.Filled.Insights),
     ExploreItem("reports", "Car diagnostics", "Fault codes, sensors, emissions", Icons.Filled.Biotech),
@@ -395,12 +395,13 @@ private fun ExploreGrid(onNavigate: (String) -> Unit) {
     val context = LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         EXPLORE_ITEMS.chunked(2).forEach { pair ->
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Both tiles in a row take the taller one's height, so the grid lines up.
+            Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 pair.forEach { item ->
                     ExploreCard(
                         item,
                         onClick = { item.customAction?.invoke(context) ?: onNavigate(item.route) },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).fillMaxHeight()
                     )
                 }
                 if (pair.size == 1) Spacer(Modifier.weight(1f))

@@ -27,11 +27,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.enginesense.app.GetAutoSureViewModel
 import com.enginesense.app.LiveDataState
+import com.enginesense.app.ui.components.LiveGraphTile
 import com.enginesense.app.ui.components.StatTile
+import com.enginesense.app.vehicle.LiveHistorySnapshot
+import com.enginesense.app.vehicle.benchmark
+import com.enginesense.app.vehicle.liveStatus
 import com.enginesense.app.ui.theme.GetAutoSureColors
 import com.enginesense.app.ui.theme.GetAutoSureType
 import com.enginesense.app.vehicle.AirFlowSource
 import com.enginesense.app.vehicle.LiveDerived
+import com.enginesense.app.vehicle.LiveDerivedCalculator
 import com.enginesense.app.vehicle.PidId
 import com.enginesense.app.vehicle.PidReading
 import com.enginesense.app.vehicle.PidStatus
@@ -51,6 +56,7 @@ fun LiveDataScreen(viewModel: GetAutoSureViewModel, onStop: () -> Unit) {
     val state by viewModel.liveState.collectAsState()
     val readings by viewModel.liveReadings.collectAsState()
     val derived by viewModel.liveDerived.collectAsState()
+    val history by viewModel.liveHistory.collectAsState()
     val fuelType by viewModel.vehicleFuelType.collectAsState()
     val engineCc by viewModel.vehicleEngineCc.collectAsState()
     var showDetailsDialog by remember { mutableStateOf(false) }
@@ -62,7 +68,7 @@ fun LiveDataScreen(viewModel: GetAutoSureViewModel, onStop: () -> Unit) {
     Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
         Text("Live Data", style = GetAutoSureType.ScreenTitle)
         Spacer(Modifier.height(4.dp))
-        Text("Updates continuously — watch it change as you drive.", style = GetAutoSureType.Caption)
+        Text("Updates continuously — each graph shows the last minute. Where a reading has a normal range, it's shaded green.", style = GetAutoSureType.Caption)
         Spacer(Modifier.height(16.dp))
 
         when (val s = state) {
@@ -81,15 +87,15 @@ fun LiveDataScreen(viewModel: GetAutoSureViewModel, onStop: () -> Unit) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             Column {
                                 Text(reason, style = GetAutoSureType.Caption)
-                                if (fuelType == null || engineCc == null) {
+                                if ((fuelType == null || engineCc == null) && reason != LiveDerivedCalculator.MILEAGE_NOT_REPORTED) {
                                     TextButton(onClick = { showDetailsDialog = true }, contentPadding = PaddingValues(0.dp)) {
-                                        Text("Add car details")
+                                        Text(if (fuelType == null) "Add fuel type and engine size" else "Add engine size")
                                     }
                                 }
                             }
                         }
                     }
-                    pidTiles(readings, TOP_PIDS)
+                    pidTiles(readings, history, TOP_PIDS)
                     val boost = derived.boostKpa
                     if (derived.turboSeen && boost != null) {
                         item { StatTile("Turbo boost", formatBoost(boost), Modifier.fillMaxWidth()) }
@@ -99,7 +105,7 @@ fun LiveDataScreen(viewModel: GetAutoSureViewModel, onStop: () -> Unit) {
                             item(span = { GridItemSpan(maxLineSpan) }) {
                                 Text(title, style = GetAutoSureType.Caption, modifier = Modifier.padding(top = 8.dp))
                             }
-                            pidTiles(readings, pids)
+                            pidTiles(readings, history, pids)
                         }
                     }
                 }
@@ -138,10 +144,45 @@ private val GROUPS: List<Pair<String, List<PidId>>> = listOf(
 private fun Map<PidId, PidReading>.isShown(pid: PidId): Boolean =
     this[pid]?.let { it.status != PidStatus.UNSUPPORTED } ?: false
 
-private fun LazyGridScope.pidTiles(readings: Map<PidId, PidReading>, pids: List<PidId>) {
-    items(pids.filter { readings.isShown(it) }) { pid ->
-        val reading = readings[pid]
-        StatTile(tileLabel(pid), formatLive(pid, reading?.status, reading?.value), modifier = Modifier.fillMaxWidth())
+/** RPM and speed get the full width and a taller graph — they're the lines that jump when you press the accelerator. */
+private val WIDE_PIDS = setOf(PidId.RPM, PidId.SPEED_KMH)
+
+/**
+ * Smallest y-axis span per sensor, so a steady reading draws as a calm line instead of sensor
+ * noise blown up to fill the graph (e.g. a 0.05 V wobble on a 14.1 V battery).
+ */
+private fun minSpan(pid: PidId): Double = when (pid) {
+    PidId.RPM -> 600.0
+    PidId.SPEED_KMH -> 20.0
+    PidId.CONTROL_MODULE_VOLTAGE -> 1.5
+    PidId.COOLANT_TEMP_C, PidId.INTAKE_AIR_TEMP_C, PidId.ENGINE_OIL_TEMP_C -> 15.0
+    PidId.SHORT_TERM_FUEL_TRIM_1, PidId.LONG_TERM_FUEL_TRIM_1 -> 20.0
+    PidId.INTAKE_MANIFOLD_PRESSURE -> 30.0
+    PidId.TIMING_ADVANCE -> 15.0
+    else -> 20.0 // percentages: throttle, load, pedal, fuel level
+}
+
+private fun LazyGridScope.pidTiles(readings: Map<PidId, PidReading>, history: LiveHistorySnapshot, pids: List<PidId>) {
+    pids.filter { readings.isShown(it) }.forEach { pid ->
+        val wide = pid in WIDE_PIDS
+        item(span = { GridItemSpan(if (wide) maxLineSpan else 1) }) {
+            val reading = readings[pid]
+            val value = reading?.value?.takeIf { reading.status == PidStatus.VERIFIED }
+            val benchmark = pid.benchmark()
+            LiveGraphTile(
+                label = tileLabel(pid),
+                value = formatLive(pid, reading?.status, reading?.value),
+                samples = history.series[pid].orEmpty(),
+                unit = pid.unit,
+                nowMs = history.nowMs,
+                status = value?.let { liveStatus(pid, it) },
+                // Shaded only where "normal" doesn't depend on how the car is being driven.
+                normalRange = benchmark?.takeUnless { it.contextDependent }?.typicalRange,
+                minSpan = minSpan(pid),
+                graphHeight = if (wide) 64.dp else 44.dp,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
 }
 

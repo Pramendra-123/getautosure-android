@@ -44,12 +44,12 @@ object HealthScoreCalculator {
     /** The categories that get a 0-100 number instead of just a Good/Watch/Attention label. */
     private val SCORED_CATEGORIES = setOf(HealthCategory.ENGINE, HealthCategory.COOLING, HealthCategory.FUEL_COMBUSTION)
 
-    fun calculate(snapshot: VehicleSnapshot, findings: List<DiagnosticFinding>): HealthScoreResult {
+    fun calculate(snapshot: VehicleSnapshot, findings: List<DiagnosticFinding>, readiness: ReadinessStatus? = null): HealthScoreResult {
         val fuelFindings = findings.filter { HealthCategory.FUEL_COMBUSTION in categoriesOf(it) }
         val fuelInsight = FuelCombustionAnalyzer.analyze(snapshot, fuelFindings)
 
         val categories = HealthCategory.entries.map { category ->
-            categoryHealth(category, snapshot, findings, fuelInsight)
+            categoryHealth(category, snapshot, findings, fuelInsight, readiness)
         }
 
         // Emissions/Diagnostics have no PID-capability gate (they're purely finding-driven —
@@ -107,7 +107,8 @@ object HealthScoreCalculator {
         category: HealthCategory,
         snapshot: VehicleSnapshot,
         findings: List<DiagnosticFinding>,
-        fuelInsight: FuelCombustionInsight
+        fuelInsight: FuelCombustionInsight,
+        readiness: ReadinessStatus?
     ): CategoryHealth {
         val categoryFindings = findings.filter { category in categoriesOf(it) }
         val worst = categoryFindings.minByOrNull { severityRank(it.severity) }?.severity
@@ -142,6 +143,9 @@ object HealthScoreCalculator {
                 CategoryHealth(category, CategoryState.WATCH, categoryFindings.first { it.severity == worst }.title, categoryScore)
             hasImplausibleReading ->
                 CategoryHealth(category, CategoryState.WATCH, "A reading looked unreliable on this scan.", categoryScore)
+            // The emissions self-tests haven't all run, so the car itself can't vouch for emissions yet.
+            category == HealthCategory.EMISSIONS && readiness != null && !readiness.readyForEmissionsTest ->
+                CategoryHealth(category, CategoryState.UNAVAILABLE, "The car's emissions self-tests haven't finished yet, so this can't be confirmed.", categoryScore)
             else ->
                 CategoryHealth(category, CategoryState.GOOD, "Nothing found here.", categoryScore)
         }
@@ -166,7 +170,8 @@ object HealthScoreCalculator {
             if (matched.isNotEmpty()) return matched
         }
 
-        finding.relatedDtcCodes.firstOrNull()?.let { code -> categoryFromDtcCode(code)?.let { return setOf(it) } }
+        // A fault code also counts against Diagnostics, the category that reports the car's codes.
+        finding.relatedDtcCodes.firstOrNull()?.let { code -> categoryFromDtcCode(code)?.let { return setOf(it, HealthCategory.DIAGNOSTICS) } }
 
         val text = (finding.title + " " + finding.plainLanguageSummary).lowercase()
         return setOf(

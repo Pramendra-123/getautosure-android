@@ -16,56 +16,47 @@ import androidx.compose.ui.unit.dp
 import com.enginesense.app.ui.theme.GetAutoSureColors
 import com.enginesense.app.ui.theme.GetAutoSureType
 
-private enum class Feasibility(val label: String, val color: Color) {
-    AVAILABLE("Already works today", GetAutoSureColors.Good),
-    BUILDABLE("Buildable locally, not built yet", GetAutoSureColors.Watch),
-    NEEDS_BACKEND("Needs a real backend/server", GetAutoSureColors.Attention)
+/** What a customer can count on today. Build notes stay out of the app: anything not ready is just "Coming soon". */
+private enum class Availability(val label: String, val color: Color) {
+    INCLUDED("Included", GetAutoSureColors.Good),
+    COMING_SOON("Coming soon", GetAutoSureColors.Unavailable)
 }
 
-private data class FeatureStatus(val name: String, val feasibility: Feasibility, val note: String)
-private data class FeaturedPitch(val name: String, val pitch: String, val feasibility: Feasibility)
+private data class FeatureStatus(val name: String, val availability: Availability, val note: String)
+private data class FeaturedPitch(val name: String, val pitch: String, val availability: Availability)
 
 /**
  * The three features actually worth a subscription, not just "more of the same for a fee":
  * the hotline because a real person beats a number on a screen, forecast+diagnosis because
  * it's the only pitch here that can save real money (catch it before it's a bigger repair),
- * and context-aware AI because it's the highest-ceiling one — assuming it actually reasons
- * over history rather than reading like the same free chat with a longer memory.
+ * and context-aware AI because it's the highest-ceiling one.
  */
 private val FEATURED = listOf(
     FeaturedPitch(
         "Ask a real expert",
-        "A 15-minute video call with a real mechanic — not a bot. For when you need an actual answer, not another reading.",
-        Feasibility.AVAILABLE
+        "A 15-minute video call with a real mechanic, not a bot, for when you need an actual answer, not another reading.",
+        Availability.INCLUDED
     ),
     FeaturedPitch(
         "Issue forecast + detailed diagnosis",
-        "Catch a problem while it's still small: trend-based prediction from your scan history, plus the cross-signal read on what it actually means — not just a raw number.",
-        Feasibility.AVAILABLE
+        "Catch a problem while it's still small: trends from your scan history, and what the readings mean together.",
+        Availability.INCLUDED
     ),
     FeaturedPitch(
-        "Context-aware AI Mechanic",
-        "Reasons over your scan history and trends, not just this one scan — ask it something and it remembers what your car's been doing.",
-        Feasibility.NEEDS_BACKEND
+        "AI Mechanic that knows your car's history",
+        "Answers that take your past scans and trends into account, not just today's scan.",
+        Availability.COMING_SOON
     )
 )
 
-/** Pure visual teaser — no billing wired up; "Explore Pro" leads here instead of a real paywall. */
+/** A teaser, not a paywall: no billing is wired up, so nothing here asks for payment. */
 @Composable
 fun ProScreen() {
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
         Text("GetAutoSure Pro", style = GetAutoSureType.ScreenTitle)
         Spacer(Modifier.height(8.dp))
-        Text(
-            "Not a real subscription yet — no payment is taken here. This previews what Pro " +
-                "would unlock once billing is wired up.",
-            style = GetAutoSureType.Caption
-        )
+        Text("More help when something's wrong with your car. Pro plans are coming soon.", style = GetAutoSureType.Caption)
         Spacer(Modifier.height(20.dp))
-        Text("Worth the subscription", style = GetAutoSureType.SectionTitle.copy(color = GetAutoSureColors.AccentGold))
-        Spacer(Modifier.height(4.dp))
-        Text("The three reasons to actually pay for this, not just more of the same for a fee.", style = GetAutoSureType.Caption)
-        Spacer(Modifier.height(12.dp))
 
         FEATURED.forEach { pitch -> FeaturedCard(pitch) }
 
@@ -74,12 +65,10 @@ fun ProScreen() {
         Spacer(Modifier.height(8.dp))
 
         val items = listOf(
-            FeatureStatus("Emissions trend history", Feasibility.AVAILABLE, "This scan's pass/fail status is free (VIN & ECU Emission Readiness) — this adds per-monitor history across scans."),
-            FeatureStatus("Repair cost reference", Feasibility.AVAILABLE, "A free link to servicecost.in's per-model pricing already lives on Home — this adds a curated in-app reference by vehicle segment."),
-            FeatureStatus("Unlimited vehicle history", Feasibility.AVAILABLE, "Actually free for everyone — every real scan is saved and shown, no cap."),
-            FeatureStatus("Advanced reports", Feasibility.AVAILABLE, "Also free for everyone now — view, save and share your full PDF report. Dealer Sathi adds dealer branding on top of this same feature."),
-            FeatureStatus("Advanced live data", Feasibility.BUILDABLE, "Logging, export and multi-session graphing — viewing live data stays free, not built yet."),
-            FeatureStatus("Multi-car garage", Feasibility.BUILDABLE, "Track more than one vehicle — needs a per-vehicle data model on top of the new local history store, not built yet.")
+            FeatureStatus("Emissions history", Availability.INCLUDED, "Your car's emissions self-tests across every scan, not just the last one."),
+            FeatureStatus("Repair cost guide", Availability.INCLUDED, "Typical price ranges for common repairs, so you know what to expect before you pay."),
+            FeatureStatus("Live data logging and export", Availability.COMING_SOON, "Record a drive and save the readings. Viewing live data stays free."),
+            FeatureStatus("More than one car", Availability.COMING_SOON, "Keep every car in your family in one app.")
         )
         items.forEach { item ->
             FeatureRow(item)
@@ -100,45 +89,19 @@ private fun FeaturedCard(pitch: FeaturedPitch, accent: Color = GetAutoSureColors
             Spacer(Modifier.height(6.dp))
             Text(pitch.pitch, style = GetAutoSureType.Caption)
             Spacer(Modifier.height(8.dp))
-            Box(
-                modifier = Modifier
-                    .background(pitch.feasibility.color.copy(alpha = 0.15f), RoundedCornerShape(20.dp))
-                    .padding(horizontal = 10.dp, vertical = 3.dp)
-            ) {
-                Text(pitch.feasibility.label, style = GetAutoSureType.Caption.copy(color = pitch.feasibility.color))
-            }
+            AvailabilityChip(pitch.availability)
         }
     }
 }
 
-/**
- * The core dealer loop — scan every car, generate a branded report, share it — plus the
- * real-AI ideas that actually fit a dealer's business rather than being consumer features
- * relabeled. The disclosure-note and shared-report-link items are the two worth building
- * first once the shared backend exists: they strengthen "buy with confidence" directly,
- * rather than just saving the dealer time.
- */
-private val DEALER_CORE_LOOP = listOf(
-    FeaturedPitch(
-        "Multi-vehicle inventory",
-        "Track every car you're selling, not just one — the foundation everything else here builds on.",
-        Feasibility.NEEDS_BACKEND
-    ),
-    FeaturedPitch(
-        "Branded report, shared like a real inspection",
-        "Scan a car, generate a PDF with your name and logo, and share the same kind of verified-report link your WhatsApp inspection reports already use — not a separate, lesser product.",
-        Feasibility.NEEDS_BACKEND
-    )
+/** What a dealer can expect next. Only shown as "Coming soon"; the reasoning behind each lives in the project notes, not the app. */
+private val DEALER_COMING_SOON = listOf(
+    FeatureStatus("Your whole inventory", Availability.COMING_SOON, "Track every car you're selling in one place."),
+    FeatureStatus("Listing descriptions", Availability.COMING_SOON, "Scan results turned into ready-to-post copy for OLX, Cars24 or Facebook."),
+    FeatureStatus("Known-issues note", Availability.COMING_SOON, "A plain-language note of what the scan found, to show buyers up front."),
+    FeatureStatus("Ask about this car", Availability.COMING_SOON, "Buyers ask the AI Mechanic about the car from your shared report, without calling you.")
 )
 
-private val DEALER_AI = listOf(
-    FeatureStatus("AI-drafted listing description", Feasibility.NEEDS_BACKEND, "Scan data turned into ready-to-post copy for OLX/Cars24/Facebook — grounded in real numbers, not generic sales language."),
-    FeatureStatus("AI-drafted disclosure note", Feasibility.NEEDS_BACKEND, "Findings turned into a plain-language \"known issues\" note you can show proactively — the actual mechanism behind \"buy with confidence,\" not just a convenience."),
-    FeatureStatus("Fleet-wide AI insight", Feasibility.NEEDS_BACKEND, "\"3 of your 12 cars need the battery checked before they go on the lot\" — Issue Forecast across your whole inventory, not one car."),
-    FeatureStatus("Buyer-facing \"Ask AI about this car\"", Feasibility.NEEDS_BACKEND, "Lives on the shared report page itself (the website, not this app) — a buyer asks the AI Mechanic about this specific scan without calling you.")
-)
-
-/** Pure visual teaser for the dealer-facing plan, with an honest feasibility note per feature — answers "which is possible". */
 @Composable
 fun DealerScreen(
     onSetUpDealerProfile: () -> Unit = {},
@@ -148,97 +111,50 @@ fun DealerScreen(
     onDealerPhotoReport: () -> Unit = {}
 ) {
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-        Text("GetAutoSure Dealer", style = GetAutoSureType.ScreenTitle)
+        Text("Dealer Sathi", style = GetAutoSureType.ScreenTitle)
         Spacer(Modifier.height(8.dp))
-        Text(
-            "Not a real account/billing system yet — this previews what a dealer plan would " +
-                "include, with an honest note on what's realistic to build without a server.",
-            style = GetAutoSureType.Caption
-        )
+        Text("For used-car dealers: scan every car and share a report with your name on it, so buyers can trust it.", style = GetAutoSureType.Caption)
         Spacer(Modifier.height(16.dp))
 
         androidx.compose.material3.Button(onClick = onSetUpDealerProfile, modifier = Modifier.fillMaxWidth()) {
             Text("Set up your dealer profile")
         }
         Spacer(Modifier.height(4.dp))
-        Text(
-            "Real and working today — your logo, name and contact info get stamped on every PDF report you generate.",
-            style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Good)
-        )
-        Spacer(Modifier.height(10.dp))
+        Text("Your logo, name and contact details go on every report you make.", style = GetAutoSureType.Caption)
+        Spacer(Modifier.height(20.dp))
 
         Text("Dealer reports", style = GetAutoSureType.SectionTitle)
         Spacer(Modifier.height(4.dp))
-        Text("A branded PDF for the car you just scanned, with your own price next to GetAutoSure's estimate.", style = GetAutoSureType.Caption)
+        Text("A branded PDF for the car you just scanned, with your own asking price.", style = GetAutoSureType.Caption)
         Spacer(Modifier.height(8.dp))
         androidx.compose.material3.Button(onClick = onDealerReport, modifier = Modifier.fillMaxWidth()) {
             Text("Dealer report")
         }
         Spacer(Modifier.height(8.dp))
         androidx.compose.material3.Button(onClick = onDealerPhotoReport, modifier = Modifier.fillMaxWidth()) {
-            Text("Dealer report with photos (Gemini)")
+            Text("Dealer report with photos")
         }
         Spacer(Modifier.height(4.dp))
-        Text(
-            "Adds the car's photos — backgrounds cleaned by Gemini — and your condition notes.",
-            style = GetAutoSureType.Caption
-        )
+        Text("Adds the car's photos, with the backgrounds cleaned up, and your condition notes.", style = GetAutoSureType.Caption)
         Spacer(Modifier.height(16.dp))
 
-        androidx.compose.material3.OutlinedButton(onClick = onOpenPricingCalculator, modifier = Modifier.fillMaxWidth()) {
-            Text("Max Buy Price Calculator (preview)")
+        androidx.compose.material3.OutlinedButton(onClick = onPublishWebReport, modifier = Modifier.fillMaxWidth()) {
+            Text("Publish web report")
         }
+        Spacer(Modifier.height(4.dp))
+        Text("A web page for the car you can share as a link, with or without a scan.", style = GetAutoSureType.Caption)
         Spacer(Modifier.height(10.dp))
 
-        androidx.compose.material3.OutlinedButton(onClick = onPublishWebReport, modifier = Modifier.fillMaxWidth()) {
-            Text("Publish Web Report")
+        androidx.compose.material3.OutlinedButton(onClick = onOpenPricingCalculator, modifier = Modifier.fillMaxWidth()) {
+            Text("Max buy price calculator")
         }
         Spacer(Modifier.height(4.dp))
-        Text(
-            "Create a shareable listing — works with or without a scan already run for this car.",
-            style = GetAutoSureType.Caption
-        )
-        Spacer(Modifier.height(4.dp))
-        Text(
-            "Phase 1 foundation — works today with comparables you enter by hand; a real data source isn't wired in yet.",
-            style = GetAutoSureType.Caption
-        )
-        Spacer(Modifier.height(20.dp))
-
-        Text("Check every car, share with your customer", style = GetAutoSureType.SectionTitle.copy(color = GetAutoSureColors.Good))
-        Spacer(Modifier.height(4.dp))
-        Text("The core loop this plan is actually for.", style = GetAutoSureType.Caption)
-        Spacer(Modifier.height(12.dp))
-        DEALER_CORE_LOOP.forEach { pitch -> FeaturedCard(pitch, accent = GetAutoSureColors.Good) }
+        Text("Work out the most to pay for a car, from selling prices you enter.", style = GetAutoSureType.Caption)
 
         Spacer(Modifier.height(24.dp))
-        Text("Real AI for your business", style = GetAutoSureType.SectionTitle.copy(color = GetAutoSureColors.Good))
-        Spacer(Modifier.height(4.dp))
-        Text("Not consumer features relabeled — things that specifically save a dealer time or build buyer trust.", style = GetAutoSureType.Caption)
+        Text("Coming soon", style = GetAutoSureType.SectionTitle)
         Spacer(Modifier.height(8.dp))
-        DEALER_AI.forEach { item -> FeatureRow(item); HorizontalDivider(color = GetAutoSureColors.SurfaceRaised) }
-
-        Spacer(Modifier.height(24.dp))
-        Text("Already built", style = GetAutoSureType.SectionTitle)
-        Spacer(Modifier.height(8.dp))
-        val items = listOf(
-            FeatureStatus("Vehicle health score", Feasibility.AVAILABLE, "Already built."),
-            FeatureStatus("34-PID diagnostic report", Feasibility.AVAILABLE, "Already built (All Sensors)."),
-            FeatureStatus("Scan history", Feasibility.AVAILABLE, "Already built."),
-            FeatureStatus("AI vehicle analysis", Feasibility.AVAILABLE, "Already built (local rules engine + AI report/chat)."),
-            FeatureStatus(
-                "Advanced reports",
-                Feasibility.AVAILABLE,
-                "Already built and free for every user, not just dealers — scan a car, then view, save or share the full PDF report. With a dealer profile set up (see Dealer branding below), the same report carries your branding instead."
-            ),
-            FeatureStatus("Dealer branding", Feasibility.AVAILABLE, "Already built — set up your profile above. A local dealer name/logo profile stamped on the PDF report, single-dealer only without a backend."),
-            FeatureStatus("Fast-scan intake mode", Feasibility.BUILDABLE, "A streamlined add-vehicle flow for scanning your 20th car this week, not your first car ever — not built yet."),
-            FeatureStatus("QR-verifiable reports", Feasibility.NEEDS_BACKEND, "A QR code can hold data, but real tamper-proof \"verification\" needs a server to check against.")
-        )
-        items.forEach { item ->
-            FeatureRow(item)
-            HorizontalDivider(color = GetAutoSureColors.SurfaceRaised)
-        }
+        DEALER_COMING_SOON.forEach { item -> FeatureRow(item); HorizontalDivider(color = GetAutoSureColors.SurfaceRaised) }
         Spacer(Modifier.height(24.dp))
     }
 }
@@ -248,16 +164,19 @@ private fun FeatureRow(item: FeatureStatus) {
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
         Text(item.name, style = GetAutoSureType.Body)
         Spacer(Modifier.height(4.dp))
-        Row {
-            Box(
-                modifier = Modifier
-                    .background(item.feasibility.color.copy(alpha = 0.15f), RoundedCornerShape(20.dp))
-                    .padding(horizontal = 10.dp, vertical = 3.dp)
-            ) {
-                Text(item.feasibility.label, style = GetAutoSureType.Caption.copy(color = item.feasibility.color))
-            }
-        }
+        AvailabilityChip(item.availability)
         Spacer(Modifier.height(4.dp))
         Text(item.note, style = GetAutoSureType.Caption)
+    }
+}
+
+@Composable
+private fun AvailabilityChip(availability: Availability) {
+    Box(
+        modifier = Modifier
+            .background(availability.color.copy(alpha = 0.15f), RoundedCornerShape(20.dp))
+            .padding(horizontal = 10.dp, vertical = 3.dp)
+    ) {
+        Text(availability.label, style = GetAutoSureType.Caption.copy(color = availability.color))
     }
 }

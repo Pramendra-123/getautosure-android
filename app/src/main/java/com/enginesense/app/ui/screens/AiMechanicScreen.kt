@@ -39,7 +39,7 @@ fun AiMechanicScreen(viewModel: GetAutoSureViewModel, advancedMode: Boolean = fa
         Spacer(Modifier.height(4.dp))
         Text(
             if (AiBackendConfig.isConfigured) {
-                "Answers from a real AI model, grounded in your scan data when available."
+                "Ask anything about your car. Answers use your latest scan when there is one."
             } else {
                 "Rule-based for now, not a live AI model — answers only come from your scan data."
             },

@@ -157,6 +157,42 @@ class VehicleLookupRepository(
         } catch (e: org.json.JSONException) {
             throw VehicleLookupParseException(e)
         }
+
+        /** The reverse of [parseLookupResponse], in the server's own shape, so a saved record is read back by the same parser. */
+        fun toResponseJson(rc: RcLookupResult): JSONObject {
+            fun obj(vararg pairs: Pair<String, Any?>) = JSONObject().apply { pairs.forEach { (k, v) -> put(k, v ?: JSONObject.NULL) } }
+            return obj(
+                "vehicle" to obj(
+                    "registrationNumber" to rc.registrationNumber,
+                    "vehicle" to obj(
+                        "make" to rc.make, "model" to rc.model, "fuelType" to rc.fuelType, "color" to rc.color,
+                        "category" to rc.category, "manufacturingMonth" to rc.manufacturingMonth,
+                        "registrationDate" to rc.registrationDate, "registeredAt" to rc.registeredAt,
+                        "cubicCapacity" to rc.cubicCapacity, "bodyType" to rc.bodyType
+                    ),
+                    "validity" to obj(
+                        "insuranceCompany" to rc.insuranceCompany, "insuranceUpto" to rc.insuranceUpto,
+                        "puccUpto" to rc.puccUpto, "fitnessUpto" to rc.fitnessUpto, "taxUpto" to rc.taxUpto
+                    ),
+                    "ownership" to obj("ownerCount" to rc.ownerCount, "financed" to rc.financed, "financer" to rc.financer),
+                    "compliance" to obj(
+                        "rcStatus" to rc.rcStatus, "blacklistStatus" to rc.blacklistStatus,
+                        "nocDetails" to rc.nocDetails, "nonUseStatus" to rc.nonUseStatus
+                    ),
+                    "identifiers" to obj("chassisNumber" to rc.chassisNumber, "engineNumber" to rc.engineNumber),
+                    "technical" to obj(
+                        "emissionNorms" to rc.emissionNorms, "cylinders" to rc.cylinders,
+                        "seatCapacity" to rc.seatCapacity, "unladenWeightKg" to rc.unladenWeightKg
+                    ),
+                    "registration" to obj("rtoCode" to rc.rtoCode, "recordUpdatedOn" to rc.recordUpdatedOn)
+                ),
+                "partial" to rc.partial,
+                "source" to rc.source,
+                "chassisMatch" to rc.chassisMatch,
+                "fetchedAt" to rc.fetchedAt,
+                "mode" to rc.mode
+            )
+        }
     }
 }
 

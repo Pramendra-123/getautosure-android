@@ -29,7 +29,7 @@ fun ExpertListScreen(viewModel: ConsultationViewModel, onSelectExpert: (String) 
     val expertsState by viewModel.experts.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-        Text("Get Real Expert", style = GetAutoSureType.ScreenTitle)
+        Text("Ask a real expert", style = GetAutoSureType.ScreenTitle)
         Spacer(Modifier.height(4.dp))
         Text(
             "Get expert advice for your car, directly from a real automotive professional.",

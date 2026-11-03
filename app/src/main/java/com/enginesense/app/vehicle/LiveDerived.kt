@@ -61,6 +61,9 @@ object LiveDerivedCalculator {
         )
     }
 
+    /** Nothing the user enters can fix this one, so the screen offers no "add details" button for it. */
+    const val MILEAGE_NOT_REPORTED = "This car doesn't report the readings needed to work out mileage."
+
     private fun unavailableReason(readings: Map<PidId, PidReading>, engineCc: Int?, fuelType: String?, air: AirFlow?): String? {
         if (fuelType != "Petrol" && fuelType != "Diesel") {
             return if (fuelType == null) "Set your car's fuel type to see mileage." else "Mileage in km/l isn't available for $fuelType cars."
@@ -70,7 +73,7 @@ object LiveDerivedCalculator {
         val hasMap = value(readings, PidId.INTAKE_MANIFOLD_PRESSURE) != null
         return when {
             hasMaf -> null
-            !hasMap && readings.containsKey(PidId.INTAKE_MANIFOLD_PRESSURE) -> "This car doesn't report air flow or manifold pressure, so mileage can't be worked out."
+            !hasMap && readings.containsKey(PidId.INTAKE_MANIFOLD_PRESSURE) -> MILEAGE_NOT_REPORTED
             engineCc == null -> "Add your engine size (cc) to see estimated mileage."
             else -> "Waiting for readings…"
         }

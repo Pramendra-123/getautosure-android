@@ -281,7 +281,7 @@ class RuleBasedAiMechanicChatService(
                 }
             }
 
-            "cost" in q || "how much" in q -> costAnswer(q, worst?.title ?: referent?.title)
+            "cost" in q || "how much" in q -> costAnswer(q, worst?.title ?: referent?.title, worst)
 
             "vin" in q || "ecu" in q -> when {
                 context.vin != null -> "Your VIN is ${context.vin}." + (context.ecuName?.let { " ECU: $it." } ?: "")
@@ -382,17 +382,29 @@ class RuleBasedAiMechanicChatService(
      * all). Falls back to the original honest refusal when nothing in the table matches —
      * this never guesses a number for a category it doesn't have.
      */
-    private fun costAnswer(q: String, subjectTitle: String?): String {
-        val match = subjectTitle?.let { RepairCostReference.findByTitle(it) } ?: RepairCostReference.findByQuestion(q)
+    private fun costAnswer(q: String, subjectTitle: String?, subject: AiFinding? = null): String {
+        // A fault code's likely causes name the parts that might need replacing, the same text
+        // the Repair Guidance screen prices, so both give the same ranges.
+        val fromFinding = subject?.let { f ->
+            val ref = f.relatedDtcCodes.firstOrNull()?.let { CommonDtcGlossary.lookup(it) }
+            RepairCostReference.findAllByText(listOfNotNull(f.title, f.summary, ref?.meaning, ref?.possibleCauses).joinToString(" "))
+        }.orEmpty()
+        if (fromFinding.size > 1) {
+            return "For ${subjectTitle?.replaceFirstChar { it.lowercase() } ?: "this"}, it depends on the actual cause. Tentative ranges:\n" +
+                fromFinding.joinToString("\n") { "• If it's ${it.category.lowercase()}: ₹${"%,d".format(it.minInr)}–₹${"%,d".format(it.maxInr)}" } +
+                "\n\nThese are rough estimates, not quotes — they vary by city, workshop and your car's segment. " +
+                "Ask the mechanic to find the cause before replacing parts, and confirm the price before agreeing."
+        }
+        val match = fromFinding.firstOrNull()
+            ?: subjectTitle?.let { RepairCostReference.findByTitle(it) }
+            ?: RepairCostReference.findByQuestion(q)
         return if (match != null) {
             "Tentative range for ${match.category.lowercase()}: ₹${"%,d".format(match.minInr)}–₹${"%,d".format(match.maxInr)}. " +
                 "${match.note}. This is a rough estimate, not a real quote — it varies by city, workshop, and your car's segment. " +
                 "Always confirm the actual price with your mechanic before agreeing."
         } else {
-            "I don't have real repair-cost data for that specific issue — that needs a priced quote " +
-                "from a workshop or a cost-estimation service, which isn't connected in this build. " +
-                "I won't guess a number; ask a mechanic for a quote on: " +
-                (subjectTitle ?: "your scan results") + "."
+            "I don't have a typical price range for that one, and I won't guess a number. " +
+                "Ask the workshop for an itemised quote on: " + (subjectTitle ?: "your scan results") + "."
         }
     }
 

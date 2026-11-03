@@ -173,6 +173,18 @@ class FallbackAiMechanicChatServiceTest {
     }
 
     @Test
+    fun `the same notice isn't repeated on later answers in the conversation`() = runTest {
+        val remote = ThrowingAiMechanicChatService(RemoteAiNotAuthenticatedException())
+        val local = FixedAiMechanicChatService("local answer")
+        val service = FallbackAiMechanicChatService(remote, local)
+        val first = service.ask(NO_SCAN, emptyList(), "question")
+        val second = service.ask(NO_SCAN, listOf(ChatMessage(true, "question"), first), "another")
+        assertTrue(first.text.contains(FallbackAiMechanicChatService.AUTH_FALLBACK_NOTICE))
+        assertFalse(second.text.contains(FallbackAiMechanicChatService.AUTH_FALLBACK_NOTICE))
+        assertTrue(second.text.contains("local answer"))
+    }
+
+    @Test
     fun `an HTTP 401 from the backend falls back to local WITH the auth notice`() = runTest {
         val remote = ThrowingAiMechanicChatService(RemoteAiHttpException(401))
         val local = FixedAiMechanicChatService("local answer")

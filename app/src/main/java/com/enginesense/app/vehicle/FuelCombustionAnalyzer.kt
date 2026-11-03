@@ -8,7 +8,8 @@ import kotlin.math.max
 data class SignalReading(val label: String, val value: String)
 
 data class FuelCombustionInsight(
-    val score: Int,
+    /** Null when this scan had nothing to judge the category on. */
+    val score: Int?,
     val state: CategoryState,
     val primarySignal: SignalReading?,
     val supportingSignals: List<SignalReading>,
@@ -70,7 +71,9 @@ object FuelCombustionAnalyzer {
         } else {
             findingSubscore
         }
-        val state = worstState(listOfNotNull(trimState, findingState) + if (relevantFindings.isEmpty() && trimState == null) listOf(CategoryState.GOOD) else emptyList())
+        // No fuel trim and nothing found is an absence of evidence, not a healthy reading.
+        val noEvidence = relevantFindings.isEmpty() && trimState == null
+        val state = if (noEvidence) CategoryState.UNAVAILABLE else worstState(listOfNotNull(trimState, findingState))
 
         val missing = mutableListOf<String>()
         if (stft == null) missing.add("short-term fuel trim")
@@ -86,7 +89,7 @@ object FuelCombustionAnalyzer {
         }
 
         return FuelCombustionInsight(
-            score = score.coerceIn(0, 100),
+            score = if (noEvidence) null else score.coerceIn(0, 100),
             state = state,
             primarySignal = primary,
             supportingSignals = supporting,

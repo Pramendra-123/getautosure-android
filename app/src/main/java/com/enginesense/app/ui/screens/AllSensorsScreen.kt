@@ -132,7 +132,12 @@ private fun formatReading(pid: PidId, reading: PidReading?): String {
     return when (reading.status) {
         PidStatus.VERIFIED -> {
             val value = reading.value ?: return "—"
-            val formatted = if (value == value.toLong().toDouble()) value.toLong().toString() else "%.2f".format(value)
+            // One decimal like Live Data and the PDF; two only for small values like oxygen-sensor volts.
+            val formatted = when {
+                value == value.toLong().toDouble() -> value.toLong().toString()
+                kotlin.math.abs(value) < 2 -> "%.2f".format(value)
+                else -> "%.1f".format(value)
+            }
             if (pid.unit.isEmpty()) formatted else "$formatted ${pid.unit}"
         }
         PidStatus.IMPLAUSIBLE -> "Unreliable reading"

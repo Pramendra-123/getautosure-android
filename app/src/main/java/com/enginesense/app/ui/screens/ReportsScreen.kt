@@ -44,7 +44,7 @@ import java.util.Locale
 
 /** Everything that used to crowd Home's "My Dashboard" list now lives here, grouped by what it's for. */
 private val LATEST_SCAN_ITEMS = listOf(
-    DiscoverMoreItem("aiReport", "Full AI Report", "The complete narrative write-up of this scan", Icons.Filled.Summarize)
+    DiscoverMoreItem("aiReport", "Full report", "This scan's summary and the shareable PDF", Icons.Filled.Summarize)
 )
 
 private val DIAGNOSTIC_ITEMS = listOf(
@@ -61,7 +61,7 @@ private val PERFORMANCE_ITEMS = listOf(
 )
 
 private val GUIDES_ITEMS = listOf(
-    DiscoverMoreItem("prePurchaseCheck", "Pre-Purchase Check", "Considering buying a car? Scan it first", Icons.Filled.FactCheck),
+    DiscoverMoreItem("prePurchaseCheck", "Used car check", "Buying a car? Catch hidden faults first", Icons.Filled.FactCheck),
     DiscoverMoreItem(
         route = "", title = "Dashboard Warning Light Guide", subtitle = "What that icon on your dash actually means",
         icon = Icons.Filled.WarningAmber, externalUrl = "https://getautosure.com/dash-lights"

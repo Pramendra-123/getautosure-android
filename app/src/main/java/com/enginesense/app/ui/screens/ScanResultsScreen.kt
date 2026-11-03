@@ -151,7 +151,7 @@ fun ScanResultsScreen(
         // 6. The two actions this screen exists to lead to
         item {
             Column {
-                Button(onClick = onOpenFullReport, modifier = Modifier.fillMaxWidth()) { Text("View Full Report") }
+                Button(onClick = onOpenFullReport, modifier = Modifier.fillMaxWidth()) { Text("View full report") }
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(onClick = onOpenAiMechanic, modifier = Modifier.fillMaxWidth()) { Text("Ask AI Mechanic") }
                 Spacer(Modifier.height(8.dp))

@@ -9,8 +9,13 @@ data class DiagnosticFinding(
     val severity: Severity,
     val relatedDtcCodes: List<String> = emptyList(),
     val relatedPids: List<PidId> = emptyList(),
-    val recommendedAction: String
-)
+    val recommendedAction: String,
+    /** Which of the car's code lists this came from, for code-based findings; null for live-reading findings. */
+    val dtcSource: DtcSource? = null
+) {
+    /** A pending or permanent code: the car remembers a fault, but it isn't a confirmed, active one right now. */
+    val isUnconfirmedCode: Boolean get() = dtcSource == DtcSource.PENDING || dtcSource == DtcSource.PERMANENT
+}
 
 /**
  * Pure, deterministic evaluation of a [VehicleSnapshot] into [DiagnosticFinding]s. This
@@ -32,20 +37,47 @@ object DiagnosticRulesEngine {
     ): List<DiagnosticFinding> {
         val findings = mutableListOf<DiagnosticFinding>()
 
-        // Pending/permanent codes aren't confirmed active faults — see DtcSource.
-        for (dtc in snapshot.dtcs.filter { it.source == DtcSource.STORED }) {
-            val explanation = dtcExplanations[dtc.code.uppercase()]
+        val storedCodes = snapshot.dtcs.filter { it.source == DtcSource.STORED }.map { it.code.uppercase() }.distinct()
+        for (code in storedCodes) {
+            val explanation = dtcExplanations[code]
             findings.add(
                 DiagnosticFinding(
-                    id = "DTC_${dtc.code.uppercase()}",
-                    title = "Code ${dtc.code.uppercase()}",
+                    id = "DTC_$code",
+                    title = explanation?.title ?: "Code $code",
                     plainLanguageSummary = explanation?.plainLanguage
-                        ?: "Code ${dtc.code.uppercase()} was reported but isn't in the offline database yet.",
+                        ?: "Code $code was reported but isn't in the offline database yet.",
                     severity = explanation?.severity ?: Severity.MODERATE,
-                    relatedDtcCodes = listOf(dtc.code.uppercase()),
-                    recommendedAction = severityToAction(explanation?.severity ?: Severity.MODERATE)
+                    relatedDtcCodes = listOf(code),
+                    recommendedAction = severityToAction(explanation?.severity ?: Severity.MODERATE),
+                    dtcSource = DtcSource.STORED
                 )
             )
+        }
+
+        // Pending and permanent codes aren't confirmed active faults, so they count for less than a
+        // stored one — but a car that still remembers a fault can't read as a clean 100.
+        fun addUnconfirmed(source: DtcSource, severity: Severity, summary: (String) -> String) {
+            snapshot.dtcs.filter { it.source == source }.map { it.code.uppercase() }.distinct()
+                .filter { it !in storedCodes }
+                .forEach { code ->
+                    findings.add(
+                        DiagnosticFinding(
+                            id = "${source.name}_$code",
+                            title = dtcExplanations[code]?.title ?: "Code $code",
+                            plainLanguageSummary = summary(code),
+                            severity = severity,
+                            relatedDtcCodes = listOf(code),
+                            recommendedAction = severityToAction(severity),
+                            dtcSource = source
+                        )
+                    )
+                }
+        }
+        addUnconfirmed(DtcSource.PERMANENT, Severity.MODERATE) { code ->
+            "The car still holds $code as a permanent code. It was cleared from the normal list, but the car hasn't yet confirmed the fault is fixed."
+        }
+        addUnconfirmed(DtcSource.PENDING, Severity.MINOR) { code ->
+            "The car noticed $code once but hasn't confirmed it yet. It may turn into a stored fault."
         }
 
         findings.addAll(liveThresholdFindings(snapshot))
@@ -123,5 +155,7 @@ object DiagnosticRulesEngine {
  */
 data class DtcExplanationInput(
     val plainLanguage: String,
-    val severity: Severity
+    val severity: Severity,
+    /** A short plain name for the code, like "Cylinder 1 misfire". Null when the code isn't recognized. */
+    val title: String? = null
 )

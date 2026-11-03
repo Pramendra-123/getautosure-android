@@ -286,7 +286,7 @@ object PrePurchaseReportBuilder {
 
     private fun faultLines(findings: List<DiagnosticFinding>, snapshot: VehicleSnapshot?): List<FaultCostLine> {
         val stored = findings
-            .filter { it.severity != Severity.INFO }
+            .filter { it.severity != Severity.INFO && !it.isUnconfirmedCode }
             .sortedBy { it.severity.ordinal }
             .map { f ->
                 val code = f.relatedDtcCodes.firstOrNull()

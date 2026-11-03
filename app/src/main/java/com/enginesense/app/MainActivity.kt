@@ -16,10 +16,10 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -28,6 +28,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import com.enginesense.app.consultation.ConsultationViewModel
+import com.enginesense.app.consultation.LoadState
+import com.enginesense.app.ui.components.LocalMechanicAvailable
 import com.enginesense.app.consultation.MechanicViewModel
 import com.enginesense.app.ui.screens.*
 import com.enginesense.app.vehicle.HealthCategory
@@ -76,7 +78,14 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
     val currentRoute = backStackEntry?.destination?.route
 
     val showBottomBar = BOTTOM_TABS.any { it.route == currentRoute }
+    // A plate typed on the lookup screen before choosing to enter the car by hand.
+    var manualPlate by rememberSaveable { mutableStateOf<String?>(null) }
 
+    // Until the expert list has loaded, assume someone is free rather than hide the prompt.
+    val experts by consultationViewModel.experts.collectAsState()
+    val mechanicAvailable = (experts as? LoadState.Success)?.data?.any { it.nextSlotEpochMillis != null } ?: true
+
+    CompositionLocalProvider(LocalMechanicAvailable provides mechanicAvailable) {
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
@@ -138,7 +147,10 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                         }
                         navController.navigate("addVehicleDetails/${encodeRouteArg(prefill.brand)}/${encodeRouteArg(prefill.model)}$query")
                     },
-                    onEnterManually = { navController.navigate("selectBrand") },
+                    onEnterManually = { plate ->
+                        manualPlate = plate.ifBlank { null }
+                        navController.navigate("selectBrand")
+                    },
                     onSkip = { navController.navigate("connect") }
                 )
             }
@@ -179,7 +191,7 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                     onContinue = { navController.navigate("addVehicleSuccess/${encodeRouteArg(brand)}/${encodeRouteArg(model)}") },
                     initialYear = entry.arguments?.getString("year")?.toIntOrNull(),
                     initialFuelType = entry.arguments?.getString("fuel")?.let { decodeRouteArg(it) },
-                    initialPlate = entry.arguments?.getString("plate")?.let { decodeRouteArg(it) },
+                    initialPlate = entry.arguments?.getString("plate")?.let { decodeRouteArg(it) } ?: manualPlate,
                     initialEngineCc = entry.arguments?.getString("cc")?.toIntOrNull()
                 )
             }
@@ -197,7 +209,9 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                     onConnectObd = { navController.navigate("connect") },
                     onGoHome = {
                         navController.navigate("home") {
-                            popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                            // The whole graph, not the start destination: once onboarding is done the
+                            // splash screen is gone, so popping to it cleared nothing and old screens piled up.
+                            popUpTo(navController.graph.id) { inclusive = true }
                             launchSingleTop = true
                         }
                     },
@@ -227,10 +241,11 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 val connectionState by viewModel.connectionState.collectAsState()
                 val result by viewModel.latestResult.collectAsState()
                 val isPrePurchase by viewModel.scanIsPrePurchaseCheck.collectAsState()
+                val prePurchaseResult by viewModel.prePurchaseResult.collectAsState()
 
-                LaunchedEffect(connectionState, result) {
+                LaunchedEffect(connectionState, result, prePurchaseResult) {
                     when (connectionState) {
-                        is ConnectionFlowState.Idle -> if (result != null) {
+                        is ConnectionFlowState.Idle -> if ((if (isPrePurchase) prePurchaseResult else result) != null) {
                             if (isPrePurchase) {
                                 navController.navigate("prePurchaseResult") {
                                     popUpTo("prePurchaseCheck") { inclusive = false }
@@ -238,7 +253,7 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                                 }
                             } else {
                                 navController.navigate("scanResults") {
-                                    popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                                    popUpTo(navController.graph.id) { inclusive = true }
                                     launchSingleTop = true
                                 }
                             }
@@ -253,7 +268,7 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 // Results replace the whole back stack, so without this, back would close the app.
                 BackHandler {
                     navController.navigate("home") {
-                        popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                        popUpTo(navController.graph.id) { inclusive = true }
                         launchSingleTop = true
                     }
                 }
@@ -265,7 +280,7 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                     onTalkToMechanic = { navController.navigate("expertList") },
                     onDone = {
                         navController.navigate("home") {
-                            popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                            popUpTo(navController.graph.id) { inclusive = true }
                             launchSingleTop = true
                         }
                     }
@@ -384,7 +399,7 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                     onTalkToMechanic = { navController.navigate("expertList") },
                     onDone = {
                         navController.navigate("home") {
-                            popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                            popUpTo(navController.graph.id) { inclusive = true }
                             launchSingleTop = true
                         }
                     }
@@ -494,5 +509,6 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 )
             }
         }
+    }
     }
 }

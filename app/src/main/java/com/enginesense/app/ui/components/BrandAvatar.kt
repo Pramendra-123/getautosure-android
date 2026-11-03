@@ -34,8 +34,12 @@ private val BRAND_PALETTE = listOf(
 
 private fun colorForKey(key: String): Color = BRAND_PALETTE[abs(key.hashCode()) % BRAND_PALETTE.size]
 
-private fun initialsFor(name: String): String =
-    name.split(" ", "-").filter { it.isNotBlank() }.mapNotNull { it.firstOrNull()?.uppercaseChar() }.take(2).joinToString("")
+private fun initialsFor(name: String): String {
+    val words = name.split(" ", "-").filter { it.isNotBlank() }
+    // A brand that's already initials (MG, BMW) keeps them, rather than "MM" for MG Motor.
+    words.firstOrNull()?.takeIf { it.length in 2..3 && it.all(Char::isUpperCase) }?.let { return it }
+    return words.mapNotNull { it.firstOrNull()?.uppercaseChar() }.take(2).joinToString("")
+}
 
 @Composable
 fun BrandAvatar(brand: String, size: Dp = 56.dp, modifier: Modifier = Modifier) {

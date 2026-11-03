@@ -161,7 +161,7 @@ object VehicleReportPdfGenerator {
             health.categories.any { it.state == CategoryState.WATCH } -> WATCH
             else -> GOOD
         }
-        val majorCount = result.findings.count { it.severity == Severity.CRITICAL }
+        val criticalCount = result.findings.count { it.severity == Severity.CRITICAL }
         val watchCount = result.findings.count { it.severity == Severity.MODERATE || it.severity == Severity.MINOR }
         val boxH = 58f
         val boxRect = RectF(MARGIN, b.y, CONTENT_RIGHT, b.y + boxH)
@@ -176,7 +176,7 @@ object VehicleReportPdfGenerator {
         // Clear of "100/100" whatever its width, so the label never runs into the score.
         val labelX = maxOf(MARGIN + 95f, MARGIN + 18f + scoreW + 2f + textPaint(GRAY, 11f).measureText("/100") + 16f)
         b.canvas.drawText(health.label, labelX, b.y + 22f, textPaint(stateColor, 12f, bold = true))
-        val countsText = if (result.findings.isEmpty()) "Nothing flagged this scan" else "$majorCount major · $watchCount to watch"
+        val countsText = if (result.findings.isEmpty()) "Nothing flagged this scan" else "$criticalCount critical · $watchCount to watch"
         b.canvas.drawText(countsText, labelX, b.y + 36f, textPaint(GRAY, 9f))
         b.canvas.drawText("Monitoring 6 systems · ${result.snapshot.readings.size} sensors read this scan", labelX, b.y + 49f, textPaint(GRAY, 8.5f))
         b.y += boxH + 14f
@@ -233,12 +233,12 @@ object VehicleReportPdfGenerator {
         b.y += 14f
 
         val whatItCovers = mapOf(
-            HealthCategory.ENGINE to "Load, RPM, timing, misfire counters",
-            HealthCategory.COOLING to "Coolant temp, fan operation, thermostat behaviour",
-            HealthCategory.FUEL_COMBUSTION to "Fuel trim (STFT/LTFT), O2 sensor response, MAF",
-            HealthCategory.BATTERY to "Voltage, charging behaviour",
-            HealthCategory.DIAGNOSTICS to "Stored & pending trouble codes",
-            HealthCategory.EMISSIONS to "MIL status, readiness monitors"
+            HealthCategory.ENGINE to "Engine load, engine speed, timing, misfires",
+            HealthCategory.COOLING to "Coolant temperature, fan, thermostat",
+            HealthCategory.FUEL_COMBUSTION to "How the engine balances air and fuel",
+            HealthCategory.BATTERY to "Voltage, charging",
+            HealthCategory.DIAGNOSTICS to "Fault codes the car has stored or noticed",
+            HealthCategory.EMISSIONS to "Check-engine light, emissions self-tests"
         )
         val headers = listOf("System", "Score / status", "State", "What it covers")
         val colX = floatArrayOf(MARGIN, MARGIN + 115f, MARGIN + 195f, MARGIN + 300f)
@@ -280,10 +280,10 @@ object VehicleReportPdfGenerator {
         b.y += 16f
 
         if (result.findings.isNotEmpty()) {
-            b.canvas.drawText("DTC SUMMARY", MARGIN, b.y, textPaint(ORANGE, 8.5f, bold = true))
+            b.canvas.drawText("SUMMARY", MARGIN, b.y, textPaint(ORANGE, 8.5f, bold = true))
             b.y += 12f
             val dtcColX = floatArrayOf(MARGIN, MARGIN + 70f, CONTENT_RIGHT - 70f)
-            b.y += drawTableHeader(b.canvas, b.y, dtcColX, listOf("DTC", "Description", "Status"))
+            b.y += drawTableHeader(b.canvas, b.y, dtcColX, listOf("Code", "What it is", "Severity"))
             result.findings.forEach { f ->
                 b.ensure(20f, "Health & findings")
                 val code = f.relatedDtcCodes.firstOrNull() ?: "—"
@@ -469,9 +469,10 @@ object VehicleReportPdfGenerator {
         if (value == value.toLong().toDouble()) value.toLong().toString() else "%.1f".format(value)
 
     private fun severityLabelColor(severity: Severity): Pair<String, Int> = when (severity) {
-        Severity.CRITICAL -> "ATTENTION" to ATTENTION
-        Severity.MODERATE -> "WATCH" to WATCH
-        Severity.MINOR -> "WATCH" to WATCH
+        // Same words the app shows on each finding.
+        Severity.CRITICAL -> "CRITICAL" to ATTENTION
+        Severity.MODERATE -> "MODERATE" to WATCH
+        Severity.MINOR -> "MINOR" to WATCH
         Severity.INFO -> "INFO" to GRAY
     }
 

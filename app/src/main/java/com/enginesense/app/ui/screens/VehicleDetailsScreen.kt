@@ -17,6 +17,7 @@ import com.enginesense.app.GetAutoSureViewModel
 import com.enginesense.app.ui.components.DemoDataBanner
 import com.enginesense.app.ui.theme.GetAutoSureColors
 import com.enginesense.app.ui.theme.GetAutoSureType
+import com.enginesense.app.vehicle.IgnitionType
 import com.enginesense.app.vehicle.ReadinessMonitor
 import com.enginesense.app.vehicle.ReadinessStatus
 
@@ -31,7 +32,7 @@ fun VehicleDetailsScreen(viewModel: GetAutoSureViewModel) {
     val result by viewModel.latestResult.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
-        Text("VIN, ECU & readiness", style = GetAutoSureType.ScreenTitle)
+        Text("Car ID & computer", style = GetAutoSureType.ScreenTitle)
         Spacer(Modifier.height(4.dp))
 
         val r = result
@@ -41,7 +42,7 @@ fun VehicleDetailsScreen(viewModel: GetAutoSureViewModel) {
             return@Column
         }
 
-        Text("Straight from your car's ECU — a dash means it didn't answer, never a guess.", style = GetAutoSureType.Caption)
+        Text("Read from your car's computer. A dash means it didn't answer — we never guess.", style = GetAutoSureType.Caption)
         Spacer(Modifier.height(12.dp))
 
         if (r.isDemo) {
@@ -49,9 +50,9 @@ fun VehicleDetailsScreen(viewModel: GetAutoSureViewModel) {
             Spacer(Modifier.height(12.dp))
         }
 
-        InfoRow("VIN", r.vehicleId.vin ?: "—")
-        InfoRow("ECU Name", r.vehicleId.ecuName ?: "—")
-        InfoRow("Calibration ID", r.vehicleId.calibrationId ?: "—")
+        InfoRow("Chassis number (VIN)", r.vehicleId.vin ?: "—")
+        InfoRow("Engine computer", r.vehicleId.ecuName ?: "—")
+        InfoRow("Software version", r.vehicleId.calibrationId ?: "—")
 
         Spacer(Modifier.height(20.dp))
         Text("Emissions readiness", style = GetAutoSureType.SectionTitle)
@@ -78,7 +79,7 @@ fun VehicleDetailsScreen(viewModel: GetAutoSureViewModel) {
         }
         Spacer(Modifier.height(4.dp))
         Text(
-            "Check-engine light: ${if (readiness.milOn) "ON" else "off"}  ·  Stored DTCs: ${readiness.dtcCount}  ·  Engine type: ${readiness.ignitionType.name.lowercase().replaceFirstChar { it.uppercase() }}",
+            "Check-engine light: ${if (readiness.milOn) "ON" else "off"}  ·  Stored fault codes: ${readiness.dtcCount}  ·  Engine: ${if (readiness.ignitionType == IgnitionType.COMPRESSION) "Diesel" else "Petrol / CNG"}",
             style = GetAutoSureType.Caption
         )
         Spacer(Modifier.height(12.dp))

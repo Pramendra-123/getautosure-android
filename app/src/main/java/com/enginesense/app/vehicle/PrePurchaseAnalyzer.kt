@@ -1,6 +1,7 @@
 package com.enginesense.app.vehicle
 
 import com.enginesense.app.obd.Severity
+import com.enginesense.app.vehicle.ai.CommonDtcGlossary
 
 enum class PurchaseVerdict { GOOD_BUY, BUY_WITH_CAUTION, AVOID }
 
@@ -118,7 +119,7 @@ object PrePurchaseAnalyzer {
             val one = codes.size == 1
             BuyerSignal(
                 title = "Permanent fault code${if (one) "" else "s"} still stored",
-                evidence = "${codes.joinToString(", ")} — ${if (one) "this can't" else "these can't"} be erased with a scanner, and ${if (one) "it's" else "they're"} " +
+                evidence = "${codesWithMeaning(codes)} — ${if (one) "this can't" else "these can't"} be erased with a scanner, and ${if (one) "it's" else "they're"} " +
                     "no longer in the normal fault list. ${if (one) "It was" else "They were"} likely cleared before the fault was fixed.",
                 advice = "Ask what was repaired and for the invoice."
             )
@@ -129,7 +130,7 @@ object PrePurchaseAnalyzer {
         val pendingSignal = pendingOnly.takeIf { it.isNotEmpty() }?.let { codes ->
             BuyerSignal(
                 title = "Developing fault${if (codes.size == 1) "" else "s"} not yet confirmed",
-                evidence = "${codes.joinToString(", ")} — the car has noticed a problem once but hasn't turned on the warning light yet.",
+                evidence = "${codesWithMeaning(codes)} — the car has noticed a problem once but hasn't turned on the warning light yet.",
                 advice = "Ask the seller about it, or scan again after a longer drive."
             )
         }
@@ -179,6 +180,12 @@ object PrePurchaseAnalyzer {
             ecuOdometerKm = snapshot?.verifiedValue(PidId.ODOMETER),
             odometerSupported = odometerSupported
         )
+    }
+
+    /** "P0420 (catalyst system efficiency below threshold)" — the code alone means nothing to a buyer. */
+    private fun codesWithMeaning(codes: List<String>): String = codes.joinToString(", ") { code ->
+        // "(Bank 1)" and the like are dropped: brackets inside brackets read badly, and buyers don't need them.
+        CommonDtcGlossary.lookup(code)?.let { "$code (${it.meaning.replace(Regex("""\s*\(.*\)$"""), "").replaceFirstChar { c -> c.lowercase() }})" } ?: code
     }
 
     private fun preWarmedSignal(snapshot: VehicleSnapshot?): BuyerSignal? {
@@ -234,7 +241,7 @@ object PrePurchaseAnalyzer {
         if (supportedNotReady.isEmpty()) return null
 
         // If there are active critical/moderate findings, this is likely a real fault, not a clear-code signal
-        val hasActiveFaults = findings.any { it.severity == Severity.CRITICAL || it.severity == Severity.MODERATE }
+        val hasActiveFaults = findings.any { !it.isUnconfirmedCode && (it.severity == Severity.CRITICAL || it.severity == Severity.MODERATE) }
         if (hasActiveFaults) return null
 
         return BuyerSignal(

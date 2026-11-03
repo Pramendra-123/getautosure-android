@@ -193,7 +193,6 @@ fun IssueDetailScreen(viewModel: GetAutoSureViewModel, issueId: String) {
         Spacer(Modifier.height(20.dp))
 
         DetailSection("What it means", finding.plainLanguageSummary)
-        DetailSection("Why it matters", finding.severity.label)
         DetailSection("Recommended action", finding.recommendedAction)
         DetailSection("Urgency", urgencyText(finding.severity))
 
@@ -202,10 +201,10 @@ fun IssueDetailScreen(viewModel: GetAutoSureViewModel, issueId: String) {
             Text("View technical details", style = GetAutoSureType.Caption)
             Spacer(Modifier.height(4.dp))
             if (finding.relatedDtcCodes.isNotEmpty()) {
-                Text("DTC: ${finding.relatedDtcCodes.joinToString(", ")}", style = GetAutoSureType.Caption)
+                Text("Fault code: ${finding.relatedDtcCodes.joinToString(", ")}", style = GetAutoSureType.Caption)
             }
             if (finding.relatedPids.isNotEmpty()) {
-                Text("PIDs: ${finding.relatedPids.joinToString(", ") { it.displayName }}", style = GetAutoSureType.Caption)
+                Text("Readings: ${finding.relatedPids.joinToString(", ") { it.displayName }}", style = GetAutoSureType.Caption)
             }
         }
     }
@@ -240,7 +239,7 @@ fun AiReportScreen(viewModel: GetAutoSureViewModel, onPublishReport: () -> Unit 
     val vehicleRc by viewModel.vehicleRc.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().padding(20.dp).verticalScroll(rememberScrollState())) {
-        Text("Advanced Report", style = GetAutoSureType.SectionTitle)
+        Text("Full report", style = GetAutoSureType.SectionTitle)
         Spacer(Modifier.height(4.dp))
         Text("A quick summary of this scan, then your full shareable PDF.", style = GetAutoSureType.Caption)
         Spacer(Modifier.height(16.dp))

@@ -84,13 +84,19 @@ class MockAiServicesTest {
 
     @Test
     fun `cost question never invents a number for an issue not in the tentative cost reference`() = runBlocking {
-        val reply = RuleBasedAiMechanicChatService().ask(
-            contextWithOneCriticalFinding(),
-            emptyList(),
-            "how much could this cost to fix?"
+        val unknown = contextWithOneCriticalFinding().copy(
+            findings = listOf(AiFinding("DTC_U0999", "Code U0999", "A module stopped talking.", "MODERATE", "Get it checked.", listOf("U0999")))
         )
-        assertTrue(reply.text.contains("don't have real repair-cost data"))
+        val reply = RuleBasedAiMechanicChatService().ask(unknown, emptyList(), "how much could this cost to fix?")
+        assertTrue(reply.text.contains("don't have a typical price range"))
         assertTrue(Regex("[₹$]\\s?\\d").containsMatchIn(reply.text).not())
+    }
+
+    @Test
+    fun `cost question for a misfire prices the same parts as Repair Guidance`() = runBlocking {
+        val reply = RuleBasedAiMechanicChatService().ask(contextWithOneCriticalFinding(), emptyList(), "how much could this cost to fix?")
+        assertTrue(reply.text.contains("spark plugs", ignoreCase = true))
+        assertTrue(reply.text.contains("not quotes") || reply.text.contains("not a real quote"))
     }
 
     @Test

@@ -22,11 +22,14 @@ import com.enginesense.app.vehicle.DtcExplanationInput
 import com.enginesense.app.vehicle.DtcReading
 import com.enginesense.app.vehicle.DtcSource
 import com.enginesense.app.vehicle.FuelCombustionInsight
+import com.enginesense.app.vehicle.ai.CommonDtcGlossary
 import com.enginesense.app.vehicle.FuelSample
 import com.enginesense.app.vehicle.HealthScoreCalculator
 import com.enginesense.app.vehicle.HealthScoreResult
 import com.enginesense.app.vehicle.LiveDerived
 import com.enginesense.app.vehicle.LiveDerivedCalculator
+import com.enginesense.app.vehicle.LiveHistory
+import com.enginesense.app.vehicle.LiveHistorySnapshot
 import com.enginesense.app.vehicle.MileageAnalyzer
 import com.enginesense.app.vehicle.MileageTrendAnalyzer
 import com.enginesense.app.vehicle.MileageTrendResult
@@ -43,6 +46,10 @@ import com.enginesense.app.vehicle.TripMileageResult
 import com.enginesense.app.vehicle.VehicleSnapshot
 import com.enginesense.app.storage.PersistedTripMileage
 import com.enginesense.app.storage.ScanHistoryStore
+import com.enginesense.app.storage.VehicleProfile
+import com.enginesense.app.storage.VehicleProfileStore
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import com.enginesense.app.vehiclelookup.RcLookupResult
 import com.enginesense.app.vehiclelookup.RcPrefillMapper
 import com.enginesense.app.storage.TripMileageStore
@@ -138,6 +145,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
     private val dtcRepository = DtcRepository(application)
     private val scanHistoryStore = ScanHistoryStore(application)
     private val tripMileageStore = TripMileageStore(application)
+    private val vehicleProfileStore = VehicleProfileStore(application)
     private val aiReportService: AiCarHealthReportService = TemplateAiCarHealthReportService()
 
     // In-memory only, never persisted. A real-device test showed getFreshGoogleIdToken's
@@ -249,6 +257,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
 
     fun setVehicleEngineCc(cc: Int?) {
         _vehicleEngineCc.value = cc
+        persistVehicle()
     }
 
     /** The RTO record confirmed during Add Vehicle — shown in the advanced and dealer reports. Null when the car was entered by hand. */
@@ -257,6 +266,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
 
     fun setVehicleRc(rc: RcLookupResult?) {
         _vehicleRc.value = rc
+        persistVehicle()
     }
 
     /** User-entered only — this app has no vehicle spec catalog, so the manufacturer-claimed (ARAI) figure is never looked up, only typed in. Shown on the Trip Mileage screen as a labeled lab-test reference, never used to judge a "drop". */
@@ -265,14 +275,20 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
 
     fun setVehicleClaimedMileage(kmPerLitre: Double?) {
         _vehicleClaimedMileageKmPerLitre.value = kmPerLitre
+        persistVehicle()
     }
 
     /** Set right before navigating into a scan so the post-scan screen knows whether this is "my car" or a car being considered for purchase. Reset once the Pre-Purchase result screen is shown, so a later "Run a new scan" from Home doesn't redirect there by accident. */
     private val _scanIsPrePurchaseCheck = MutableStateFlow(false)
     val scanIsPrePurchaseCheck: StateFlow<Boolean> = _scanIsPrePurchaseCheck.asStateFlow()
 
+    /** The seller's car from the last Used Car Check. Kept apart from [latestResult] and [history], which are the user's own car. */
+    private val _prePurchaseResult = MutableStateFlow<ScanResult?>(null)
+    val prePurchaseResult: StateFlow<ScanResult?> = _prePurchaseResult.asStateFlow()
+
     fun startPrePurchaseCheck() {
         _scanIsPrePurchaseCheck.value = true
+        _prePurchaseResult.value = null
     }
 
     fun clearPrePurchaseCheck() {
@@ -287,6 +303,10 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
 
     private val _liveDerived = MutableStateFlow(LiveDerived())
     val liveDerived: StateFlow<LiveDerived> = _liveDerived.asStateFlow()
+
+    /** The last minute of readings per sensor, for Live Data's scrolling graphs. */
+    private val _liveHistory = MutableStateFlow(LiveHistorySnapshot())
+    val liveHistory: StateFlow<LiveHistorySnapshot> = _liveHistory.asStateFlow()
 
     private var liveJob: Job? = null
 
@@ -311,6 +331,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         _vehicleBrand.value = brand
         _vehicleNickname.value = nickname
         _vehicleModel.value = model
+        persistVehicle()
     }
 
     fun setVehicleDetails(year: Int?, fuelType: String?, odometerKm: Int?, plate: String? = null, engineCc: Int? = null) {
@@ -324,10 +345,48 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         if (rc != null && RcPrefillMapper.normalizePlate(plate.orEmpty()) != RcPrefillMapper.normalizePlate(rc.registrationNumber)) {
             _vehicleRc.value = null
         }
+        persistVehicle()
+    }
+
+    private val vehicleSaveLock = Mutex()
+
+    /**
+     * Saves the car after every change, so it's still there the next time the app opens. The
+     * values are read inside the lock, so whichever save runs last writes the newest car — an
+     * older save finishing late can't overwrite details set just after it.
+     */
+    private fun persistVehicle() {
+        viewModelScope.launch(Dispatchers.IO) {
+            vehicleSaveLock.withLock {
+                vehicleProfileStore.save(
+                    VehicleProfile(
+                        brand = _vehicleBrand.value, nickname = _vehicleNickname.value, model = _vehicleModel.value,
+                        year = _vehicleYear.value, fuelType = _vehicleFuelType.value, odometerKm = _vehicleOdometerKm.value,
+                        plate = _vehiclePlate.value, engineCc = _vehicleEngineCc.value,
+                        claimedMileageKmPerLitre = _vehicleClaimedMileageKmPerLitre.value, rc = _vehicleRc.value
+                    )
+                )
+            }
+        }
+    }
+
+    private suspend fun loadVehicle() {
+        val p = withContext(Dispatchers.IO) { vehicleProfileStore.load() } ?: return
+        _vehicleBrand.value = p.brand
+        _vehicleNickname.value = p.nickname
+        _vehicleModel.value = p.model
+        _vehicleYear.value = p.year
+        _vehicleFuelType.value = p.fuelType
+        _vehicleOdometerKm.value = p.odometerKm
+        _vehiclePlate.value = p.plate
+        _vehicleEngineCc.value = p.engineCc
+        _vehicleClaimedMileageKmPerLitre.value = p.claimedMileageKmPerLitre
+        _vehicleRc.value = p.rc
     }
 
     init {
         viewModelScope.launch {
+            loadVehicle()
             loadPersistedHistory()
             // Example timeline scans help while testing; customers only ever see their own.
             if (BuildConfig.DEBUG) seedDemoHistory()
@@ -393,10 +452,15 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
             try {
                 val result = buildScanResult(profileLabel, isDemo, vehicleBrand, System.currentTimeMillis(), makeTransport)
                 _connectionState.update { ConnectionFlowState.Scanning }
-                _latestResult.update { result }
-                _history.update { listOf(result) + it }
-                persistHistory()
-                _chatMessages.update { emptyList() }
+                if (_scanIsPrePurchaseCheck.value) {
+                    // Someone else's car: never let it replace the user's own scan or history.
+                    _prePurchaseResult.update { result }
+                } else {
+                    _latestResult.update { result }
+                    _history.update { listOf(result) + it }
+                    persistHistory()
+                    _chatMessages.update { emptyList() }
+                }
                 _lastRawLog.update { transport?.commandLog() ?: emptyList() }
                 _connectionState.update { ConnectionFlowState.Idle }
             } catch (e: Exception) {
@@ -479,11 +543,11 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
     ): ScanResult {
         val explanations = snapshot.dtcs.associate { dtc ->
             val explained = dtcRepository.explain(dtc.code, snapshot.vehicleBrand)
-            dtc.code.uppercase() to DtcExplanationInput(explained.plainLanguage, explained.severity)
+            dtc.code.uppercase() to DtcExplanationInput(explained.plainLanguage, explained.severity, dtcTitle(dtc.code, explained.rawDescription))
         }
 
         val findings = DiagnosticRulesEngine.evaluate(snapshot, explanations)
-        val health = HealthScoreCalculator.calculate(snapshot, findings)
+        val health = HealthScoreCalculator.calculate(snapshot, findings, readiness)
         val aiContext = AiVehicleContext.from(snapshot, findings, vehicleId, readiness)
         val aiReport = aiReportService.generateReport(aiContext)
 
@@ -572,6 +636,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
                 val unsupported = mutableSetOf<PidId>()
                 val latest = mutableMapOf<PidId, PidReading>()
                 val tripSamples = mutableListOf<FuelSample>()
+                val history = LiveHistory()
                 val startNanos = System.nanoTime()
                 var turboSeen = false
                 var cycle = 0
@@ -585,6 +650,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
                         if (reading.status == PidStatus.UNSUPPORTED) unsupported += pid
                         latest[pid] = reading
                     }
+                    history.add(fresh, (System.nanoTime() - startNanos) / 1_000_000)
 
                     val air = LiveDerivedCalculator.airFlow(latest, _vehicleEngineCc.value)
                     val speed = LiveDerivedCalculator.value(latest, PidId.SPEED_KMH)
@@ -596,6 +662,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
 
                     _liveReadings.update { latest.toMap() }
                     _liveDerived.update { derived }
+                    _liveHistory.update { history.snapshot() }
                     cycle++
                     // A breather for the adapter, not a refresh-rate cap — the reads themselves set the pace.
                     delay(LIVE_LOOP_PAUSE_MS)
@@ -614,11 +681,13 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         _liveState.update { LiveDataState.Idle }
         _liveReadings.update { emptyMap() }
         _liveDerived.update { LiveDerived() }
+        _liveHistory.update { LiveHistorySnapshot() }
     }
 
     /** From the Live Data screen when mileage needs details onboarding didn't collect (e.g. onboarding was skipped). */
     fun setVehicleFuelType(fuelType: String?) {
         _vehicleFuelType.value = fuelType
+        persistVehicle()
     }
 
     /**
@@ -820,6 +889,14 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         tripMileageJob?.cancel()
         transport?.close()
         super.onCleared()
+    }
+
+    /** A short plain name for a fault code ("Cylinder 1 misfire detected"), or null when the code isn't recognized. */
+    private fun dtcTitle(code: String, rawDescription: String): String? {
+        CommonDtcGlossary.lookup(code)?.let { return it.meaning }
+        if (rawDescription.startsWith("Unrecognized code")) return null
+        val text = if (rawDescription == rawDescription.uppercase()) rawDescription.lowercase() else rawDescription
+        return text.replaceFirstChar { it.uppercase() }
     }
 
     companion object {

@@ -74,7 +74,7 @@ val MODELS_BY_MAKE: Map<String, List<String>> = mapOf(
 
 const val OTHER_MODEL = "Other / not sure"
 
-fun modelsFor(make: String): List<String> = listOf(OTHER_MODEL) + (MODELS_BY_MAKE[make] ?: emptyList())
+fun modelsFor(make: String): List<String> = (MODELS_BY_MAKE[make] ?: emptyList()) + OTHER_MODEL
 
 /** What picking a device/test-profile in [ConnectScreen] actually does — one sheet pair reused for all four flows. */
 private enum class ConnectIntent { SCAN, LIVE_DATA, PERFORMANCE, TRIP_MILEAGE }
@@ -101,6 +101,8 @@ fun ConnectScreen(
     val context = LocalContext.current
     val connectionState by viewModel.connectionState.collectAsState()
     val vehicleBrand by viewModel.vehicleBrand.collectAsState()
+    // A Used Car Check scans the seller's car, so the wording mustn't say "my car".
+    val isPrePurchase by viewModel.scanIsPrePurchaseCheck.collectAsState()
     var showDeviceSheet by remember { mutableStateOf(false) }
     var showSimSheet by remember { mutableStateOf(false) }
     var intent by remember { mutableStateOf(ConnectIntent.SCAN) }
@@ -126,7 +128,7 @@ fun ConnectScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState())) {
-        Text("Scan your car", style = GetAutoSureType.ScreenTitle)
+        Text(if (isPrePurchase) "Scan the car you're buying" else "Scan your car", style = GetAutoSureType.ScreenTitle)
         Spacer(Modifier.height(16.dp))
         listOf(
             "Plug the GetAutoSure scanner into the port under the steering wheel.",
@@ -141,16 +143,17 @@ fun ConnectScreen(
         Spacer(Modifier.height(16.dp))
 
         Button(onClick = { connectWithScanner(ConnectIntent.SCAN) }, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-            Text("Scan my car")
+            Text(if (isPrePurchase) "Scan this car" else "Scan my car")
         }
         if (permissionDenied) {
             Spacer(Modifier.height(8.dp))
             Text(
-                "GetAutoSure needs the Nearby devices (Bluetooth) permission to talk to your scanner. Tap Scan my car to allow it.",
+                "GetAutoSure needs the Nearby devices (Bluetooth) permission to talk to your scanner. Tap the scan button again to allow it.",
                 style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Attention)
             )
         }
 
+        if (!isPrePurchase) {
         Spacer(Modifier.height(28.dp))
         Text("More with your scanner", style = GetAutoSureType.SectionTitle)
         Spacer(Modifier.height(10.dp))
@@ -164,6 +167,7 @@ fun ConnectScreen(
         Spacer(Modifier.height(8.dp))
         OutlinedButton(onClick = { connectWithScanner(ConnectIntent.TRIP_MILEAGE) }, modifier = Modifier.fillMaxWidth()) {
             Text("Mileage (km/L) for a drive")
+        }
         }
 
         if (connectionState is ConnectionFlowState.Error) {

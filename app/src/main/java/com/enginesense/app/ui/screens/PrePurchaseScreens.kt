@@ -68,14 +68,14 @@ fun PrePurchaseCheckScreen(viewModel: GetAutoSureViewModel, onStartScan: () -> U
         Text("Considering buying a car?", style = GetAutoSureType.ScreenTitle)
         Spacer(Modifier.height(8.dp))
         Text(
-            "Scan it before you commit — the same health check this app runs on your own car, read as a buy/caution/avoid call instead of an ownership status.",
+            "Scan it before you pay. You get a clear answer — good buy, buy with caution, or avoid — and what to ask the seller.",
             style = GetAutoSureType.Caption
         )
         Spacer(Modifier.height(24.dp))
         listOf(
-            "Plug in at the seller's location, same as any scan",
-            "Free verdict: good buy, buy with caution, or avoid",
-            "Dealer Sathi: itemized talking points for the negotiation"
+            "Plug the scanner into the seller's car, the same way as your own",
+            "Spot faults that were hidden or cleared before the sale",
+            "Check the odometer and RTO record against the car"
         ).forEach { line ->
             Row(modifier = Modifier.padding(vertical = 4.dp)) {
                 Text("•  ", style = GetAutoSureType.Body)
@@ -186,7 +186,7 @@ private fun formatRupees(value: Double): String =
 
 @Composable
 fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onOpenDealer: () -> Unit, onTalkToMechanic: () -> Unit, onDone: () -> Unit) {
-    val result by viewModel.latestResult.collectAsState()
+    val result by viewModel.prePurchaseResult.collectAsState()
     val context = LocalContext.current
     val r = result
     // What the buyer adds at the car — kept here, not in each card, because the PDF needs all of it.
@@ -269,7 +269,7 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onOpenDealer: () ->
                         if (insight.negotiationPoints.isEmpty()) "Nothing to raise beyond the points above" else "${insight.negotiationPoints.size} thing${if (insight.negotiationPoints.size == 1) "" else "s"} worth raising with the seller",
                         style = GetAutoSureType.Body
                     )
-                    Text("Itemized negotiation points — Dealer Sathi", style = GetAutoSureType.Caption)
+                    Text("An itemised list of what to raise when you negotiate", style = GetAutoSureType.Caption)
                 }
                 if (insight.negotiationPoints.isNotEmpty()) {
                     Box(
