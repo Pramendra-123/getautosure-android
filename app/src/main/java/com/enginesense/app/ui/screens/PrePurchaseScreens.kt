@@ -185,7 +185,7 @@ private fun formatRupees(value: Double): String =
     if (value >= 100000) "%.2f L".format(value / 100000) else "%,.0f".format(value)
 
 @Composable
-fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onOpenDealer: () -> Unit, onTalkToMechanic: () -> Unit, onDone: () -> Unit) {
+fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: () -> Unit, onDone: () -> Unit) {
     val result by viewModel.prePurchaseResult.collectAsState()
     val context = LocalContext.current
     val r = result
@@ -261,22 +261,18 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onOpenDealer: () ->
 
         SectionHeader("Price & negotiation")
 
-        // Dealer Pro: the itemized list is the paid part — teased by count, not revealed free.
-        Card(colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenDealer)) {
-            Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        if (insight.negotiationPoints.isEmpty()) "Nothing to raise beyond the points above" else "${insight.negotiationPoints.size} thing${if (insight.negotiationPoints.size == 1) "" else "s"} worth raising with the seller",
-                        style = GetAutoSureType.Body
-                    )
-                    Text("An itemised list of what to raise when you negotiate", style = GetAutoSureType.Caption)
-                }
-                if (insight.negotiationPoints.isNotEmpty()) {
-                    Box(
-                        modifier = Modifier.background(GetAutoSureColors.Good.copy(alpha = 0.15f), RoundedCornerShape(20.dp)).padding(horizontal = 8.dp, vertical = 2.dp)
-                    ) { Text("PRO", style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Good, fontSize = 10.sp)) }
-                    Spacer(Modifier.width(8.dp))
-                    Icon(Icons.Filled.Lock, contentDescription = null, tint = GetAutoSureColors.Unavailable, modifier = Modifier.size(18.dp))
+        // Shown here, not behind a link: it used to open the Dealer Sathi screen, which is for
+        // dealers and doesn't even show this list — a dead end for a buyer.
+        Card(colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
+                Text(
+                    if (insight.negotiationPoints.isEmpty()) "Nothing to raise beyond the points above" else "${insight.negotiationPoints.size} thing${if (insight.negotiationPoints.size == 1) "" else "s"} worth raising with the seller",
+                    style = GetAutoSureType.Body
+                )
+                insight.negotiationPoints.forEach { point ->
+                    Spacer(Modifier.height(8.dp))
+                    Text("• ${point.title}", style = GetAutoSureType.Body)
+                    Text(point.recommendedAction, style = GetAutoSureType.Caption, modifier = Modifier.padding(start = 12.dp))
                 }
             }
         }

@@ -134,18 +134,15 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
             }
             composable("enterRegistration") {
                 EnterRegistrationScreen(
-                    // Straight to the details screen — brand/model came from the RTO record and
-                    // were just confirmed, so the two picker screens are skipped.
+                    // The customer just confirmed the RTO record, so the car is saved as is — no
+                    // pickers and no details form asking for what they've already seen. Anything
+                    // missing can be changed later from Edit vehicle on Home.
                     onConfirmed = { prefill, rc ->
                         // Kept for the reports' RTO section; dropped again if the plate is later changed by hand.
                         viewModel.setVehicleRc(rc)
-                        val query = buildString {
-                            append("?plate=${encodeRouteArg(prefill.registrationNumber)}")
-                            prefill.year?.let { append("&year=$it") }
-                            prefill.fuelType?.let { append("&fuel=${encodeRouteArg(it)}") }
-                            prefill.engineCc?.let { append("&cc=$it") }
-                        }
-                        navController.navigate("addVehicleDetails/${encodeRouteArg(prefill.brand)}/${encodeRouteArg(prefill.model)}$query")
+                        viewModel.setVehicle(prefill.brand, nickname = "", model = prefill.model)
+                        viewModel.setVehicleDetails(prefill.year, prefill.fuelType, odometerKm = null, plate = prefill.registrationNumber, engineCc = prefill.engineCc)
+                        navController.navigate("addVehicleSuccess/${encodeRouteArg(prefill.brand)}/${encodeRouteArg(prefill.model)}")
                     },
                     onEnterManually = { plate ->
                         manualPlate = plate.ifBlank { null }
@@ -312,7 +309,19 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 val issueId = entry.arguments?.getString("issueId") ?: ""
                 IssueDetailScreen(viewModel, issueId)
             }
-            composable("aiReport") { AiReportScreen(viewModel, onPublishReport = { navController.navigate("publishReport") }) }
+            composable("aiReport") {
+                AiReportScreen(
+                    viewModel,
+                    onOpenIssue = { id -> navController.navigate("issueDetail/$id") },
+                    onViewPdf = { file -> navController.navigate("pdfViewer/${encodeRouteArg(file.absolutePath)}") }
+                )
+            }
+            composable(
+                "pdfViewer/{path}",
+                arguments = listOf(navArgument("path") { type = NavType.StringType })
+            ) { entry ->
+                PdfViewerScreen(decodeRouteArg(entry.arguments?.getString("path")))
+            }
             composable("publishReport") {
                 val latestResult by viewModel.latestResult.collectAsState()
                 val vehicleBrand by viewModel.vehicleBrand.collectAsState()
@@ -395,7 +404,6 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
             composable("prePurchaseResult") {
                 PrePurchaseResultScreen(
                     viewModel,
-                    onOpenDealer = { navController.navigate("dealer") },
                     onTalkToMechanic = { navController.navigate("expertList") },
                     onDone = {
                         navController.navigate("home") {

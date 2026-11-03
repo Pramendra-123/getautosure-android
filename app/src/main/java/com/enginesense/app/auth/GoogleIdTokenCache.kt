@@ -10,14 +10,24 @@ private const val ASSUMED_TOKEN_LIFETIME_SECONDS = 15L * 60L
  * token is actually near expiry (decoded from its own `exp` claim), not on every call — the
  * same real-device-tested approach [com.enginesense.app.GetAutoSureViewModel] uses inline for
  * AI Mechanic (see its own doc comment on `authUiContext` for the account-picker-on-every-
- * -message bug this fixes). Pulled out as a reusable class here since
- * [com.enginesense.app.consultation.ConsultationViewModel] is now a second caller;
- * GetAutoSureViewModel's own inline copy is deliberately left as-is rather than migrated, to
- * avoid touching already-working, already-tested code for a refactor nobody asked for.
+ * -message bug this fixes).
+ *
+ * The token is shared by every instance, and [signInWithGoogle] stores the one it gets. Before,
+ * each feature kept its own empty cache, so a customer who had just signed in was asked to sign
+ * in again on their very next step (looking their car up by plate).
  */
 class GoogleIdTokenCache {
     private data class CachedToken(val token: String, val expiresAtEpochSeconds: Long)
-    private var cached: CachedToken? = null
+
+    companion object {
+        @Volatile private var cached: CachedToken? = null
+
+        /** Keeps a token the user just got by signing in, so the next request doesn't ask again. */
+        fun remember(token: String) {
+            val now = System.currentTimeMillis() / 1000
+            cached = CachedToken(token, decodeJwtExpiry(token) ?: (now + ASSUMED_TOKEN_LIFETIME_SECONDS))
+        }
+    }
 
     /**
      * @param uiContext Must be Activity-rooted, not an Application context — see

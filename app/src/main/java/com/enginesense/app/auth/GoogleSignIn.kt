@@ -44,6 +44,7 @@ suspend fun signInWithGoogle(context: Context): Result<GoogleSignInResult> = try
     val request = GetCredentialRequest.Builder().addCredentialOption(option).build()
     val response = CredentialManager.create(context).getCredential(context, request)
     val credential = GoogleIdTokenCredential.createFrom(response.credential.data)
+    GoogleIdTokenCache.remember(credential.idToken)
     Result.success(GoogleSignInResult(credential.displayName, credential.id, credential.idToken))
 } catch (e: Exception) {
     // Every real-world failure here — no configured client ID, no Google account on the

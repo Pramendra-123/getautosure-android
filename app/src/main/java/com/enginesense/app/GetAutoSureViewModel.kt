@@ -14,8 +14,7 @@ import com.enginesense.app.obd.ObdTransport
 import com.enginesense.app.obd.SimulatedObdTransport
 import com.enginesense.app.obd.SimulatedProfile
 import com.enginesense.app.obd.VehicleIdInfo
-import com.enginesense.app.auth.decodeJwtExpiry
-import com.enginesense.app.auth.getFreshGoogleIdToken
+import com.enginesense.app.auth.GoogleIdTokenCache
 import com.enginesense.app.vehicle.DiagnosticFinding
 import com.enginesense.app.vehicle.DiagnosticRulesEngine
 import com.enginesense.app.vehicle.DtcExplanationInput
@@ -152,8 +151,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
     // Credential Manager call triggering an account-picker prompt on every single chat message
     // without this cache — fetching once and reusing until shortly before expiry (per the
     // token's own `exp` claim) cuts that down to roughly once an hour instead.
-    private data class CachedIdToken(val token: String, val expiresAtEpochSeconds: Long)
-    private var cachedIdToken: CachedIdToken? = null
+    private val tokenCache = GoogleIdTokenCache()
 
     // AiBackendConfig.isConfigured is false until a real backend is deployed and its URL set
     // there — this stays local-only (unchanged default behavior) until that happens.
@@ -176,17 +174,13 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
                     // against developer.android.com). See authUiContext's own doc for why that
                     // can't just be captured here the same way endpointUrl is.
                     idTokenProvider = {
-                        val now = System.currentTimeMillis() / 1000
-                        val cached = cachedIdToken
-                        if (cached != null && cached.expiresAtEpochSeconds - TOKEN_EXPIRY_SAFETY_MARGIN_SECONDS > now) {
-                            cached.token
-                        } else {
-                            val uiContext = authUiContext
-                                ?: throw RemoteAiNotAuthenticatedException(IllegalStateException("no UI context available for sign-in"))
-                            val fresh = getFreshGoogleIdToken(uiContext).getOrElse { throw RemoteAiNotAuthenticatedException(it) }
-                            val expiry = decodeJwtExpiry(fresh) ?: (now + ASSUMED_TOKEN_LIFETIME_SECONDS)
-                            cachedIdToken = CachedIdToken(fresh, expiry)
-                            fresh
+                        // The app-wide cache, so the sign-in from onboarding is reused here too.
+                        val uiContext = authUiContext
+                            ?: throw RemoteAiNotAuthenticatedException(IllegalStateException("no UI context available for sign-in"))
+                        try {
+                            tokenCache.get(uiContext)
+                        } catch (e: Exception) {
+                            throw RemoteAiNotAuthenticatedException(e)
                         }
                     },
                     knowledgeRetriever = LocalAutomotiveKnowledgeRetriever()
@@ -902,12 +896,6 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
     companion object {
         /** Keeps the AI Mechanic chat's in-memory history from growing unbounded for the life of the ViewModel. */
         const val MAX_CHAT_MESSAGES = 40
-
-        /** Re-fetch this long before a cached Google ID token's real expiry, so a request never starts with a token that expires mid-flight. */
-        private const val TOKEN_EXPIRY_SAFETY_MARGIN_SECONDS = 60L
-
-        /** Used only when a token's own `exp` claim couldn't be read — observed real expiry is ~1 hour; this is deliberately shorter so a decode failure errs toward re-fetching too often, not too rarely. */
-        private const val ASSUMED_TOKEN_LIFETIME_SECONDS = 15L * 60L
 
         /**
          * Everything Live Data reads. Deliberately the agreed short list (2026-10-27 mockup) — more

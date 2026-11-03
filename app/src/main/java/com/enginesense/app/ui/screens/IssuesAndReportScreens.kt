@@ -18,6 +18,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -219,11 +220,15 @@ private fun DetailSection(heading: String, body: String) {
     }
 }
 
+/**
+ * The complete report, readable in the app — the same sections as the PDF (car, score, problems,
+ * key readings, each system, RTO record, limits) — with the PDF itself as the last card, for
+ * saving or sending on. Before, this screen only repeated the scan summary and pointed at the PDF.
+ */
 @Composable
-fun AiReportScreen(viewModel: GetAutoSureViewModel, onPublishReport: () -> Unit = {}) {
+fun AiReportScreen(viewModel: GetAutoSureViewModel, onOpenIssue: (String) -> Unit = {}, onViewPdf: (java.io.File) -> Unit = {}) {
     val latestResult by viewModel.latestResult.collectAsState()
     val result = latestResult
-    val report = result?.aiReport
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var generatingPdf by remember { mutableStateOf(false) }
@@ -239,15 +244,18 @@ fun AiReportScreen(viewModel: GetAutoSureViewModel, onPublishReport: () -> Unit 
     val vehicleRc by viewModel.vehicleRc.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().padding(20.dp).verticalScroll(rememberScrollState())) {
-        Text("Full report", style = GetAutoSureType.SectionTitle)
+        Text("Full report", style = GetAutoSureType.ScreenTitle)
         Spacer(Modifier.height(4.dp))
-        Text("A quick summary of this scan, then your full shareable PDF.", style = GetAutoSureType.Caption)
-        Spacer(Modifier.height(16.dp))
 
-        if (result == null || report == null) {
+        if (result == null) {
             Text("Run a scan first to get your report.", style = GetAutoSureType.Body)
             return@Column
         }
+
+        val carName = listOfNotNull(vehicleBrand, vehicleModel.takeIf { it.isNotBlank() }).joinToString(" ").ifBlank { "Your car" }
+        val scannedOn = java.text.SimpleDateFormat("d MMM yyyy, h:mm a", java.util.Locale.getDefault()).format(java.util.Date(result.timestampMillis))
+        Text(listOfNotNull(carName, vehiclePlate, "Scanned $scannedOn").joinToString(" · "), style = GetAutoSureType.Caption)
+        Spacer(Modifier.height(16.dp))
 
         if (result.isDemo) {
             DemoDataBanner()
@@ -255,27 +263,86 @@ fun AiReportScreen(viewModel: GetAutoSureViewModel, onPublishReport: () -> Unit 
         }
 
         ReportSummaryCard(result)
-        Spacer(Modifier.height(16.dp))
-
-        Text(report.headline, style = GetAutoSureType.ScreenTitle)
+        Spacer(Modifier.height(12.dp))
+        Text(result.health.label, style = GetAutoSureType.SectionTitle)
         Spacer(Modifier.height(6.dp))
-        Text(report.summary, style = GetAutoSureType.Body.copy(color = GetAutoSureColors.TextSecondary))
-        Spacer(Modifier.height(16.dp))
+        Text(
+            "This scan covers the engine, fuel and emissions systems through the car's standard OBD port. " +
+                "ABS, airbags and other body systems need the manufacturer's own tools and aren't included.",
+            style = GetAutoSureType.Caption
+        )
 
-        report.sections.forEach { section ->
-            Card(colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(section.heading, style = GetAutoSureType.SectionTitle)
-                    Spacer(Modifier.height(6.dp))
-                    Text(section.body, style = GetAutoSureType.Body)
-                }
+        ReportSection("Problems found")
+        if (result.findings.isEmpty()) {
+            Text("Nothing found on this scan.", style = GetAutoSureType.Body)
+        } else {
+            result.findings.forEach { finding ->
+                ReportFindingCard(finding, onClick = { onOpenIssue(finding.id) })
+                Spacer(Modifier.height(10.dp))
             }
-            Spacer(Modifier.height(10.dp))
         }
 
-        Text(report.disclaimer, style = GetAutoSureType.Caption)
-        Spacer(Modifier.height(20.dp))
+        val readings = com.enginesense.app.report.keyReadingRows(result.snapshot)
+        if (readings.isNotEmpty()) {
+            ReportSection("Key readings", "Taken with the engine running. \"Normal\" is for a warmed-up, healthy engine.")
+            ReportCard {
+                readings.forEachIndexed { i, row ->
+                    ReportRow(row.name, row.value, "Normal ${row.range}", row.chip, Color(row.chipColor))
+                    if (i != readings.lastIndex) HorizontalDivider(color = GetAutoSureColors.SurfaceRaised)
+                }
+            }
+        }
 
+        ReportSection("Each system")
+        ReportCard {
+            result.health.categories.forEachIndexed { i, cat ->
+                val label = cat.score?.let { "$it / 100" } ?: when (cat.state) {
+                    CategoryState.GOOD -> "Good"; CategoryState.WATCH -> "Watch"
+                    CategoryState.ATTENTION -> "Attention"; CategoryState.UNAVAILABLE -> "No data"
+                }
+                ReportRow(cat.category.displayName, label, cat.note, null, GetAutoSureColors.forCategoryState(cat.state), valueColor = GetAutoSureColors.forCategoryState(cat.state))
+                if (i != result.health.categories.lastIndex) HorizontalDivider(color = GetAutoSureColors.SurfaceRaised)
+            }
+        }
+
+        result.readiness?.let { readiness ->
+            ReportSection("Emissions (PUC) self-tests")
+            Text(
+                if (readiness.readyForEmissionsTest) "All of this car's self-tests have finished, so it's ready for a PUC test."
+                else "Some self-tests haven't finished yet: " + readiness.monitors.filter { it.supported && !it.ready }.joinToString(", ") { it.name } +
+                    ". Drive normally for a few days, then scan again before a PUC test.",
+                style = GetAutoSureType.Body
+            )
+        }
+
+        vehicleRc?.let { rc ->
+            ReportSection("RTO record", "The official registration record for this car.")
+            ReportCard {
+                com.enginesense.app.vehiclelookup.RtoRecord.vehicleRows(rc).forEach { row ->
+                    ReportRow(row.label, row.value, null, null, GetAutoSureColors.TextSecondary, valueColor = if (row.concern) GetAutoSureColors.Attention else GetAutoSureColors.TextPrimary)
+                }
+                HorizontalDivider(color = GetAutoSureColors.SurfaceRaised)
+                com.enginesense.app.vehiclelookup.RtoRecord.validity(rc, java.time.LocalDate.now()).forEach { line ->
+                    val (chip, color) = when (line.status) {
+                        com.enginesense.app.vehiclelookup.ValidityStatus.VALID -> "Valid" to GetAutoSureColors.Good
+                        com.enginesense.app.vehiclelookup.ValidityStatus.LIFETIME -> "Lifetime" to GetAutoSureColors.Good
+                        com.enginesense.app.vehiclelookup.ValidityStatus.EXPIRES_SOON -> "Expires soon" to GetAutoSureColors.Watch
+                        com.enginesense.app.vehiclelookup.ValidityStatus.EXPIRED -> "Expired" to GetAutoSureColors.Attention
+                        com.enginesense.app.vehiclelookup.ValidityStatus.UNKNOWN -> "Not on record" to GetAutoSureColors.Unavailable
+                    }
+                    ReportRow(line.label, line.display, null, chip, color)
+                }
+            }
+        }
+
+        ReportSection("What this report doesn't cover")
+        Text(
+            "It's built from the car's own electronic data, so it can't see tyres, brakes, suspension, bodywork, rust or the interior, " +
+                "and it isn't a mechanic's inspection. For anything serious, get it confirmed by a mechanic before you rely on it.",
+            style = GetAutoSureType.Caption
+        )
+
+        ReportSection("PDF report", "The same report as a file, to save or send to a mechanic or buyer.")
         PdfReportActions(
             result = result, context = context, scope = scope,
             generatingPdf = generatingPdf, onGeneratingChange = { generatingPdf = it },
@@ -284,15 +351,68 @@ fun AiReportScreen(viewModel: GetAutoSureViewModel, onPublishReport: () -> Unit 
                 brand = vehicleBrand, nickname = vehicleNickname, model = vehicleModel,
                 year = vehicleYear, fuelType = vehicleFuelType,
                 odometerKm = vehicleOdometerKm, plate = vehiclePlate, rc = vehicleRc
-            )
+            ),
+            onView = onViewPdf
         )
 
-        Spacer(Modifier.height(10.dp))
-        OutlinedButton(onClick = onPublishReport, modifier = Modifier.fillMaxWidth()) {
-            Text("Publish Web Report (Dealer Sathi)")
-        }
-
         RawLogSection(viewModel)
+    }
+}
+
+@Composable
+private fun ReportSection(title: String, subtitle: String? = null) {
+    Spacer(Modifier.height(24.dp))
+    Text(title, style = GetAutoSureType.SectionTitle)
+    subtitle?.let {
+        Spacer(Modifier.height(2.dp))
+        Text(it, style = GetAutoSureType.Caption)
+    }
+    Spacer(Modifier.height(10.dp))
+}
+
+@Composable
+private fun ReportCard(content: @Composable ColumnScope.() -> Unit) {
+    Card(colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), content = content)
+    }
+}
+
+/** One line of a report table: name and value, an optional note under them, and an optional status chip. */
+@Composable
+private fun ReportRow(name: String, value: String, note: String?, chip: String?, chipColor: Color, valueColor: Color = GetAutoSureColors.TextPrimary) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(name, style = GetAutoSureType.Body, modifier = Modifier.weight(1f))
+            Text(value, style = GetAutoSureType.Body.copy(color = valueColor))
+            chip?.let {
+                Spacer(Modifier.width(8.dp))
+                SeverityBadge(it, chipColor)
+            }
+        }
+        note?.takeIf { it.isNotBlank() }?.let {
+            Spacer(Modifier.height(2.dp))
+            Text(it, style = GetAutoSureType.Caption)
+        }
+    }
+}
+
+@Composable
+private fun ReportFindingCard(finding: DiagnosticFinding, onClick: () -> Unit) {
+    Card(onClick = onClick, colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(finding.title, style = GetAutoSureType.Body.copy(color = severityColor(finding.severity)), modifier = Modifier.weight(1f))
+                SeverityBadge(finding.severity.name, severityColor(finding.severity))
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(finding.plainLanguageSummary, style = GetAutoSureType.Body.copy(color = GetAutoSureColors.TextSecondary))
+            Spacer(Modifier.height(8.dp))
+            Text("What to do: ${finding.recommendedAction}", style = GetAutoSureType.Body)
+            if (finding.relatedDtcCodes.isNotEmpty()) {
+                Spacer(Modifier.height(4.dp))
+                Text("Code: ${finding.relatedDtcCodes.joinToString(", ")}", style = GetAutoSureType.Caption)
+            }
+        }
     }
 }
 
@@ -356,7 +476,9 @@ private fun PdfReportActions(
     onGeneratingChange: (Boolean) -> Unit,
     reportFile: java.io.File?,
     onReportFileChange: (java.io.File?) -> Unit,
-    vehicleInfo: VehicleReportInfo
+    vehicleInfo: VehicleReportInfo,
+    /** Opens the PDF inside the app, not in whichever PDF app the phone happens to have. */
+    onView: (java.io.File) -> Unit
 ) {
     var pendingLegacySave by remember { mutableStateOf(false) }
     val legacyPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -436,7 +558,7 @@ private fun PdfReportActions(
     } else {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             OutlinedButton(
-                onClick = { context.startActivity(com.enginesense.app.report.viewPdfIntent(context, reportFile)) },
+                onClick = { onView(reportFile) },
                 modifier = Modifier.weight(1f)
             ) { Text("View") }
             OutlinedButton(onClick = { saveCurrentFile(reportFile) }, modifier = Modifier.weight(1f)) { Text("Save") }

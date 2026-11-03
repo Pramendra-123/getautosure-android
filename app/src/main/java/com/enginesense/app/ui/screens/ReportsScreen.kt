@@ -48,7 +48,7 @@ private val LATEST_SCAN_ITEMS = listOf(
 )
 
 private val DIAGNOSTIC_ITEMS = listOf(
-    DiscoverMoreItem("issues", "Fault Codes", "Read & clear diagnostic trouble codes", Icons.Filled.Build),
+    DiscoverMoreItem("issues", "Fault Codes", "Read and clear the car's fault codes", Icons.Filled.Build),
     DiscoverMoreItem("allSensors", "All Sensor Readings", "Every reading your car shares", Icons.Filled.ListAlt),
     DiscoverMoreItem("vehicleDetails", "Car ID & Computer", "Chassis number (VIN) and the engine computer", Icons.Filled.Description),
     DiscoverMoreItem("milStatus", "Check-Engine Light & Emissions", "Is the warning light on, and PUC readiness", Icons.Filled.ReportProblem)
@@ -84,8 +84,7 @@ private val PRO_ITEMS = listOf(
     DiscoverMoreItem("emissionsTrend", "Emissions Trend History", "Beyond this scan's free pass/fail status", Icons.Filled.ShowChart, isPremium = true),
     DiscoverMoreItem("repairCostReference", "Repair Cost Reference", "Beyond the free Service Cost Estimate above", Icons.Filled.RequestQuote, isPremium = true),
     DiscoverMoreItem("pro", "Advanced Live Data", "Logging, export & multi-session graphing", Icons.Filled.Insights, isPremium = true),
-    DiscoverMoreItem("pro", "Multi-Car Garage", "Track more than one vehicle", Icons.Filled.Garage, isPremium = true),
-    DiscoverMoreItem("pro", "Advanced Reports", "PDF export, shareable & branded reports", Icons.Filled.Assessment, isPremium = true)
+    DiscoverMoreItem("pro", "Multi-Car Garage", "Track more than one vehicle", Icons.Filled.Garage, isPremium = true)
 )
 
 /**
