@@ -8,17 +8,31 @@ import org.junit.Test
 class FairPriceEstimatorTest {
 
     @Test
-    fun `a 2 year old car depreciates by the IRDAI 2-year band, 20 percent`() {
+    fun `a 2 year old car is 20 percent below its new price`() {
         val est = FairPriceEstimator.estimate(exShowroomPrice = 1000000.0, ageYears = 2.0, odometerKm = null)
         assertEquals(20, est.depreciationPercent)
         assertFalse(est.beyondPublishedSchedule)
     }
 
     @Test
-    fun `a 10 year old car is flagged as beyond IRDAI's published 5-year schedule`() {
-        val est = FairPriceEstimator.estimate(exShowroomPrice = 500000.0, ageYears = 10.0, odometerKm = null)
+    fun `ages between points on the curve are blended`() {
+        val est = FairPriceEstimator.estimate(exShowroomPrice = 1000000.0, ageYears = 6.5, odometerKm = null)
+        assertEquals(45, est.depreciationPercent)
+    }
+
+    @Test
+    fun `a 7 year old mid-size SUV lands near real used prices, not insurance write-down`() {
+        // A 2019 Creta, mid variant at about ₹15.8 lakh new, sells for roughly ₹8–9.5 lakh.
+        val est = FairPriceEstimator.estimate(exShowroomPrice = 1_580_000.0, ageYears = 7.0, odometerKm = null)
+        assertTrue(est.lowEstimate in 700_000.0..900_000.0)
+        assertTrue(est.highEstimate in 800_000.0..1_000_000.0)
+    }
+
+    @Test
+    fun `a car over 10 years old is flagged as a loose guide`() {
+        val est = FairPriceEstimator.estimate(exShowroomPrice = 500000.0, ageYears = 12.0, odometerKm = null)
         assertTrue(est.beyondPublishedSchedule)
-        assertTrue(est.depreciationPercent > 50)
+        assertTrue(est.depreciationPercent > 58)
     }
 
     @Test

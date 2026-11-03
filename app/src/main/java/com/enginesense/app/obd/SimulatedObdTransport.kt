@@ -62,6 +62,8 @@ class SimulatedObdTransport(private val profile: SimulatedProfile = SimulatedPro
             normalized == "010F" -> intakeTempResponse()
             normalized == "012F" -> fuelLevelResponse()
             normalized == "0104" -> engineLoadResponse()
+            normalized == "0106" -> "41 06 82" // short-term fuel trim +1.6%
+            normalized == "0107" -> "41 07 84" // long-term fuel trim +3.1%
             normalized == "0142" -> voltageResponse()
             normalized == "03" -> dtcResponse()
             normalized == "04" -> { dtcsCleared = true; "OK" }
@@ -111,7 +113,9 @@ class SimulatedObdTransport(private val profile: SimulatedProfile = SimulatedPro
         return bytes.joinToString(" ") { "%02X".format(it) }
     }
 
-    private fun supportedPidsRange0() = "41 00 18 1A 80 00" // marks 0x04,0x05,0x0C,0x0D,0x0F,0x11 supported
+    // Fuel trims (0x06, 0x07) too: real cars report them, and without them Fuel & Combustion
+    // could only ever show "No data" in test mode.
+    private fun supportedPidsRange0() = "41 00 1E 1A 80 00" // marks 0x04-0x07,0x0C,0x0D,0x0F,0x11 supported
     private fun supportedPidsRange20() = "41 20 00 02 00 00" // marks 0x2F (fuel level) supported
 
     private fun supportedPidsRange40(): String = when (profile) {
@@ -119,8 +123,9 @@ class SimulatedObdTransport(private val profile: SimulatedProfile = SimulatedPro
         else -> "41 40 40 00 00 00" // marks 0x42 (module voltage) supported
     }
 
+    // A parked car at idle: ~780 rpm. It used to send ~1726 rpm at 0 km/h, which a real idling car wouldn't.
     private fun rpmResponse(): String = when (profile) {
-        SimulatedProfile.HEALTHY, SimulatedProfile.MISFIRE_DTC -> "41 0C 1A F8" // ~1726 rpm
+        SimulatedProfile.HEALTHY, SimulatedProfile.MISFIRE_DTC -> "41 0C 0C 30" // ~780 rpm
         else -> "41 0C 0A F0" // ~700 rpm idle
     }
 

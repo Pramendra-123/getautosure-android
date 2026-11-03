@@ -75,7 +75,8 @@ object RepairGuidanceBuilder {
             symptoms = ref?.symptoms,
             possibleCauses = causes,
             checks = ref?.diagnosticSteps ?: finding.recommendedAction.takeIf { code == null },
-            costEstimates = RepairCostReference.findAllByText(costText),
+            // Always a tentative range: a specific part when we know one, else the usual cost for that system.
+            costEstimates = RepairCostReference.findAllByText(costText).ifEmpty { listOf(RepairCostReference.fallbackFor(code)) },
             mechanicNote = mechanicNote(finding, code, ref?.meaning, ref?.symptoms, scanDateLabel),
             afterRepair = afterRepairSteps(code),
             hasDetailedReference = ref != null,

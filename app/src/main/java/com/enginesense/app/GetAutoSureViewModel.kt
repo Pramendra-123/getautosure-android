@@ -837,6 +837,14 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         tripMileageJob = null
     }
 
+    /** Starts an AI Mechanic chat about one problem, so "ask about this" opens with the answer already coming. */
+    fun askAiMechanicAbout(finding: DiagnosticFinding, uiContext: Context) {
+        askAiMechanic(
+            "My scan shows \"${finding.title}\". What does it mean for my car, is it safe to drive, and roughly what will it cost to fix?",
+            uiContext
+        )
+    }
+
     fun askAiMechanic(question: String, uiContext: Context) {
         val context = _latestResult.value?.aiContext ?: AiVehicleContext.NO_SCAN
         // History must be the conversation BEFORE this question, not including it — passing

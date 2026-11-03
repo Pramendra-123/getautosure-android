@@ -178,8 +178,9 @@ private fun IssueCard(finding: DiagnosticFinding, onClick: () -> Unit) {
 }
 
 @Composable
-fun IssueDetailScreen(viewModel: GetAutoSureViewModel, issueId: String) {
+fun IssueDetailScreen(viewModel: GetAutoSureViewModel, issueId: String, onOpenAiMechanic: () -> Unit = {}) {
     val result by viewModel.latestResult.collectAsState()
+    val context = LocalContext.current
     val finding = result?.findings?.firstOrNull { it.id == issueId }
 
     Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
@@ -196,6 +197,9 @@ fun IssueDetailScreen(viewModel: GetAutoSureViewModel, issueId: String) {
         DetailSection("What it means", finding.plainLanguageSummary)
         DetailSection("Recommended action", finding.recommendedAction)
         DetailSection("Urgency", urgencyText(finding.severity))
+        OutlinedButton(onClick = { viewModel.askAiMechanicAbout(finding, context); onOpenAiMechanic() }, modifier = Modifier.fillMaxWidth()) {
+            Text("Ask AI Mechanic about this")
+        }
 
         if (finding.relatedDtcCodes.isNotEmpty() || finding.relatedPids.isNotEmpty()) {
             Spacer(Modifier.height(12.dp))
@@ -226,7 +230,7 @@ private fun DetailSection(heading: String, body: String) {
  * saving or sending on. Before, this screen only repeated the scan summary and pointed at the PDF.
  */
 @Composable
-fun AiReportScreen(viewModel: GetAutoSureViewModel, onOpenIssue: (String) -> Unit = {}, onViewPdf: (java.io.File) -> Unit = {}) {
+fun AiReportScreen(viewModel: GetAutoSureViewModel, onOpenIssue: (String) -> Unit = {}, onViewPdf: (java.io.File) -> Unit = {}, onOpenAiMechanic: () -> Unit = {}) {
     val latestResult by viewModel.latestResult.collectAsState()
     val result = latestResult
     val context = LocalContext.current
@@ -277,7 +281,11 @@ fun AiReportScreen(viewModel: GetAutoSureViewModel, onOpenIssue: (String) -> Uni
             Text("Nothing found on this scan.", style = GetAutoSureType.Body)
         } else {
             result.findings.forEach { finding ->
-                ReportFindingCard(finding, onClick = { onOpenIssue(finding.id) })
+                ReportFindingCard(
+                    finding,
+                    onClick = { onOpenIssue(finding.id) },
+                    onAskAi = { viewModel.askAiMechanicAbout(finding, context); onOpenAiMechanic() }
+                )
                 Spacer(Modifier.height(10.dp))
             }
         }
@@ -397,7 +405,7 @@ private fun ReportRow(name: String, value: String, note: String?, chip: String?,
 }
 
 @Composable
-private fun ReportFindingCard(finding: DiagnosticFinding, onClick: () -> Unit) {
+private fun ReportFindingCard(finding: DiagnosticFinding, onClick: () -> Unit, onAskAi: () -> Unit) {
     Card(onClick = onClick, colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -412,6 +420,7 @@ private fun ReportFindingCard(finding: DiagnosticFinding, onClick: () -> Unit) {
                 Spacer(Modifier.height(4.dp))
                 Text("Code: ${finding.relatedDtcCodes.joinToString(", ")}", style = GetAutoSureType.Caption)
             }
+            TextButton(onClick = onAskAi, contentPadding = PaddingValues(0.dp)) { Text("Ask AI Mechanic about this →") }
         }
     }
 }

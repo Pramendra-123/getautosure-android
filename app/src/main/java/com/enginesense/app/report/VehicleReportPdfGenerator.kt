@@ -225,9 +225,8 @@ object VehicleReportPdfGenerator {
         b.y += 20f
         b.y += drawWrapped(
             b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN,
-            "Engine, Cooling and Fuel & Combustion each receive a 0-100 score, fitted to that system's own readings. " +
-                "Battery, Diagnostics and Emissions are shown by status only, not a score — averaging three independent " +
-                "pass/watch/attention states into one number would overstate a precision this data doesn't have.",
+            "Each system gets a 0-100 score from what this scan found in it. \"No data\" means the car didn't report " +
+                "what that system needs, so it isn't scored rather than guessed.",
             textPaint(GRAY, 8.5f)
         )
         b.y += 14f

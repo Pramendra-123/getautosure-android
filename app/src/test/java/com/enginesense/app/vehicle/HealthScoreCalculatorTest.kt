@@ -28,7 +28,7 @@ class HealthScoreCalculatorTest {
     }
 
     @Test
-    fun `scored categories report a 0-100 number, label-only categories do not`() {
+    fun `every category with data reports a 0-100 number`() {
         val readings = mapOf(
             verified(PidId.RPM, 1726.0),
             verified(PidId.COOLANT_TEMP_C, 90.0),
@@ -40,9 +40,9 @@ class HealthScoreCalculatorTest {
         assertEquals(100, result.categories.first { it.category == HealthCategory.ENGINE }.score)
         assertEquals(100, result.categories.first { it.category == HealthCategory.COOLING }.score)
         assertEquals(100, result.categories.first { it.category == HealthCategory.FUEL_COMBUSTION }.score)
-        assertEquals(null, result.categories.first { it.category == HealthCategory.BATTERY }.score)
-        assertEquals(null, result.categories.first { it.category == HealthCategory.EMISSIONS }.score)
-        assertEquals(null, result.categories.first { it.category == HealthCategory.DIAGNOSTICS }.score)
+        assertEquals(100, result.categories.first { it.category == HealthCategory.BATTERY }.score)
+        assertEquals(100, result.categories.first { it.category == HealthCategory.EMISSIONS }.score)
+        assertEquals(100, result.categories.first { it.category == HealthCategory.DIAGNOSTICS }.score)
     }
 
     @Test

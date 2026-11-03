@@ -18,7 +18,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateMapOf
+import com.enginesense.app.vehicle.ExteriorDamage
+import com.enginesense.app.vehicle.pricing.ExShowroomPrices
+import com.enginesense.app.vehicle.pricing.Variant
+import com.enginesense.app.vehicle.pricing.VinHints
+import com.enginesense.app.vehicle.pricing.priceFor
+import com.enginesense.app.vehiclelookup.RcPrefill
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,7 +65,6 @@ import android.widget.Toast
 import androidx.compose.runtime.rememberCoroutineScope
 import com.enginesense.app.report.PrePurchaseReportPdfGenerator
 import com.enginesense.app.report.sharePdfIntent
-import com.enginesense.app.report.viewPdfIntent
 import com.enginesense.app.vehicle.PrePurchaseReport
 import com.enginesense.app.vehicle.PrePurchaseReportBuilder
 import kotlinx.coroutines.Dispatchers
@@ -91,91 +102,136 @@ fun PrePurchaseCheckScreen(viewModel: GetAutoSureViewModel, onStartScan: () -> U
 }
 
 /**
- * Depreciation-based fair price estimate — see [FairPriceEstimator]. Built on IRDAI's
- * published standard motor depreciation schedule, not any company's internal pricing
- * model. The user supplies the ex-showroom price; this app has no price catalog and
- * never guesses one.
+ * Our tentative price for the car: its new (ex-showroom) price from [ExShowroomPrices] for the
+ * chosen make, model and variant, aged by [com.enginesense.app.vehicle.FairPriceEstimator], with
+ * the repair costs above taken off. The make, model and year fill themselves in from the RTO
+ * record or the chassis number when there's one; the buyer can change any of them, or type the
+ * exact new price instead.
  */
 @Composable
-private fun FairPriceEstimateCard(
-    priceInput: String,
-    onPriceChange: (String) -> Unit,
-    yearInput: String,
-    onYearChange: (String) -> Unit,
-    /** From the RTO lookup, when done — wins over [yearInput], which is only asked for without it. */
-    rcYear: Int?,
-    /** Dashboard km if entered, else the car's computer — never asked for twice. */
-    km: Int?
+private fun PriceCard(
+    report: PrePurchaseReport,
+    make: String?, onMake: (String) -> Unit,
+    model: String?, onModel: (String) -> Unit,
+    variant: Variant, onVariant: (Variant) -> Unit,
+    yearInput: String, onYear: (String) -> Unit, autoYear: Int?, autoYearSource: String?,
+    exactPrice: String, onExactPrice: (String) -> Unit,
+    newPriceUsed: Double?, newPriceFromTable: Boolean
 ) {
-    val year = rcYear ?: yearInput.toIntOrNull()
-
     Card(colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Fair Price Estimate", style = GetAutoSureType.Body)
+            Text("Our tentative price", style = GetAutoSureType.SectionTitle)
             Spacer(Modifier.height(2.dp))
-            Text(
-                "Based on the IRDAI standard depreciation schedule — a rough estimate, not a verified valuation.",
-                style = GetAutoSureType.Caption
-            )
+            Text("From the car's new price, its age and km, minus the repairs above. A rough guide, not a valuation.", style = GetAutoSureType.Caption)
             Spacer(Modifier.height(12.dp))
 
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                PickerButton("Make", make, VEHICLE_MAKES.drop(1), onMake, Modifier.weight(1f))
+                PickerButton("Model", model, make?.let { MODELS_BY_MAKE[it] }.orEmpty(), onModel, Modifier.weight(1f))
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Variant", style = GetAutoSureType.Caption)
+                Variant.entries.forEach { v ->
+                    FilterChip(selected = v == variant, onClick = { onVariant(v) }, label = { Text(v.label) })
+                }
+            }
+            Spacer(Modifier.height(8.dp))
             OutlinedTextField(
-                value = priceInput,
-                onValueChange = { onPriceChange(it.filter(Char::isDigit)) },
-                label = { Text("Ex-showroom price (₹)") },
+                value = yearInput,
+                onValueChange = { onYear(it.filter(Char::isDigit).take(4)) },
+                label = { Text("Year of manufacture") },
+                placeholder = { autoYear?.let { Text("$it") } },
+                supportingText = { autoYear?.let { Text("$it from the $autoYearSource — change it if the RC says otherwise") } },
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-            if (rcYear == null) {
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = yearInput,
-                    onValueChange = { onYearChange(it.filter(Char::isDigit).take(4)) },
-                    label = { Text("Year of manufacture") },
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            } else {
-                Spacer(Modifier.height(6.dp))
-                Text("Manufactured $rcYear, from RTO records", style = GetAutoSureType.Caption)
-            }
-
-            val price = priceInput.toDoubleOrNull()
-            val currentYear = Calendar.getInstance().get(Calendar.YEAR)
-            val ageYears = year?.let { (currentYear - it).toDouble().coerceAtLeast(0.5) }
+            OutlinedTextField(
+                value = exactPrice,
+                onValueChange = { onExactPrice(it.filter(Char::isDigit)) },
+                label = { Text("Exact ex-showroom price (optional, ₹)") },
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
 
             Spacer(Modifier.height(12.dp))
-            when {
-                price == null || price <= 0 -> Text(
-                    "Enter the ex-showroom price to see an estimate — we don't have a pricing catalog, so this can't be guessed.",
+            val value = report.value
+            if (value == null) {
+                Text(report.valueMissingReason ?: "", style = GetAutoSureType.Caption)
+            } else {
+                val est = value.fair
+                Text(
+                    "₹${formatRupees(est.lowEstimate)} – ₹${formatRupees(est.highEstimate)}",
+                    style = GetAutoSureType.ScreenTitle.copy(color = GetAutoSureColors.Accent)
+                )
+                Text(
+                    "${est.depreciationPercent}% below the new price after ${est.ageYears} year${if (est.ageYears == 1) "" else "s"}",
                     style = GetAutoSureType.Caption
                 )
-                ageYears == null -> Text(
-                    "Add the year of manufacture, or check RTO records above, to calculate an estimate.",
-                    style = GetAutoSureType.Caption
-                )
-                else -> {
-                    val est = FairPriceEstimator.estimate(price, ageYears, km)
+                if (report.repairMaxInr > 0) {
+                    Spacer(Modifier.height(8.dp))
+                    Text("After the repairs above", style = GetAutoSureType.Caption)
                     Text(
-                        "₹${formatRupees(est.lowEstimate)} – ₹${formatRupees(est.highEstimate)}",
-                        style = GetAutoSureType.SectionTitle.copy(color = GetAutoSureColors.Accent)
+                        "₹${formatRupees(value.afterRepairsLow)} – ₹${formatRupees(value.afterRepairsHigh)}",
+                        style = GetAutoSureType.SectionTitle
                     )
-                    Spacer(Modifier.height(4.dp))
+                }
+                newPriceUsed?.let {
+                    Spacer(Modifier.height(6.dp))
                     Text(
-                        "${est.depreciationPercent}% depreciation over ${est.ageYears} year${if (est.ageYears == 1) "" else "s"}" +
-                            if (km != null) ", adjusted for ${"%,d".format(km)} km" else "",
+                        "New price used: ₹${formatRupees(it)}" + if (newPriceFromTable) " (approx. ex-showroom, ${variant.label.lowercase()} variant)" else " (as entered)",
                         style = GetAutoSureType.Caption
                     )
-                    if (est.beyondPublishedSchedule) {
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "IRDAI only publishes rates up to 5 years — beyond that this extrapolates, it isn't an official figure.",
-                            style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Watch)
-                        )
-                    }
                 }
+            }
+        }
+    }
+}
+
+/** A make or model picker: a button showing the choice that opens the list. */
+@Composable
+private fun PickerButton(label: String, value: String?, options: List<String>, onPick: (String) -> Unit, modifier: Modifier = Modifier) {
+    var open by remember { mutableStateOf(false) }
+    Box(modifier) {
+        OutlinedButton(onClick = { open = true }, enabled = options.isNotEmpty(), modifier = Modifier.fillMaxWidth()) {
+            Text(value ?: label, maxLines = 1)
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            options.forEach { option ->
+                DropdownMenuItem(text = { Text(option) }, onClick = { onPick(option); open = false })
+            }
+        }
+    }
+}
+
+/** What the scan can't see: the buyer counts damage on the body, glass, tyres and cabin, and each adds a tentative repair cost. */
+@Composable
+private fun ExteriorCard(counts: Map<String, Int>, onCount: (String, Int) -> Unit) {
+    Card(colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Walk around the car and count anything you see. Each adds a tentative repair cost.", style = GetAutoSureType.Caption)
+            Spacer(Modifier.height(8.dp))
+            ExteriorDamage.items.forEach { item ->
+                val n = counts[item.id] ?: 0
+                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(item.label, style = GetAutoSureType.Body)
+                        Text("₹${"%,d".format(item.minInr)}–${"%,d".format(item.maxInr)} per ${item.unit}", style = GetAutoSureType.Caption)
+                    }
+                    TextButton(onClick = { onCount(item.id, (n - 1).coerceAtLeast(0)) }, enabled = n > 0) { Text("−") }
+                    Text("$n", style = GetAutoSureType.Body, modifier = Modifier.width(24.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    TextButton(onClick = { onCount(item.id, (n + 1).coerceAtMost(9)) }) { Text("+") }
+                }
+            }
+            val lines = ExteriorDamage.lines(counts)
+            if (lines.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Body and cabin repairs: ₹${"%,d".format(lines.sumOf { it.cost!!.minInr })}–${"%,d".format(lines.sumOf { it.cost!!.maxInr })}",
+                    style = GetAutoSureType.Body.copy(color = GetAutoSureColors.Watch)
+                )
             }
         }
     }
@@ -185,7 +241,7 @@ private fun formatRupees(value: Double): String =
     if (value >= 100000) "%.2f L".format(value / 100000) else "%,.0f".format(value)
 
 @Composable
-fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: () -> Unit, onDone: () -> Unit) {
+fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: () -> Unit, onDone: () -> Unit, onViewPdf: (java.io.File) -> Unit = {}) {
     val result by viewModel.prePurchaseResult.collectAsState()
     val context = LocalContext.current
     val r = result
@@ -193,8 +249,12 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: (
     val rcViewModel: PurchaseRcCheckViewModel = viewModel()
     val rcState by rcViewModel.state.collectAsState()
     var dashboardInput by remember { mutableStateOf("") }
-    var priceInput by remember { mutableStateOf("") }
+    var exactPriceInput by remember { mutableStateOf("") }
     var yearInput by remember { mutableStateOf("") }
+    var make by remember { mutableStateOf<String?>(null) }
+    var model by remember { mutableStateOf<String?>(null) }
+    var variant by remember { mutableStateOf(Variant.MID) }
+    val exteriorCounts = remember { mutableStateMapOf<String, Int>() }
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)) {
         if (r == null) {
@@ -206,11 +266,26 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: (
 
         val insight = PrePurchaseAnalyzer.analyze(r.findings, r.health.score, r.readiness, r.snapshot)
         val rc = (rcState as? PurchaseRcState.Found)?.result
+        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+
+        // Make, model and year fill themselves in — RTO record first, then the chassis number — until the buyer picks their own.
+        val rcPrefill = rc?.let { RcPrefill.from(it) }
+        LaunchedEffect(rcPrefill, r.vehicleId.vin) {
+            if (make == null) make = rcPrefill?.brand?.takeIf { it in MODELS_BY_MAKE } ?: VinHints.make(r.vehicleId.vin)
+            if (model == null) model = rcPrefill?.model?.takeIf { m -> make?.let { MODELS_BY_MAKE[it]?.contains(m) } == true }
+        }
+        val vinYear = VinHints.modelYear(r.vehicleId.vin, currentYear)
+        val autoYear = rcPrefill?.year ?: vinYear
+        val autoYearSource = if (rcPrefill?.year != null) "RTO record" else "chassis number"
+        val tableRange = ExShowroomPrices.lookup(make, model)
+        val newPrice = exactPriceInput.toDoubleOrNull()?.takeIf { it > 0 } ?: tableRange?.priceFor(variant)
+
         val report = PrePurchaseReportBuilder.build(
             findings = r.findings, healthScore = r.health.score, readiness = r.readiness, snapshot = r.snapshot,
             vin = r.vehicleId.vin, dashboardKm = dashboardInput.toDoubleOrNull(), rc = rc, registration = rc?.registrationNumber,
-            exShowroomPriceInr = priceInput.toDoubleOrNull(), buyerEnteredYear = yearInput.toIntOrNull(),
-            currentYear = Calendar.getInstance().get(Calendar.YEAR)
+            exShowroomPriceInr = newPrice, buyerEnteredYear = yearInput.toIntOrNull() ?: autoYear,
+            currentYear = currentYear,
+            exteriorCounts = exteriorCounts.toMap()
         )
         // The report's verdict also counts the buyer's own checks (odometer, chassis), so the screen uses it too.
         val (color, emoji) = when (report.verdict) {
@@ -259,6 +334,9 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: (
         OdometerCheckCard(insight.ecuOdometerKm, insight.odometerSupported, dashboardInput) { dashboardInput = it }
         VehicleIdentityCard(r.vehicleId.vin, isDemo = r.isDemo)
 
+        SectionHeader("Body and cabin", "What the scan can't see")
+        ExteriorCard(exteriorCounts) { id, n -> exteriorCounts[id] = n }
+
         SectionHeader("Price & negotiation")
 
         // Shown here, not behind a link: it used to open the Dealer Sathi screen, which is for
@@ -279,16 +357,19 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: (
 
         Spacer(Modifier.height(16.dp))
 
-        FairPriceEstimateCard(
-            priceInput = priceInput, onPriceChange = { priceInput = it },
-            yearInput = yearInput, onYearChange = { yearInput = it },
-            rcYear = rc?.manufacturingMonth?.take(4)?.toIntOrNull(),
-            km = (dashboardInput.toDoubleOrNull() ?: insight.ecuOdometerKm)?.toInt()
+        PriceCard(
+            report = report,
+            make = make, onMake = { make = it; model = null },
+            model = model, onModel = { model = it },
+            variant = variant, onVariant = { variant = it },
+            yearInput = yearInput, onYear = { yearInput = it }, autoYear = autoYear, autoYearSource = autoYearSource,
+            exactPrice = exactPriceInput, onExactPrice = { exactPriceInput = it },
+            newPriceUsed = newPrice, newPriceFromTable = exactPriceInput.toDoubleOrNull() == null && tableRange != null
         )
 
         Spacer(Modifier.height(16.dp))
         Text(
-            "Want a second opinion? These tools factor in local market listings, which this estimate doesn't:",
+            "Second opinion: these sites also look at local listings.",
             style = GetAutoSureType.Caption
         )
         Spacer(Modifier.height(8.dp))
@@ -303,7 +384,7 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: (
         ) { Text("Cars24 Valuation →") }
 
         SectionHeader("Pre-purchase report", "A PDF of everything above — red flags, odometer, RTO record, repair costs and value")
-        PrePurchaseReportActions(r, report)
+        PrePurchaseReportActions(r, report, onViewPdf)
 
         Spacer(Modifier.height(24.dp))
         Button(onClick = { viewModel.clearPrePurchaseCheck(); onDone() }, modifier = Modifier.fillMaxWidth().height(52.dp)) {
@@ -561,7 +642,7 @@ internal fun OdometerCheckCard(ecuKm: Double?, supported: Boolean?, dashboardInp
  * matches the screen. A saved dealer profile brands it, same as the advanced report.
  */
 @Composable
-private fun PrePurchaseReportActions(result: com.enginesense.app.ScanResult, report: PrePurchaseReport) {
+private fun PrePurchaseReportActions(result: com.enginesense.app.ScanResult, report: PrePurchaseReport, onViewPdf: (java.io.File) -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var file by remember(report) { mutableStateOf<java.io.File?>(null) }
@@ -598,7 +679,7 @@ private fun PrePurchaseReportActions(result: com.enginesense.app.ScanResult, rep
         ) { Text(if (generating) "Making report…" else "Make pre-purchase report (PDF)") }
     } else {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(onClick = { context.startActivity(viewPdfIntent(context, current)) }, modifier = Modifier.weight(1f)) { Text("View") }
+            OutlinedButton(onClick = { onViewPdf(current) }, modifier = Modifier.weight(1f)) { Text("View") }
             Button(onClick = { context.startActivity(sharePdfIntent(context, current)) }, modifier = Modifier.weight(1f)) { Text("Share") }
         }
     }

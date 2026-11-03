@@ -41,7 +41,7 @@ object HealthScoreCalculator {
     )
     private val BATTERY_PIDS = setOf(PidId.CONTROL_MODULE_VOLTAGE)
 
-    /** The categories that get a 0-100 number instead of just a Good/Watch/Attention label. */
+    /** The categories scored from live readings — the ones whose data decides whether there's anything to score at all. */
     private val SCORED_CATEGORIES = setOf(HealthCategory.ENGINE, HealthCategory.COOLING, HealthCategory.FUEL_COMBUSTION)
 
     fun calculate(snapshot: VehicleSnapshot, findings: List<DiagnosticFinding>, readiness: ReadinessStatus? = null): HealthScoreResult {
@@ -133,8 +133,9 @@ object HealthScoreCalculator {
             return CategoryHealth(category, fuelInsight.state, fuelInsight.interpretation, fuelInsight.score)
         }
 
-        val scored = category in SCORED_CATEGORIES
-        val categoryScore = if (scored) max(0, 100 - categoryFindings.sumOf { deductionFor(it.severity) } - (if (hasImplausibleReading && categoryFindings.isEmpty()) 10 else 0)) else null
+        // Every category gets a 0-100 number now, Battery, Diagnostics and Emissions included —
+        // a label alone ("Watch") read as missing next to the scored ones.
+        val categoryScore = max(0, 100 - categoryFindings.sumOf { deductionFor(it.severity) } - (if (hasImplausibleReading && categoryFindings.isEmpty()) 10 else 0))
 
         return when {
             worst == Severity.CRITICAL ->
@@ -145,7 +146,7 @@ object HealthScoreCalculator {
                 CategoryHealth(category, CategoryState.WATCH, "A reading looked unreliable on this scan.", categoryScore)
             // The emissions self-tests haven't all run, so the car itself can't vouch for emissions yet.
             category == HealthCategory.EMISSIONS && readiness != null && !readiness.readyForEmissionsTest ->
-                CategoryHealth(category, CategoryState.UNAVAILABLE, "The car's emissions self-tests haven't finished yet, so this can't be confirmed.", categoryScore)
+                CategoryHealth(category, CategoryState.UNAVAILABLE, "The car's emissions self-tests haven't finished yet, so this can't be confirmed.", score = null)
             else ->
                 CategoryHealth(category, CategoryState.GOOD, "Nothing found here.", categoryScore)
         }

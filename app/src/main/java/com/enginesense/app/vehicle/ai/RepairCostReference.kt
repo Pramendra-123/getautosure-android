@@ -41,8 +41,44 @@ object RepairCostReference {
         RepairCostEntry("Transmission/gearbox service", 2_500, 8_000, "Fluid change vs. deeper repair", listOf("transmission", "gearbox")),
         RepairCostEntry("Head gasket replacement", 10_000, 30_000, "Labor-intensive, engine-dependent", listOf("head gasket")),
         RepairCostEntry("Tyre replacement (per tyre)", 3_000, 9_000, "Depends on size and brand", listOf("tyre", "tire")),
-        RepairCostEntry("General service (oil, filters)", 2_000, 6_000, "Routine interval service", listOf("oil change", "general service", "car service"))
+        RepairCostEntry("General service (oil, filters)", 2_000, 6_000, "Routine interval service", listOf("oil change", "general service", "car service")),
+        RepairCostEntry("Ignition coil", 1_500, 5_000, "Per coil; often found by swapping coils between cylinders", listOf("ignition coil", "coil")),
+        RepairCostEntry("Fuel injector", 2_500, 9_000, "Cleaning vs. replacing one injector", listOf("injector")),
+        RepairCostEntry("Air-flow (MAF) sensor", 3_000, 10_000, "Cleaning can fix it; replacement costs more", listOf("maf", "mass airflow", "air flow")),
+        RepairCostEntry("Throttle body", 800, 12_000, "Cleaning vs. replacing the unit", listOf("throttle")),
+        RepairCostEntry("EGR valve", 3_000, 12_000, "Cleaning vs. replacement; mostly diesels", listOf("egr")),
+        RepairCostEntry("EVAP purge valve / fuel cap", 300, 4_000, "A loose or worn fuel cap is the cheap fix", listOf("evap", "purge", "fuel cap", "gas cap", "vapor")),
+        RepairCostEntry("Coolant temperature sensor", 800, 3_000, "Small part, quick job", listOf("coolant temp", "temperature sensor")),
+        RepairCostEntry("Vacuum leak repair", 500, 4_000, "Usually a cracked hose or gasket", listOf("vacuum leak", "intake leak"))
     )
+
+    /**
+     * A fault with no specific entry still gets a tentative range, by which system its code
+     * belongs to, so the app never answers "how much?" with "I can't say". Wider than a specific
+     * entry on purpose: it covers the usual parts for that system plus a diagnosis fee.
+     */
+    fun fallbackFor(code: String?): RepairCostEntry {
+        val c = code?.uppercase().orEmpty()
+        val subsystem = c.getOrNull(2)
+        return when {
+            c.startsWith("P") && (subsystem == '1' || subsystem == '2') ->
+                RepairCostEntry("Fuel or air sensor / part", 1_500, 8_000, "Most are a sensor, hose or connector", emptyList())
+            c.startsWith("P") && subsystem == '3' ->
+                RepairCostEntry("Ignition part (plug, coil or wiring)", 1_000, 6_000, "Plugs and coils are the usual fix", emptyList())
+            c.startsWith("P") && subsystem == '4' ->
+                RepairCostEntry("Emission-control part", 1_500, 12_000, "From a sensor up to a catalytic converter", emptyList())
+            c.startsWith("P") && (subsystem == '5' || subsystem == '0') ->
+                RepairCostEntry("Engine sensor or idle-control part", 1_000, 6_000, "Usually a sensor or cleaning job", emptyList())
+            c.startsWith("P") && subsystem == '6' ->
+                RepairCostEntry("Wiring or engine computer", 1_000, 15_000, "Wiring fixes are cheap; a new computer isn't", emptyList())
+            c.startsWith("P") && subsystem in listOf('7', '8', '9') ->
+                RepairCostEntry("Gearbox sensor or service", 3_000, 25_000, "From a sensor or fluid change up to gearbox repair", emptyList())
+            c.startsWith("B") || c.startsWith("C") || c.startsWith("U") ->
+                RepairCostEntry("Electrical or body-module repair", 1_000, 10_000, "Often wiring or a connector", emptyList())
+            else ->
+                RepairCostEntry("Diagnosis and repair", 1_000, 10_000, "Includes a workshop diagnosis fee of about ₹500–1,500", emptyList())
+        }
+    }
 
     /** The six most commonly asked-about categories — used for the Repair Guidance screen's inline preview, full list is [entries]. */
     val previewCategories = listOf(

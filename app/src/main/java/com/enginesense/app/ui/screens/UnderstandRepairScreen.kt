@@ -36,19 +36,15 @@ import java.util.Locale
 
 /**
  * Repair Guidance home: every finding from the latest scan, most urgent first, each opening
- * [RepairGuidanceDetailScreen]. Below that, the free-text "what did your mechanic say?" ask is
- * kept for repairs a scan can't see (brakes, suspension, a quotation in hand).
+ * [RepairGuidanceDetailScreen].
  */
 @Composable
 fun UnderstandRepairScreen(
     viewModel: GetAutoSureViewModel,
-    onAsk: () -> Unit,
     onOpenFinding: (findingId: String) -> Unit,
     onRunScan: () -> Unit,
 ) {
     val result by viewModel.latestResult.collectAsState()
-    var description by remember { mutableStateOf("") }
-    val context = LocalContext.current
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
         Text("Repair guidance", style = GetAutoSureType.ScreenTitle)
@@ -83,30 +79,6 @@ fun UnderstandRepairScreen(
             }
         }
 
-        Spacer(Modifier.height(28.dp))
-        Text("Got a mechanic's recommendation?", style = GetAutoSureType.SectionTitle)
-        Spacer(Modifier.height(4.dp))
-        Text("Describe it or paste the quotation — AI Mechanic explains what it means and what to ask.", style = GetAutoSureType.Caption)
-        Spacer(Modifier.height(12.dp))
-        OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
-            modifier = Modifier.fillMaxWidth().height(110.dp),
-            placeholder = { Text("Mechanic said I need a new clutch plate and pressure plate") }
-        )
-        Spacer(Modifier.height(12.dp))
-        OutlinedButton(
-            onClick = {
-                val q = if (description.isBlank()) {
-                    "A mechanic gave me a repair recommendation. What should I know, and what should I ask them?"
-                } else {
-                    "My mechanic recommended: \"$description\". What does this mean, what should I verify, and what should I ask them?"
-                }
-                viewModel.askAiMechanic(q, context)
-                onAsk()
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) { Text("Ask AI Mechanic") }
     }
 }
 

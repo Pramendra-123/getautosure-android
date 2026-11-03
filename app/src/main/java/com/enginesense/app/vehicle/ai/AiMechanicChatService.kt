@@ -403,8 +403,11 @@ class RuleBasedAiMechanicChatService(
                 "${match.note}. This is a rough estimate, not a real quote — it varies by city, workshop, and your car's segment. " +
                 "Always confirm the actual price with your mechanic before agreeing."
         } else {
-            "I don't have a typical price range for that one, and I won't guess a number. " +
-                "Ask the workshop for an itemised quote on: " + (subjectTitle ?: "your scan results") + "."
+            // Never a flat "can't say": the usual range for that kind of repair, clearly tentative.
+            val fallback = RepairCostReference.fallbackFor(subject?.relatedDtcCodes?.firstOrNull())
+            "Tentative range for ${(subjectTitle ?: "this repair").replaceFirstChar { it.lowercase() }}: " +
+                "₹${"%,d".format(fallback.minInr)}–₹${"%,d".format(fallback.maxInr)} (${fallback.category.lowercase()}). ${fallback.note}. " +
+                "This is a rough estimate, not a quote — ask the workshop to find the exact cause and give an itemised price before agreeing."
         }
     }
 

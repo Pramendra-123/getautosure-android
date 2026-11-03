@@ -352,11 +352,11 @@ object PrePurchaseReportPdfGenerator {
         if (dealerPrice != null) {
             drawDealerPrice(b, dealerPrice, value)
         } else if (value == null) {
-            sectionTitle(b, "Fair estimated value", "Based on the IRDAI standard depreciation schedule — a rough estimate, not a verified valuation.", PAGE_COST)
+            sectionTitle(b, "Tentative price", "From the car's new price, its age and km — a rough guide, not a valuation.", PAGE_COST)
             b.y += drawBanner(b.canvas, b.y, report.valueMissingReason ?: "Fair value not available.", GRAY_LIGHT, BORDER, GRAY)
             b.y += 16f
         } else {
-            sectionTitle(b, "Fair estimated value", "Based on the IRDAI standard depreciation schedule — a rough estimate, not a verified valuation.", PAGE_COST)
+            sectionTitle(b, "Tentative price", "From the car's new price, its age and km — a rough guide, not a valuation.", PAGE_COST)
             val boxH = 74f
             b.ensure(boxH + 50f, PAGE_COST)
             val half = (CONTENT_RIGHT - MARGIN - 10f) / 2
@@ -375,7 +375,7 @@ object PrePurchaseReportPdfGenerator {
             b.y += boxH + 10f
             val basis = "${value.fair.depreciationPercent}% depreciation over ${value.fair.ageYears} year${if (value.fair.ageYears == 1) "" else "s"}" +
                 (report.odometer.dashboardKm ?: report.odometer.ecuKm)?.let { ", adjusted for ${km(it)}" }.orEmpty() + "." +
-                (if (value.fair.beyondPublishedSchedule) " IRDAI only publishes rates up to 5 years — beyond that this extrapolates, it isn't an official figure." else "") +
+                (if (value.fair.beyondPublishedSchedule) " Cars over 10 years old vary a lot, so treat this as a loose guide." else "") +
                 " Compare listings for the same model, year and km on CarDekho, Cars24 or OLX — they reflect your local market, this doesn't."
             b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, basis, textPaint(GRAY, 8f))
             b.y += 18f
@@ -392,7 +392,7 @@ object PrePurchaseReportPdfGenerator {
     private fun drawDealerPrice(b: ReportBuilder, dealer: DealerPrice, value: ValueEstimate?) {
         sectionTitle(
             b, "Price",
-            "The dealer's asking range, next to GetAutoSure's independent estimate from the IRDAI depreciation schedule.",
+            "The dealer's asking range, next to GetAutoSure's independent estimate from the car's new price, age and km.",
             PAGE_COST
         )
         val boxH = 74f
@@ -416,7 +416,7 @@ object PrePurchaseReportPdfGenerator {
         b.y += boxH + 10f
         val basis = (value?.let { v ->
             "Estimate: ${v.fair.depreciationPercent}% depreciation over ${v.fair.ageYears} year${if (v.fair.ageYears == 1) "" else "s"}" +
-                (if (v.fair.beyondPublishedSchedule) " (extrapolated beyond IRDAI's 5-year schedule)" else "") + ". "
+                (if (v.fair.beyondPublishedSchedule) " (over 10 years old, a loose guide)" else "") + ". "
         } ?: "") + "The dealer's price is theirs to set; compare listings for the same model, year and km on CarDekho, Cars24 or OLX."
         b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, basis, textPaint(GRAY, 8f))
         b.y += 18f
@@ -598,6 +598,7 @@ object PrePurchaseReportPdfGenerator {
         }
         FaultKind.HIDDEN_PERMANENT -> "Hidden (cleared)" to ATTENTION
         FaultKind.PENDING -> "Developing" to WATCH
+        FaultKind.EXTERIOR -> "Body / cabin" to GRAY
     }
 
     private fun ecuKmText(report: PrePurchaseReport): String = report.odometer.ecuKm?.let { km(it) } ?: when (report.odometer.ecuSupported) {

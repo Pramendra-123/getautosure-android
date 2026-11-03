@@ -29,7 +29,6 @@ import com.enginesense.app.report.DealerReportExtras
 import com.enginesense.app.report.PrePurchaseReportPdfGenerator
 import com.enginesense.app.report.ReportPhoto
 import com.enginesense.app.report.sharePdfIntent
-import com.enginesense.app.report.viewPdfIntent
 import com.enginesense.app.storage.DealerProfileStore
 import com.enginesense.app.ui.theme.GetAutoSureColors
 import com.enginesense.app.ui.theme.GetAutoSureType
@@ -53,7 +52,7 @@ private const val PRICE_STEP_INR = 10_000.0
  * the same as Publish Web Report) and the dealer's condition notes as a page after the summary.
  */
 @Composable
-fun DealerReportScreen(viewModel: GetAutoSureViewModel, withPhotos: Boolean, onSetUpDealerProfile: () -> Unit) {
+fun DealerReportScreen(viewModel: GetAutoSureViewModel, withPhotos: Boolean, onSetUpDealerProfile: () -> Unit, onViewPdf: (java.io.File) -> Unit = {}) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val result by viewModel.latestResult.collectAsState()
@@ -261,7 +260,7 @@ fun DealerReportScreen(viewModel: GetAutoSureViewModel, withPhotos: Boolean, onS
         file?.let { current ->
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                OutlinedButton(onClick = { context.startActivity(viewPdfIntent(context, current)) }, modifier = Modifier.weight(1f)) { Text("View") }
+                OutlinedButton(onClick = { onViewPdf(current) }, modifier = Modifier.weight(1f)) { Text("View") }
                 Button(onClick = { context.startActivity(sharePdfIntent(context, current)) }, modifier = Modifier.weight(1f)) { Text("Share") }
             }
         }

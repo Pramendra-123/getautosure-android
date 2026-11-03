@@ -29,6 +29,15 @@ class RepairCostReferenceTest {
     }
 
     @Test
+    fun `every kind of fault code gets a positive fallback range`() {
+        listOf("P0171", "P0301", "P0420", "P0505", "P0606", "P0700", "B1234", "U0100", null).forEach { code ->
+            val entry = RepairCostReference.fallbackFor(code)
+            assertTrue("$code min must be positive", entry.minInr > 0)
+            assertTrue("$code max must be >= min", entry.maxInr >= entry.minInr)
+        }
+    }
+
+    @Test
     fun `findByTitle matches a finding title mentioning a known category`() {
         val match = RepairCostReference.findByTitle("Engine overheating detected")
         assertNotNull(match)

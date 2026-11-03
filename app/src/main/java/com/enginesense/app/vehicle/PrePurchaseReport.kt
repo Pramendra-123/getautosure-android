@@ -10,8 +10,8 @@ import com.enginesense.app.vehiclelookup.ValidityLine
 import com.enginesense.app.vehiclelookup.ValidityStatus
 import java.time.LocalDate
 
-/** Where a fault in the report came from — only [STORED] codes are findings; the other two come straight from the car's code lists. */
-enum class FaultKind { STORED, HIDDEN_PERMANENT, PENDING }
+/** Where a fault in the report came from — [STORED] codes are findings, the next two come from the car's code lists, and [EXTERIOR] is what the buyer saw on the body or cabin. */
+enum class FaultKind { STORED, HIDDEN_PERMANENT, PENDING, EXTERIOR }
 
 /** One row of "Major faults & estimated repair cost". [cost] is null when no tentative range fits — shown as "needs a workshop quote", never guessed. */
 data class FaultCostLine(
@@ -114,7 +114,9 @@ object PrePurchaseReportBuilder {
         exShowroomPriceInr: Double?,
         buyerEnteredYear: Int?,
         currentYear: Int,
-        today: LocalDate = LocalDate.now()
+        today: LocalDate = LocalDate.now(),
+        /** What the buyer counted on the body, tyres and cabin — see [ExteriorDamage]. */
+        exteriorCounts: Map<String, Int> = emptyMap()
     ): PrePurchaseReport {
         val insight = PrePurchaseAnalyzer.analyze(findings, healthScore, readiness, snapshot)
 
@@ -227,7 +229,7 @@ object PrePurchaseReportBuilder {
                 )
             }
 
-        val faults = faultLines(findings, snapshot)
+        val faults = faultLines(findings, snapshot) + ExteriorDamage.lines(exteriorCounts)
         val priced = faults.filter { it.countedInTotal }.mapNotNull { it.cost }.distinctBy { it.category }
         val repairMin = priced.sumOf { it.minInr }
         val repairMax = priced.sumOf { it.maxInr }
@@ -236,7 +238,7 @@ object PrePurchaseReportBuilder {
         val km = (dashboardKm ?: ecuKm)?.toInt()
         val (value, valueMissing) = when {
             exShowroomPriceInr == null || exShowroomPriceInr <= 0 ->
-                null to "Add the car's ex-showroom price on the Used Car Check screen to see a fair value — this app has no price catalogue, so it isn't guessed."
+                null to "Pick the car's make and model (or add its ex-showroom price) on the Used Car Check screen to see a tentative price."
             manufactureYear == null ->
                 null to "Add the year of manufacture (or check RTO records) to see a fair value."
             else -> {
@@ -267,7 +269,7 @@ object PrePurchaseReportBuilder {
             valueMissingReason = valueMissing,
             // Reassurance next to "Avoid" would undercut it — the red flags speak for that verdict.
             evidence = if (verdict == PurchaseVerdict.AVOID) emptyList() else evidence(readiness, snapshot, odometer, rc),
-            faultsOutsideScore = faults.count { it.kind != FaultKind.STORED },
+            faultsOutsideScore = faults.count { it.kind == FaultKind.HIDDEN_PERMANENT || it.kind == FaultKind.PENDING },
             validity = validity
         )
     }
@@ -290,7 +292,8 @@ object PrePurchaseReportBuilder {
             .sortedBy { it.severity.ordinal }
             .map { f ->
                 val code = f.relatedDtcCodes.firstOrNull()
-                FaultCostLine(code, f.title, FaultKind.STORED, f.severity, costFor(f.title, code), countedInTotal = true)
+                // Always a tentative range, as everywhere else: the usual cost for that system when no part matches.
+                FaultCostLine(code, f.title, FaultKind.STORED, f.severity, costFor(f.title, code) ?: RepairCostReference.fallbackFor(code), countedInTotal = true)
             }
         val storedCodes = stored.mapNotNull { it.code?.uppercase() }.toSet() +
             snapshot?.dtcs.orEmpty().filter { it.source == DtcSource.STORED }.map { it.code.uppercase() }

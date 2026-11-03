@@ -50,6 +50,7 @@ fun ScanResultsScreen(
 ) {
     val result by viewModel.latestResult.collectAsState()
     val r = result
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     if (r == null) {
         Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
@@ -138,6 +139,9 @@ fun ScanResultsScreen(
                         Text("Recommended next step", style = GetAutoSureType.Caption)
                         Spacer(Modifier.height(4.dp))
                         Text(topFinding.recommendedAction, style = GetAutoSureType.Body)
+                        TextButton(onClick = { viewModel.askAiMechanicAbout(topFinding, context); onOpenAiMechanic() }, contentPadding = PaddingValues(0.dp)) {
+                            Text("Ask AI Mechanic about this →")
+                        }
                     }
                 }
             }

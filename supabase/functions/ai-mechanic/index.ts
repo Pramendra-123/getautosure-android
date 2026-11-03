@@ -1,19 +1,10 @@
 // Supabase Edge Function implementing the backend contract described in
 // app/src/main/java/com/enginesense/app/vehicle/ai/RemoteAiModels.kt (RemoteAiProtocol).
 //
-// STATUS: written, not deployed, not tested against a real Supabase project or the real
-// Gemini API. No Supabase/Gemini credentials or CLI access exist in the environment this was
-// written in. Reviewed a second time against Google's live docs (fetched during that review,
-// see README.md) and fixed a real rate-limit race condition found in that pass — still
-// unexecuted, not "working code" until someone deploys and tests it for real.
-//
-// Required secrets (set via `supabase secrets set`):
+// Required secrets (set via the Edge Functions > Secrets page):
 //   GEMINI_API_KEY        — Google AI Studio API key. Never exposed to the client.
 //   GOOGLE_WEB_CLIENT_ID  — same value as GOOGLE_WEB_CLIENT_ID in the Android app's
 //                           GoogleSignIn.kt. Used to verify the audience of incoming ID tokens.
-//                           NOTE: that value is still a placeholder in the Android app as of
-//                           this writing — this function's auth check will correctly reject
-//                           everything until real Google Sign-In is finished on the client side.
 // Required Supabase resources:
 //   ai_mechanic_requests table + check_and_record_ai_mechanic_rate_limit() function —
 //   see ../../migrations/ in this repo.
@@ -70,7 +61,7 @@ ABOUT THIS USER'S OWN VEHICLE, SPECIFICALLY — this part is not optional:
 SAFETY:
 - For overheating, oil pressure warnings, brake failure/soft pedal, or other dangerous symptoms, give clear safety guidance (e.g. stop driving, don't open a hot cooling system) before anything else.
 - Never claim an OBD scan can verify something it physically cannot measure (compression, brake pad thickness, tyre tread, body/rust condition, etc.) — say that needs a physical inspection.
-- Never state a specific repair cost as a real quote. Costs vary by shop and region and you don't have real pricing data — suggest getting a quote from a mechanic instead.
+- When cost comes up, always give a tentative range in Indian rupees (₹) for a typical Indian workshop — per likely part when the cause isn't certain (e.g. "if it's the spark plugs: ₹1,000–4,000; if it's the coil: ₹1,500–5,000"). Never refuse to give a range. Label it clearly as a rough estimate, not a quote, and suggest getting an itemised quote before agreeing to the work.
 - Present causes as possibilities, not confirmed diagnoses, unless scanContext directly confirms them.
 
 RESPONSE FORMAT:
@@ -81,6 +72,7 @@ RESPONSE FORMAT:
   **Possible causes** — up to 4 bullets, one line each.
   **Urgency** — one sentence.
   **Safe next steps** — up to 3 bullets or 2 sentences.
+  **Questions to ask the mechanic** — 1-2 bullets.
   **Limitations** — one closing sentence noting what's general guidance vs. confirmed, and that this isn't a substitute for a mechanic's physical inspection.
 - Keep a full structured answer under roughly 200 words total. Being concise is more useful than being exhaustive — a mechanic can fill in detail a chat answer can't.`;
 

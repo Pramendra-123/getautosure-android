@@ -83,13 +83,13 @@ class MockAiServicesTest {
     }
 
     @Test
-    fun `cost question never invents a number for an issue not in the tentative cost reference`() = runBlocking {
+    fun `cost question for an issue with no specific entry still gives a tentative range, never a refusal`() = runBlocking {
         val unknown = contextWithOneCriticalFinding().copy(
             findings = listOf(AiFinding("DTC_U0999", "Code U0999", "A module stopped talking.", "MODERATE", "Get it checked.", listOf("U0999")))
         )
         val reply = RuleBasedAiMechanicChatService().ask(unknown, emptyList(), "how much could this cost to fix?")
-        assertTrue(reply.text.contains("don't have a typical price range"))
-        assertTrue(Regex("[₹$]\\s?\\d").containsMatchIn(reply.text).not())
+        assertTrue(Regex("₹\\d").containsMatchIn(reply.text))
+        assertTrue(reply.text.contains("not a quote"))
     }
 
     @Test
@@ -118,7 +118,8 @@ class MockAiServicesTest {
         val reply = RuleBasedAiMechanicChatService().ask(context, emptyList(), "how much will this cost to fix?")
         assertTrue(reply.text.contains("Tentative range"))
         assertTrue(Regex("₹[\\d,]+").containsMatchIn(reply.text))
-        assertTrue(reply.text.contains("not a real quote"))
+        // Overheating can be the radiator or the sensor, so it may come back as the "if it's…" list.
+        assertTrue(reply.text.contains("not a real quote") || reply.text.contains("not quotes"))
     }
 
     @Test

@@ -307,13 +307,14 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 arguments = listOf(navArgument("issueId") { type = NavType.StringType })
             ) { entry ->
                 val issueId = entry.arguments?.getString("issueId") ?: ""
-                IssueDetailScreen(viewModel, issueId)
+                IssueDetailScreen(viewModel, issueId, onOpenAiMechanic = { navController.navigate("aiMechanic") })
             }
             composable("aiReport") {
                 AiReportScreen(
                     viewModel,
                     onOpenIssue = { id -> navController.navigate("issueDetail/$id") },
-                    onViewPdf = { file -> navController.navigate("pdfViewer/${encodeRouteArg(file.absolutePath)}") }
+                    onViewPdf = { file -> navController.navigate("pdfViewer/${encodeRouteArg(file.absolutePath)}") },
+                    onOpenAiMechanic = { navController.navigate("aiMechanic") }
                 )
             }
             composable(
@@ -362,7 +363,6 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
             composable("understandRepair") {
                 UnderstandRepairScreen(
                     viewModel,
-                    onAsk = { navController.navigate("aiMechanic") },
                     onOpenFinding = { id -> navController.navigate("repairGuidance/${encodeRouteArg(id)}") },
                     onRunScan = { navController.navigate("connect") }
                 )
@@ -404,6 +404,7 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
             composable("prePurchaseResult") {
                 PrePurchaseResultScreen(
                     viewModel,
+                    onViewPdf = { file -> navController.navigate("pdfViewer/${encodeRouteArg(file.absolutePath)}") },
                     onTalkToMechanic = { navController.navigate("expertList") },
                     onDone = {
                         navController.navigate("home") {
@@ -438,7 +439,8 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 DealerReportScreen(
                     viewModel,
                     withPhotos = entry.arguments?.getString("kind") == "photos",
-                    onSetUpDealerProfile = { navController.navigate("dealerProfile") }
+                    onSetUpDealerProfile = { navController.navigate("dealerProfile") },
+                    onViewPdf = { file -> navController.navigate("pdfViewer/${encodeRouteArg(file.absolutePath)}") }
                 )
             }
             composable("dealerProfile") { DealerProfileScreen(onSaved = { navController.popBackStack() }) }

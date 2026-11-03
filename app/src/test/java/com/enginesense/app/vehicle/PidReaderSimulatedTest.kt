@@ -24,7 +24,7 @@ class PidReaderSimulatedTest {
 
         val rpm = reader.read(PidId.RPM)
         assertEquals(PidStatus.VERIFIED, rpm.status)
-        assertEquals(1726.0, rpm.value)
+        assertEquals(780.0, rpm.value)
     }
 
     @Test

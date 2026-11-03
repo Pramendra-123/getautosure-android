@@ -301,10 +301,9 @@ private fun topFinding(findings: List<DiagnosticFinding>): DiagnosticFinding? {
 }
 
 /**
- * Engine / Cooling / Fuel & Combustion keep their real 0-100 scores. Battery, Diagnostics and
- * Emissions are combined into one "Electrical & Diagnostics" state — there's no honest single
- * score across three independently-scored categories, so this shows their worst state, not an
- * invented average.
+ * Engine / Cooling / Fuel & Combustion get a pill each. Battery, Diagnostics and Emissions share
+ * one "Electrical & Diagnostics" pill showing the lowest of their scores (and the worst state),
+ * not an average, so one problem can't be hidden by two healthy systems.
  */
 @Composable
 private fun CategoryPillsRow(result: ScanResult, onNavigate: (String) -> Unit) {
@@ -321,6 +320,8 @@ private fun CategoryPillsRow(result: ScanResult, onNavigate: (String) -> Unit) {
         }
     }
 
+    val electricalScore = electrical.mapNotNull { it.score }.minOrNull()
+
     Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         scored.forEach { cat ->
             CategoryPill(
@@ -333,7 +334,7 @@ private fun CategoryPillsRow(result: ScanResult, onNavigate: (String) -> Unit) {
         }
         CategoryPill(
             "Electrical & Diagnostics",
-            stateLabel(electricalState),
+            electricalScore?.let { "$it" } ?: stateLabel(electricalState),
             GetAutoSureColors.forCategoryState(electricalState),
             onClick = { onNavigate("healthBreakdown") },
             modifier = Modifier.weight(1f).fillMaxHeight()
