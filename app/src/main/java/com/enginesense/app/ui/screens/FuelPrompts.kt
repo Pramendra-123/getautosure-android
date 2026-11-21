@@ -33,6 +33,7 @@ import com.enginesense.app.drivelab.DriveLabStore
 import com.enginesense.app.drivelab.DriveLabSummary
 import com.enginesense.app.drivelab.DriveRecorderService
 import com.enginesense.app.owner.DetectedFill
+import com.enginesense.app.owner.EntrySource
 import com.enginesense.app.owner.ExpenseCategory
 import com.enginesense.app.owner.ExpenseEntry
 import com.enginesense.app.owner.FuelAutomation
@@ -121,7 +122,7 @@ fun FillUpPrompt(viewModel: GetAutoSureViewModel) {
                         it.copy(
                             tankLitres = size,
                             handledFills = it.handledFills + fill.atMillis,
-                            fuel = it.fuel + FuelEntry(System.currentTimeMillis(), date.toString(), fill.litres(size), paid, odometer, fill.fullTank)
+                            fuel = it.fuel + FuelEntry(System.currentTimeMillis(), date.toString(), fill.litres(size), paid, odometer, fill.fullTank, EntrySource.FILL_UP)
                         )
                     }
                 }
@@ -152,7 +153,7 @@ fun SharedPaymentDialog(viewModel: GetAutoSureViewModel) {
                 if (parsed == null) Text("We couldn't read an amount from that message. Fill it in below.", style = OwnerText.RowSub)
                 parsed?.merchant?.let { Text(it, style = OwnerText.RowTitle) }
                 Text("Date: ${date.format(DAY)}", style = OwnerText.RowTitle.copy(color = GetAutoSureColors.Accent), modifier = Modifier.clickable { pickDate(context, date) { date = it } })
-                PaymentKind.entries.chunked(4).forEach { row ->
+                PaymentKind.entries.chunked(3).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         row.forEach { k ->
                             val on = k == kind
@@ -175,8 +176,8 @@ fun SharedPaymentDialog(viewModel: GetAutoSureViewModel) {
                     val paid = amount.toIntOrNull() ?: return@TextButton
                     val id = System.currentTimeMillis()
                     viewModel.updateOwnerData {
-                        if (kind == PaymentKind.FUEL) it.copy(fuel = it.fuel + FuelEntry(id, date.toString(), null, paid, null, fullTank = false))
-                        else it.copy(expenses = it.expenses + ExpenseEntry(id, date.toString(), expenseCategory(kind), paid, parsed?.merchant ?: "From SMS"))
+                        if (kind == PaymentKind.FUEL) it.copy(fuel = it.fuel + FuelEntry(id, date.toString(), null, paid, null, fullTank = false, source = EntrySource.SHARE))
+                        else it.copy(expenses = it.expenses + ExpenseEntry(id, date.toString(), expenseCategory(kind), paid, parsed?.merchant ?: "", EntrySource.SHARE))
                     }
                     viewModel.clearSharedText()
                 }
@@ -192,5 +193,7 @@ private fun expenseCategory(kind: PaymentKind): ExpenseCategory = when (kind) {
     PaymentKind.WASH -> ExpenseCategory.WASH
     PaymentKind.SERVICE -> ExpenseCategory.SERVICE
     PaymentKind.PARTS -> ExpenseCategory.PARTS
+    PaymentKind.INSURANCE -> ExpenseCategory.INSURANCE
+    PaymentKind.PUC -> ExpenseCategory.PUC
     PaymentKind.FUEL, PaymentKind.OTHER -> ExpenseCategory.OTHER
 }

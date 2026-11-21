@@ -10,8 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
@@ -46,7 +47,7 @@ data class ModeTabs(val tabs: List<ModeTab>) {
         fun forMode(mode: AppMode): ModeTabs = when (mode) {
             AppMode.OWN_CAR -> ModeTabs(listOf(
                 ModeTab("home", "Garage", Icons.Filled.Home), ModeTab("trips", "Trips", Icons.Filled.Route),
-                ModeTab("reports", "Reports", Icons.Filled.Description), PROFILE
+                ModeTab("wallet", "Wallet", Icons.Filled.AccountBalanceWallet), ModeTab("reports", "Reports", Icons.Filled.Description), PROFILE
             ))
             AppMode.BUYING -> ModeTabs(listOf(ModeTab("home", "Home", Icons.Filled.Home), ModeTab("reports", "Reports", Icons.Filled.Description), PROFILE))
             AppMode.DEALER -> ModeTabs(listOf(ModeTab("home", "Home", Icons.Filled.Home), ModeTab("dealerReports", "Reports", Icons.Filled.Description), PROFILE))
@@ -63,16 +64,16 @@ fun ModeBottomBar(tabs: ModeTabs, currentRoute: String?, onSelect: (String) -> U
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            tabs.tabs.forEach { TabItem(it, it.route == currentRoute, onSelect) }
+            tabs.tabs.forEach { TabItem(it, it.route == currentRoute, onSelect, Modifier.weight(1f)) }
         }
     }
 }
 
 @Composable
-private fun TabItem(tab: ModeTab, selected: Boolean, onSelect: (String) -> Unit) {
+private fun TabItem(tab: ModeTab, selected: Boolean, onSelect: (String) -> Unit, modifier: Modifier) {
     val color = if (selected) GetAutoSureColors.Accent else GetAutoSureColors.TextSecondary
     Column(
-        Modifier.size(width = 80.dp, height = 56.dp).clip(CircleShape).clickable(role = Role.Tab) { onSelect(tab.route) },
+        modifier.height(56.dp).clip(RoundedCornerShape(28.dp)).clickable(role = Role.Tab) { onSelect(tab.route) },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {

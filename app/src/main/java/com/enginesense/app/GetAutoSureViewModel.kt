@@ -249,6 +249,12 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         _sharedText.value = text?.takeIf { it.isNotBlank() }
     }
 
+    private val _openRoute = MutableStateFlow<String?>(null)
+    /** A screen a notification asked to open (e.g. the wallet after a payment was added). */
+    val openRoute: StateFlow<String?> = _openRoute.asStateFlow()
+    fun requestRoute(route: String?) { _openRoute.value = route }
+    fun routeOpened() { _openRoute.value = null }
+
     fun clearSharedText() {
         _sharedText.value = null
     }
@@ -468,6 +474,14 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
             // Example timeline scans help while testing; customers only ever see their own.
             if (BuildConfig.DEBUG) seedDemoHistory()
             persistedTripMileage = withContext(Dispatchers.IO) { tripMileageStore.load() }
+        }
+        // A payment added by auto-capture lands on disk; show it in the open wallet.
+        viewModelScope.launch {
+            com.enginesense.app.owner.PaymentAlertListener.captures.collect { stamp ->
+                if (stamp == 0L) return@collect
+                val id = _garage.value.active?.id ?: return@collect
+                _ownerData.value = withContext(Dispatchers.IO) { ownerDataStore.load(id) }
+            }
         }
     }
 

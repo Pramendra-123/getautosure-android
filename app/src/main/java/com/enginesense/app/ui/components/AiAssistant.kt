@@ -49,6 +49,8 @@ fun showsAssistant(route: String?): Boolean = route != null && NO_ASSISTANT_ROUT
 fun aiContextFor(route: String?, findingTitle: String?): AiScreenContext = when {
     route == null -> AiScreenContext("This screen", listOf("Is my car healthy?"))
     route == "home" -> AiScreenContext("Home", listOf("Is my car healthy?", "What should I fix first?", "Is it safe for a long drive?"))
+    route == "wallet" ->
+        AiScreenContext("Your car wallet", listOf("How can I cut my fuel cost?", "Is my car getting expensive to run?", "Why is my mileage low?"))
     route == "connect" -> AiScreenContext("Scan", listOf("How do I connect the scanner?", "Where is the OBD port in my car?", "Can I scan with the engine off?"))
     route.startsWith("issueDetail") || route.startsWith("repairGuidance") -> {
         val t = findingTitle ?: "this problem"

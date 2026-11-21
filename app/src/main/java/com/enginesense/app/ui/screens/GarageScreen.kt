@@ -123,13 +123,13 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
-private val CHIPS = listOf("Health", "Service", "Renewals", "Costs")
+private val CHIPS = listOf("Health", "Service", "Renewals")
 private val DAY = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
 private const val WEEK_MILLIS = 7L * 24 * 60 * 60 * 1000
 
 /**
  * The car owner's home ("Garage"): the car with its switcher and health score, the pulsing Scan
- * button, this week's driving score, then four chips — Health, Service, Renewals and Costs — each
+ * button, this week's driving score, then three chips — Health, Service and Renewals — each
  * opening its own list on the same page. AI Mechanic is the floating button; Trips, Reports and
  * Profile are the bottom tabs.
  */
@@ -166,8 +166,7 @@ fun GarageScreen(
         when (chip) {
             0 -> healthItems(viewModel, result, history, drives, onNavigate)
             1 -> serviceItems(viewModel, owner)
-            2 -> renewalItems(viewModel, owner)
-            else -> costItems(viewModel, owner, drives, result)
+            else -> renewalItems(viewModel, owner)
         }
     }
 }
@@ -205,9 +204,6 @@ private fun CarCard(viewModel: GetAutoSureViewModel, result: ScanResult?, onAddC
     var menuOpen by remember { mutableStateOf(false) }
     val title = nickname.ifBlank { listOfNotNull(brand, model.ifBlank { null }).joinToString(" ").ifBlank { "My car" } }
     val picture = CarImages.forCar(brand, model, fuel)
-    val value = remember(brand, model, year, odo, owner) {
-        OwnerInsights.carValue(brand, model, year, OwnerInsights.currentOdometer(owner, odo), LocalDate.now())
-    }
 
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(GetAutoSureColors.Surface).padding(16.dp)) {
         if (picture != null) {
@@ -266,13 +262,6 @@ private fun CarCard(viewModel: GetAutoSureViewModel, result: ScanResult?, onAddC
                 }
             }
         }
-        if (value != null) {
-            Spacer(Modifier.height(10.dp))
-            Text(
-                "Tentative value ${OwnerInsights.lakhRange(value.lowEstimate, value.highEstimate)} · based on model, age and km",
-                style = OwnerText.RowSub.copy(fontSize = 13.sp)
-            )
-        }
     }
 }
 
@@ -317,24 +306,7 @@ private fun LazyListScope.healthItems(
     drives: DriveLabSummary?,
     onNavigate: (String) -> Unit
 ) {
-    val scores = history.filter { !it.isDemo || history.all { h -> h.isDemo } }.sortedBy { it.timestampMillis }.mapNotNull { it.health.score }
-    if (scores.size >= 2) {
-        item {
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(GetAutoSureColors.Surface).padding(16.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Health over time", style = OwnerText.RowTitle)
-                    Text("${scores.size} scans", style = OwnerText.RowSub)
-                }
-                Spacer(Modifier.height(8.dp))
-                val shown = scores.takeLast(12)
-                Sparkline(shown.map { it.toFloat() }, GetAutoSureColors.Good, Modifier.fillMaxWidth().height(48.dp), min = (shown.min() - 10).coerceAtLeast(0).toFloat(), max = (shown.max() + 5).coerceAtMost(100).toFloat())
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(if (shown.min() < shown.first()) "Was ${shown.first()} · lowest ${shown.min()}" else "Was ${shown.first()}", style = OwnerText.RowSub)
-                    Text("Now ${shown.last()}", style = OwnerText.RowSub.copy(fontWeight = FontWeight.SemiBold))
-                }
-            }
-        }
-    }
+    item { HealthOverTime(history.filter { !it.isDemo || history.all { h -> h.isDemo } }, drives) }
     item {
         val volts = result?.snapshot?.verifiedValue(PidId.CONTROL_MODULE_VOLTAGE)
         val bf = drives?.battery
@@ -566,112 +538,10 @@ private fun RenewalSection(viewModel: GetAutoSureViewModel, owner: OwnerCarData)
     }
 }
 
-// ---------- Costs ----------
-
-private fun LazyListScope.costItems(viewModel: GetAutoSureViewModel, owner: OwnerCarData, drives: DriveLabSummary?, result: ScanResult?) {
-    item { CostSection(viewModel, owner, drives, result) }
-}
+// ---------- Payment dialogs (used by the wallet) ----------
 
 @Composable
-private fun CostSection(viewModel: GetAutoSureViewModel, owner: OwnerCarData, drives: DriveLabSummary?, result: ScanResult?) {
-    val claimed by viewModel.vehicleClaimedMileageKmPerLitre.collectAsState()
-    var addingFuel by remember { mutableStateOf(false) }
-    var addingExpense by remember { mutableStateOf(false) }
-    val month = YearMonth.now()
-    val spend = OwnerInsights.monthSpend(owner, month)
-    val monthStart = month.atDay(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-    val monthKm = drives?.trips.orEmpty().filter { it.startMillis >= monthStart }.sumOf { it.distanceKm }
-    val fillMileage = OwnerInsights.fuelMileage(owner.fuel)
-    val tripTrips = drives?.trips.orEmpty()
-    // The scanner's fuel estimate, corrected once two full tanks give the real litres.
-    val live = FuelAutomation.liveMileage(tripTrips, FuelAutomation.calibrationFactor(owner.fuel, tripTrips))
-    val mileage = live?.kmPerLitre ?: fillMileage
-    val trim = result?.snapshot?.let { s ->
-        val st = s.verifiedValue(PidId.SHORT_TERM_FUEL_TRIM_1); val lt = s.verifiedValue(PidId.LONG_TERM_FUEL_TRIM_1)
-        if (st == null && lt == null) null else (st ?: 0.0) + (lt ?: 0.0)
-    }
-    val reasons = OwnerInsights.mileageReasons(tripTrips.takeLast(20), trim)
-    val low = mileage != null && claimed != null && mileage < claimed!! * 0.9
-
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        InkCard {
-            Text(month.month.getDisplayName(TextStyle.FULL, Locale.ENGLISH), style = OwnerText.InkLabel)
-            Text("${OwnerInsights.inr(spend.total)} spent", style = OwnerText.Big)
-            Text(
-                if (monthKm > 0 && spend.total > 0) "₹%.1f per km · %.0f km driven".format(spend.total / monthKm, monthKm)
-                else "Add fill-ups and expenses to see your cost per km",
-                style = OwnerText.InkSub
-            )
-            if (spend.total > 0) {
-                Spacer(Modifier.height(10.dp))
-                Row(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))) {
-                    if (spend.fuel > 0) Box(Modifier.weight(spend.fuel.toFloat()).fillMaxSize().background(GetAutoSureColors.AccentBright))
-                    if (spend.service > 0) Box(Modifier.weight(spend.service.toFloat()).fillMaxSize().background(GetAutoSureColors.OnInk))
-                    if (spend.other > 0) Box(Modifier.weight(spend.other.toFloat()).fillMaxSize().background(GetAutoSureColors.OnInkMuted))
-                }
-                Spacer(Modifier.height(6.dp))
-                Text("Fuel ${OwnerInsights.inr(spend.fuel)} · Service ${OwnerInsights.inr(spend.service)} · Other ${OwnerInsights.inr(spend.other)}", style = OwnerText.InkSub)
-            }
-        }
-        ListGroup {
-            ListRow(
-                Icons.Filled.Speed,
-                when {
-                    live != null -> "Live mileage %.1f km/l".format(live.kmPerLitre)
-                    mileage != null -> "Real mileage %.1f km/l".format(mileage)
-                    else -> "Live mileage"
-                },
-                listOfNotNull(
-                    when {
-                        live?.calibrated == true -> "From the scanner, corrected by your fill-ups"
-                        live != null -> "From the scanner, ±15%. Fill the tank full twice to make it exact"
-                        mileage != null -> "From your fill-ups"
-                        else -> "Leave the scanner plugged in while you drive"
-                    },
-                    claimed?.let { "company %.1f km/l".format(it) }
-                ).joinToString(" · "),
-                if (low) GetAutoSureColors.Watch else GetAutoSureColors.TextSecondary
-            )
-        }
-        if (mileage != null && (low || reasons.isNotEmpty())) {
-            SectionTitle(if (low) "Why it's lower" else "What's costing you mileage")
-            ListGroup {
-                if (reasons.isEmpty()) ListRow(Icons.Filled.Speed, "Nothing in your driving or scan explains it", "Check the tips below")
-                reasons.forEachIndexed { i, r ->
-                    if (i > 0) ListDivider()
-                    ListRow(Icons.Filled.Warning, r.substringBefore(":"), r.substringAfter(": ", r))
-                }
-            }
-            OwnerInsights.MILEAGE_TIPS.forEach { GroupNote("Tip: $it") }
-        }
-        ListGroup {
-            ListRow(Icons.Filled.LocalGasStation, "Add fuel", "Amount, litres and odometer", onClick = { addingFuel = true })
-            ListDivider()
-            ListRow(Icons.Filled.Receipt, "Add expense", "Toll, parking, wash, parts", onClick = { addingExpense = true })
-            ListDivider()
-            ListRow(Icons.Filled.Sms, "Add from a payment SMS", "In your SMS app, long-press a bank, UPI or FASTag message, then Share → GetAutoSure")
-        }
-        val recent = (owner.fuel.map { Triple(it.date, "Fuel · ${OwnerInsights.inr(it.amountInr)}", listOfNotNull(it.litres?.let { l -> "%.1f L".format(l) }, it.odometerKm?.let { k -> "%,d km".format(k) }).joinToString(" · ")) } +
-            owner.expenses.map { Triple(it.date, "${it.category.label} · ${OwnerInsights.inr(it.amountInr)}", it.note) } +
-            owner.services.filter { it.costInr != null }.map { Triple(it.date, "${it.work} · ${OwnerInsights.inr(it.costInr!!)}", "Service log") })
-            .sortedByDescending { it.first }.take(10)
-        if (recent.isNotEmpty()) {
-            SectionTitle("Recent")
-            ListGroup {
-                recent.forEachIndexed { i, (date, title, sub) ->
-                    if (i > 0) ListDivider()
-                    val d = runCatching { LocalDate.parse(date).format(DAY) }.getOrDefault(date)
-                    ListRow(if (title.startsWith("Fuel")) Icons.Filled.LocalGasStation else Icons.Filled.Receipt, title, listOf(d, sub).filter { it.isNotBlank() }.joinToString(" · "))
-                }
-            }
-        }
-    }
-    if (addingFuel) AddFuelDialog(onDismiss = { addingFuel = false }) { e -> addingFuel = false; viewModel.updateOwnerData { it.copy(fuel = it.fuel + e) } }
-    if (addingExpense) AddExpenseDialog(onDismiss = { addingExpense = false }) { e -> addingExpense = false; viewModel.updateOwnerData { it.copy(expenses = it.expenses + e) } }
-}
-
-@Composable
-private fun AddFuelDialog(onDismiss: () -> Unit, onSave: (FuelEntry) -> Unit) {
+internal fun AddFuelDialog(onDismiss: () -> Unit, onSave: (FuelEntry) -> Unit) {
     val context = LocalContext.current
     var date by remember { mutableStateOf(LocalDate.now()) }
     var amount by remember { mutableStateOf("") }
@@ -705,10 +575,10 @@ private fun AddFuelDialog(onDismiss: () -> Unit, onSave: (FuelEntry) -> Unit) {
 }
 
 @Composable
-private fun AddExpenseDialog(onDismiss: () -> Unit, onSave: (ExpenseEntry) -> Unit) {
+internal fun AddExpenseDialog(initial: ExpenseCategory = ExpenseCategory.TOLL, onDismiss: () -> Unit, onSave: (ExpenseEntry) -> Unit) {
     val context = LocalContext.current
     var date by remember { mutableStateOf(LocalDate.now()) }
-    var category by remember { mutableStateOf(ExpenseCategory.TOLL) }
+    var category by remember { mutableStateOf(initial) }
     var amount by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
     AlertDialog(
@@ -717,7 +587,7 @@ private fun AddExpenseDialog(onDismiss: () -> Unit, onSave: (ExpenseEntry) -> Un
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Date: ${date.format(DAY)}", style = OwnerText.RowTitle.copy(color = GetAutoSureColors.Accent), modifier = Modifier.clickable { pickDate(context, date) { date = it } })
-                ExpenseCategory.entries.chunked(3).forEach { row ->
+                ExpenseCategory.entries.chunked(4).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         row.forEach { c ->
                             val on = c == category

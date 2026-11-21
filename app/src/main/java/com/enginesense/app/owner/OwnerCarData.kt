@@ -18,6 +18,9 @@ data class ServiceEntry(
     val costInr: Int?
 )
 
+/** Where a fill-up or expense came from — shown under it in the wallet. */
+enum class EntrySource(val label: String) { MANUAL("Added by you"), SHARE("From a shared message"), ALERT("From a payment alert"), FILL_UP("Spotted by the scanner") }
+
 data class FuelEntry(
     val id: Long,
     val date: String,
@@ -25,17 +28,21 @@ data class FuelEntry(
     val amountInr: Int,
     val odometerKm: Int?,
     /** Filled to the brim — mileage is worked out between two full tanks. */
-    val fullTank: Boolean
+    val fullTank: Boolean,
+    val source: EntrySource = EntrySource.MANUAL
 )
 
-enum class ExpenseCategory(val label: String) { SERVICE("Service"), PARTS("Parts"), TOLL("Toll"), PARKING("Parking"), WASH("Wash"), OTHER("Other") }
+enum class ExpenseCategory(val label: String) {
+    SERVICE("Service"), PARTS("Parts"), INSURANCE("Insurance"), TOLL("Toll"), PARKING("Parking"), WASH("Wash"), PUC("PUC"), OTHER("Other")
+}
 
 data class ExpenseEntry(
     val id: Long,
     val date: String,
     val category: ExpenseCategory,
     val amountInr: Int,
-    val note: String = ""
+    val note: String = "",
+    val source: EntrySource = EntrySource.MANUAL
 )
 
 /**
@@ -56,5 +63,9 @@ data class OwnerCarData(
     /** Fuel tank size, asked once the first time a fill-up is spotted. */
     val tankLitres: Int? = null,
     /** Spotted fill-ups the owner already answered (saved or said "not a fill-up"), by when they were spotted. */
-    val handledFills: List<Long> = emptyList()
+    val handledFills: List<Long> = emptyList(),
+    /** The owner's answer to "How much do you drive a month?" — wins over every estimate. */
+    val monthlyKm: Int? = null,
+    /** Payment alerts already added, so the same alert posted twice is added once. Newest last, capped. */
+    val capturedKeys: List<String> = emptyList()
 )

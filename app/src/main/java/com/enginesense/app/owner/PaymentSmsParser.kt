@@ -5,7 +5,9 @@ import java.time.format.DateTimeFormatterBuilder
 import java.util.Locale
 
 /** What a shared payment SMS was for. Fuel becomes a fill-up; the rest are expenses. */
-enum class PaymentKind(val label: String) { FUEL("Fuel"), TOLL("Toll"), PARKING("Parking"), WASH("Wash"), SERVICE("Service"), PARTS("Parts"), OTHER("Other") }
+enum class PaymentKind(val label: String) {
+    FUEL("Fuel"), TOLL("Toll"), PARKING("Parking"), WASH("Wash"), SERVICE("Service"), PARTS("Parts"), INSURANCE("Insurance"), PUC("PUC"), OTHER("Other")
+}
 
 data class ParsedPayment(val amountInr: Int, val kind: PaymentKind, val date: LocalDate?, val merchant: String?)
 
@@ -23,11 +25,27 @@ object PaymentSmsParser {
     private val KINDS: List<Pair<PaymentKind, List<String>>> = listOf(
         PaymentKind.TOLL to listOf("fastag", "toll", "nhai", "netc", "plaza"),
         PaymentKind.PARKING to listOf("parking", "park+", "parkplus"),
+        PaymentKind.PUC to listOf("pucc", "puc centre", "puc center", "pollution under control", "emission test"),
+        PaymentKind.INSURANCE to listOf("motor insurance", "car insurance", "vehicle insurance", "motor policy", "acko", "go digit", "godigit", "icici lombard", "bajaj allianz", "hdfc ergo", "tata aig"),
         PaymentKind.FUEL to listOf("petrol", "diesel", "fuel", "hpcl", "iocl", "bpcl", "indian oil", "indianoil", "bharat petroleum", "hindustan petroleum", "nayara", "shell", "jio-bp", "jio bp", "filling station", "service station", "cng"),
         PaymentKind.WASH to listOf("car wash", "carwash", "wash", "detailing", "spa"),
         PaymentKind.PARTS to listOf("spares", "spare parts", "auto parts", "tyre", "tyres", "battery", "boodmo"),
         PaymentKind.SERVICE to listOf("service", "garage", "motors", "workshop", "automobiles", "gomechanic", "car care")
     )
+
+    /** Kinds that are almost always for the car, so a payment alert of this kind is added without asking. */
+    val AUTO_KINDS = setOf(PaymentKind.FUEL, PaymentKind.TOLL, PaymentKind.PARKING)
+
+    /**
+     * A payment alert seen in the notification shade (auto-capture). Stricter than [parse]: it must
+     * say money left the account, and only [AUTO_KINDS] count — a "service" or "parts" alert could
+     * be for anything, so those still need the owner to share them.
+     */
+    fun parseAlert(text: String, today: LocalDate = LocalDate.now()): ParsedPayment? {
+        val lower = text.lowercase(Locale.ROOT)
+        if (listOf("debited", "spent", "paid", "deducted", "debit", "purchase", "txn of", "charged").none { it in lower }) return null
+        return parse(text, today)?.takeIf { it.kind in AUTO_KINDS }
+    }
 
     fun parse(text: String, today: LocalDate = LocalDate.now()): ParsedPayment? {
         val lower = text.lowercase(Locale.ROOT)

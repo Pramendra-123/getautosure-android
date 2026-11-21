@@ -1,6 +1,7 @@
 package com.enginesense.app.storage
 
 import android.content.Context
+import com.enginesense.app.owner.EntrySource
 import com.enginesense.app.owner.ExpenseCategory
 import com.enginesense.app.owner.ExpenseEntry
 import com.enginesense.app.owner.FuelEntry
@@ -55,17 +56,19 @@ class OwnerDataStore(context: Context) {
         put("fuel", JSONArray().apply {
             d.fuel.forEach { f ->
                 put(JSONObject().put("id", f.id).put("date", f.date).put("litres", f.litres ?: JSONObject.NULL)
-                    .put("amountInr", f.amountInr).put("odometerKm", f.odometerKm ?: JSONObject.NULL).put("fullTank", f.fullTank))
+                    .put("amountInr", f.amountInr).put("odometerKm", f.odometerKm ?: JSONObject.NULL).put("fullTank", f.fullTank).put("source", f.source.name))
             }
         })
         put("expenses", JSONArray().apply {
             d.expenses.forEach { e ->
                 put(JSONObject().put("id", e.id).put("date", e.date).put("category", e.category.name)
-                    .put("amountInr", e.amountInr).put("note", e.note))
+                    .put("amountInr", e.amountInr).put("note", e.note).put("source", e.source.name))
             }
         })
         put("tankLitres", d.tankLitres ?: JSONObject.NULL)
         put("handledFills", JSONArray().apply { d.handledFills.forEach { put(it) } })
+        put("monthlyKm", d.monthlyKm ?: JSONObject.NULL)
+        put("capturedKeys", JSONArray().apply { d.capturedKeys.forEach { put(it) } })
     }
 
     private fun fromJson(j: JSONObject): OwnerCarData {
@@ -83,19 +86,22 @@ class OwnerDataStore(context: Context) {
             },
             fuel = j.optJSONArray("fuel").objects().mapNotNull { o ->
                 runCatching {
-                    FuelEntry(o.getLong("id"), o.getString("date"), o.doubleOrNull("litres"), o.getInt("amountInr"), o.intOrNull("odometerKm"), o.optBoolean("fullTank", true))
+                    FuelEntry(o.getLong("id"), o.getString("date"), o.doubleOrNull("litres"), o.getInt("amountInr"), o.intOrNull("odometerKm"), o.optBoolean("fullTank", true), o.source())
                 }.getOrNull()
             },
             expenses = j.optJSONArray("expenses").objects().mapNotNull { o ->
                 runCatching {
-                    ExpenseEntry(o.getLong("id"), o.getString("date"), ExpenseCategory.valueOf(o.getString("category")), o.getInt("amountInr"), o.optString("note"))
+                    ExpenseEntry(o.getLong("id"), o.getString("date"), ExpenseCategory.valueOf(o.getString("category")), o.getInt("amountInr"), o.optString("note"), o.source())
                 }.getOrNull()
             },
             tankLitres = j.intOrNull("tankLitres"),
-            handledFills = j.optJSONArray("handledFills")?.let { a -> (0 until a.length()).mapNotNull { i -> a.optLong(i).takeIf { it > 0 } } } ?: emptyList()
+            handledFills = j.optJSONArray("handledFills")?.let { a -> (0 until a.length()).mapNotNull { i -> a.optLong(i).takeIf { it > 0 } } } ?: emptyList(),
+            monthlyKm = j.intOrNull("monthlyKm"),
+            capturedKeys = j.optJSONArray("capturedKeys")?.let { a -> (0 until a.length()).mapNotNull { i -> a.optString(i).takeIf { it.isNotEmpty() } } } ?: emptyList()
         )
     }
 
+    private fun JSONObject.source(): EntrySource = runCatching { EntrySource.valueOf(optString("source")) }.getOrDefault(EntrySource.MANUAL)
     private fun JSONArray?.objects(): List<JSONObject> = if (this == null) emptyList() else (0 until length()).mapNotNull { optJSONObject(it) }
     private fun JSONObject.intOrNull(key: String): Int? = if (isNull(key)) null else (opt(key) as? Number)?.toInt()
     private fun JSONObject.doubleOrNull(key: String): Double? = if (isNull(key)) null else (opt(key) as? Number)?.toDouble()

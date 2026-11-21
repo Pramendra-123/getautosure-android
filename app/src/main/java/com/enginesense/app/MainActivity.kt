@@ -45,6 +45,11 @@ import com.enginesense.app.ui.theme.GetAutoSureTheme
 
 class MainActivity : ComponentActivity() {
 
+    companion object {
+        /** A notification can ask for a screen to open, e.g. "wallet". */
+        const val EXTRA_OPEN_ROUTE = "open_route"
+    }
+
     private val viewModel: GetAutoSureViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,6 +75,7 @@ class MainActivity : ComponentActivity() {
 
     /** A payment SMS shared from the SMS app (Share → GetAutoSure) opens the "Add this payment?" dialog. */
     private fun receiveShare(intent: android.content.Intent?) {
+        intent?.getStringExtra(EXTRA_OPEN_ROUTE)?.let { viewModel.requestRoute(it) }
         if (intent?.action == android.content.Intent.ACTION_SEND && intent.type == "text/plain") {
             viewModel.receiveSharedText(intent.getStringExtra(android.content.Intent.EXTRA_TEXT))
         }
@@ -131,6 +137,10 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
     CompositionLocalProvider(LocalMechanicAvailable provides mechanicAvailable) {
     CarQuestionDialog(viewModel, onAddDetails = { navController.navigate("enterRegistration") }, onUsedCarCheck = { navController.navigate("prePurchaseResult") })
     SharedPaymentDialog(viewModel)
+    val openRoute by viewModel.openRoute.collectAsState()
+    LaunchedEffect(openRoute) {
+        openRoute?.let { route -> viewModel.routeOpened(); navController.navigate(route) { popUpTo("home") } }
+    }
     if (assistantOpen) {
         AiAssistantSheet(
             viewModel = viewModel,
@@ -524,6 +534,8 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
             composable("battery") { BatteryScreen(viewModel, onNavigate = { route -> navController.navigate(route) }) }
             composable("pucCheck") { PucCheckScreen(viewModel) }
             composable("trips") { TripsScreen(viewModel, onNavigate = { route -> navController.navigate(route) }) }
+            composable("wallet") { WalletScreen(viewModel, onNavigate = { route -> navController.navigate(route) }) }
+            composable("autoCapture") { AutoCaptureScreen(onDone = { navController.popBackStack() }) }
             composable("warranty") { WarrantyScreen() }
             composable("marketplace") { MarketplaceScreen() }
             composable("pro") { ProScreen() }
