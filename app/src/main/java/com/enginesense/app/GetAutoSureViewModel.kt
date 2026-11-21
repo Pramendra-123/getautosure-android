@@ -75,6 +75,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.SharingStarted
+import com.enginesense.app.owner.OwnerCarData
+import com.enginesense.app.storage.GarageCar
+import com.enginesense.app.storage.GarageState
+import com.enginesense.app.storage.GarageStore
+import com.enginesense.app.storage.ActiveSince
+import com.enginesense.app.storage.OwnerDataStore
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -96,6 +105,9 @@ data class ScanResult(
     /** The same breakdown behind the Fuel & Combustion category score — computed once here so the detail screen and the home ring never disagree. */
     val fuelCombustionInsight: FuelCombustionInsight
 )
+
+/** A scan of a car whose VIN isn't in My Garage: ask whether it's the owner's. */
+data class CarQuestion(val scanTimestampMillis: Long, val vin: String)
 
 /** Transient state for the Connect -> Bluetooth -> Scanning sub-flow. Cleared once a [ScanResult] lands. */
 sealed interface ConnectionFlowState {
@@ -209,8 +221,37 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
     private val _latestResult = MutableStateFlow<ScanResult?>(null)
     val latestResult: StateFlow<ScanResult?> = _latestResult.asStateFlow()
 
+    /** Every own-car scan, for all cars in the garage. */
     private val _history = MutableStateFlow<List<ScanResult>>(emptyList())
-    val history: StateFlow<List<ScanResult>> = _history.asStateFlow()
+
+    private val _garage = MutableStateFlow(GarageState.EMPTY)
+    val garage: StateFlow<GarageState> = _garage.asStateFlow()
+
+    /** Scans of the car picked in My Garage only. */
+    val history: StateFlow<List<ScanResult>> = combine(_history, _garage) { all, g ->
+        val active = g.active?.id
+        all.filter { g.carOfScan(it.timestampMillis) == active }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    private val _ownerData = MutableStateFlow(OwnerCarData())
+    /** Renewals, services, fill-ups and spending the owner entered for the picked car. */
+    val ownerData: StateFlow<OwnerCarData> = _ownerData.asStateFlow()
+
+    /** Set right after a scan of a car that isn't in My Garage — the "Is this your car?" pop-up. */
+    private val _carQuestion = MutableStateFlow<CarQuestion?>(null)
+    val carQuestion: StateFlow<CarQuestion?> = _carQuestion.asStateFlow()
+
+    /** Text shared into the app from another app — a payment SMS to add as a cost. */
+    private val _sharedText = MutableStateFlow<String?>(null)
+    val sharedText: StateFlow<String?> = _sharedText.asStateFlow()
+
+    fun receiveSharedText(text: String?) {
+        _sharedText.value = text?.takeIf { it.isNotBlank() }
+    }
+
+    fun clearSharedText() {
+        _sharedText.value = null
+    }
 
     private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val chatMessages: StateFlow<List<ChatMessage>> = _chatMessages.asStateFlow()
@@ -281,12 +322,31 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
     val prePurchaseResult: StateFlow<ScanResult?> = _prePurchaseResult.asStateFlow()
 
     fun startPrePurchaseCheck() {
+        _scanIsDealerReport.value = false
         _scanIsPrePurchaseCheck.value = true
         _prePurchaseResult.value = null
     }
 
     fun clearPrePurchaseCheck() {
         _scanIsPrePurchaseCheck.value = false
+    }
+
+    /** Set right before a Dealer Sathi scan, so the result goes to [dealerResult] and the scan screen returns to the dealer flow. */
+    private val _scanIsDealerReport = MutableStateFlow(false)
+    val scanIsDealerReport: StateFlow<Boolean> = _scanIsDealerReport.asStateFlow()
+
+    /** A car on the dealer's lot. Like [prePurchaseResult], never the user's own car or history. */
+    private val _dealerResult = MutableStateFlow<ScanResult?>(null)
+    val dealerResult: StateFlow<ScanResult?> = _dealerResult.asStateFlow()
+
+    fun startDealerScan() {
+        _scanIsPrePurchaseCheck.value = false
+        _scanIsDealerReport.value = true
+        _dealerResult.value = null
+    }
+
+    fun clearDealerScan() {
+        _scanIsDealerReport.value = false
     }
 
     private val _liveState = MutableStateFlow<LiveDataState>(LiveDataState.Idle)
@@ -352,20 +412,43 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
     private fun persistVehicle() {
         viewModelScope.launch(Dispatchers.IO) {
             vehicleSaveLock.withLock {
-                vehicleProfileStore.save(
-                    VehicleProfile(
-                        brand = _vehicleBrand.value, nickname = _vehicleNickname.value, model = _vehicleModel.value,
-                        year = _vehicleYear.value, fuelType = _vehicleFuelType.value, odometerKm = _vehicleOdometerKm.value,
-                        plate = _vehiclePlate.value, engineCc = _vehicleEngineCc.value,
-                        claimedMileageKmPerLitre = _vehicleClaimedMileageKmPerLitre.value, rc = _vehicleRc.value
-                    )
-                )
+                val profile = currentProfile()
+                vehicleProfileStore.save(profile)
+                // The picked car in My Garage gets the change; the first car ever added is created here.
+                _garage.update { g ->
+                    val active = g.active
+                    if (active == null) {
+                        val car = GarageCar(GarageStore.newCarId(), profile)
+                        g.copy(cars = listOf(car), activeId = car.id)
+                    } else {
+                        g.copy(cars = g.cars.map { if (it.id == active.id) it.copy(profile = profile) else it })
+                    }
+                }
+                garageStore.save(_garage.value)
             }
         }
     }
 
+    private fun currentProfile() = VehicleProfile(
+        brand = _vehicleBrand.value, nickname = _vehicleNickname.value, model = _vehicleModel.value,
+        year = _vehicleYear.value, fuelType = _vehicleFuelType.value, odometerKm = _vehicleOdometerKm.value,
+        plate = _vehiclePlate.value, engineCc = _vehicleEngineCc.value,
+        claimedMileageKmPerLitre = _vehicleClaimedMileageKmPerLitre.value, rc = _vehicleRc.value
+    )
+
+    private val garageStore = GarageStore(application)
+    private val ownerDataStore = OwnerDataStore(application)
+
     private suspend fun loadVehicle() {
-        val p = withContext(Dispatchers.IO) { vehicleProfileStore.load() } ?: return
+        val g = withContext(Dispatchers.IO) { garageStore.load() }
+        _garage.value = g
+        val p = g.active?.profile ?: return
+        showProfile(p)
+        _ownerData.value = withContext(Dispatchers.IO) { ownerDataStore.load(g.active!!.id) }
+    }
+
+    /** Puts a car's details into the flows every screen reads. */
+    private fun showProfile(p: VehicleProfile) {
         _vehicleBrand.value = p.brand
         _vehicleNickname.value = p.nickname
         _vehicleModel.value = p.model
@@ -396,13 +479,131 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
             computeScanResult(p.toSnapshot(), p.vehicleId, p.readiness, p.profileLabel, p.isDemo, p.timestampMillis)
         }
         _history.update { results + it }
-        _latestResult.update { results.first() }
+        _latestResult.update { newestScanOf(_garage.value.active?.id) }
     }
 
     /** Saves every real (non-demo) scan currently in [history] — called after any change to it, so disk always matches what's on screen. */
     private fun persistHistory() {
         val realScans = _history.value.filter { !it.isDemo }.map { it.toPersistedScan() }
         viewModelScope.launch(Dispatchers.IO) { scanHistoryStore.save(realScans) }
+    }
+
+    private fun newestScanOf(carId: String?): ScanResult? =
+        _history.value.filter { !it.isDemo && _garage.value.carOfScan(it.timestampMillis) == carId }.maxByOrNull { it.timestampMillis }
+
+    private fun saveGarage() {
+        val snapshot = _garage.value
+        viewModelScope.launch(Dispatchers.IO) { vehicleSaveLock.withLock { garageStore.save(snapshot) } }
+    }
+
+    /** Picks another car in My Garage: its details, its last scan and its own records come up everywhere. */
+    fun switchCar(carId: String) {
+        val car = _garage.value.cars.firstOrNull { it.id == carId } ?: return
+        if (car.id == _garage.value.active?.id) return
+        _garage.update { it.copy(activeId = car.id, activeLog = it.activeLog + ActiveSince(System.currentTimeMillis(), car.id)) }
+        saveGarage()
+        showProfile(car.profile)
+        vehicleProfileStore.let { store -> viewModelScope.launch(Dispatchers.IO) { store.save(car.profile) } }
+        _latestResult.value = newestScanOf(car.id)
+        _chatMessages.update { emptyList() }
+        viewModelScope.launch { _ownerData.value = withContext(Dispatchers.IO) { ownerDataStore.load(car.id) } }
+    }
+
+    /** Adds an empty car and picks it; the add-car screens then fill in its details. */
+    fun addCar(vin: String? = null): String {
+        val car = GarageCar(GarageStore.newCarId(), VehicleProfile(null, "", "", null, null, null, null, null, null, null), vin)
+        _garage.update { it.copy(cars = it.cars + car) }
+        saveGarage()
+        // An empty car must not inherit the previous car's details.
+        switchCar(car.id)
+        return car.id
+    }
+
+    /** Removes a car and its records; its scans stay on disk but no longer show. */
+    fun removeCar(carId: String) {
+        val g = _garage.value
+        if (g.cars.size <= 1) return
+        val remaining = g.cars.filter { it.id != carId }
+        _garage.update { it.copy(cars = remaining) }
+        if (g.active?.id == carId) {
+            _garage.update { it.copy(activeId = null) }
+            switchCar(remaining.first().id)
+        }
+        saveGarage()
+        viewModelScope.launch(Dispatchers.IO) { ownerDataStore.delete(carId) }
+    }
+
+    /** Changes the picked car's owner records (renewal dates, services, fill-ups, spending) and saves them. */
+    fun updateOwnerData(change: (OwnerCarData) -> OwnerCarData) {
+        val carId = _garage.value.active?.id ?: run {
+            // No car yet: save the empty one first so the records have somewhere to live.
+            persistVehicle(); null
+        }
+        _ownerData.update(change)
+        val data = _ownerData.value
+        viewModelScope.launch(Dispatchers.IO) {
+            val id = carId ?: vehicleSaveLock.withLock { _garage.value.active?.id } ?: return@launch
+            ownerDataStore.save(id, data)
+        }
+    }
+
+    /**
+     * Ties a new own-car scan to a car in My Garage by its VIN: the car with that VIN (switching to
+     * it), else the picked car if it has no VIN yet (it learns this one). A VIN that belongs to no
+     * car and differs from the picked car's asks "Is this your car?".
+     */
+    private fun assignScanToCar(result: ScanResult) {
+        val g = _garage.value
+        val vin = result.vehicleId.vin?.trim()?.takeIf { it.length >= 11 && !result.isDemo }
+        val match = vin?.let { v -> g.cars.firstOrNull { it.vin == v } }
+        val active = g.active
+        val carId = when {
+            match != null -> match.id
+            vin != null && active != null && active.vin == null -> {
+                _garage.update { s -> s.copy(cars = s.cars.map { if (it.id == active.id) it.copy(vin = vin) else it }) }
+                active.id
+            }
+            else -> active?.id
+        }
+        if (carId != null) _garage.update { it.copy(scanCars = it.scanCars + (result.timestampMillis to carId)) }
+        saveGarage()
+        if (vin != null && match == null && active?.vin != null && active.vin != vin) {
+            _carQuestion.value = CarQuestion(result.timestampMillis, vin)
+        }
+        if (match != null && match.id != active?.id) switchCar(match.id)
+    }
+
+    /** "Yes, add to My Garage": the scan moves to a new car, which is picked so its details can be added. */
+    fun answerCarIsMine() {
+        val q = _carQuestion.value ?: return
+        _carQuestion.value = null
+        val scan = _history.value.firstOrNull { it.timestampMillis == q.scanTimestampMillis }
+        val id = addCar(q.vin)
+        _garage.update { it.copy(scanCars = it.scanCars + (q.scanTimestampMillis to id)) }
+        saveGarage()
+        _latestResult.value = scan
+    }
+
+    /** "I'm checking it before buying": the scan leaves the owner's history and opens as a used-car check. */
+    fun answerCarIsForSale() {
+        val q = _carQuestion.value ?: return
+        _carQuestion.value = null
+        val scan = _history.value.firstOrNull { it.timestampMillis == q.scanTimestampMillis } ?: return
+        _history.update { list -> list.filter { it.timestampMillis != q.scanTimestampMillis } }
+        persistHistory()
+        _garage.update { it.copy(scanCars = it.scanCars - q.scanTimestampMillis) }
+        saveGarage()
+        _prePurchaseResult.value = scan
+        _latestResult.value = newestScanOf(_garage.value.active?.id)
+    }
+
+    /** "It's this car": the picked car's VIN is updated (an engine computer can be replaced). */
+    fun answerCarIsSame() {
+        val q = _carQuestion.value ?: return
+        _carQuestion.value = null
+        val activeId = _garage.value.active?.id ?: return
+        _garage.update { s -> s.copy(cars = s.cars.map { if (it.id == activeId) it.copy(vin = q.vin) else it }) }
+        saveGarage()
     }
 
     fun pairedDevices(): List<BluetoothDevice> {
@@ -446,12 +647,15 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
             try {
                 val result = buildScanResult(profileLabel, isDemo, vehicleBrand, System.currentTimeMillis(), makeTransport)
                 _connectionState.update { ConnectionFlowState.Scanning }
-                if (_scanIsPrePurchaseCheck.value) {
+                if (_scanIsDealerReport.value) {
+                    _dealerResult.update { result }
+                } else if (_scanIsPrePurchaseCheck.value) {
                     // Someone else's car: never let it replace the user's own scan or history.
                     _prePurchaseResult.update { result }
                 } else {
                     _latestResult.update { result }
                     _history.update { listOf(result) + it }
+                    assignScanToCar(result)
                     persistHistory()
                     _chatMessages.update { emptyList() }
                 }
@@ -569,6 +773,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
                 val result = readScanResult(t, previous.profileLabel, isDemo = false, vehicleBrand = _vehicleBrand.value, timestampMillis = System.currentTimeMillis())
                 _latestResult.update { result }
                 _history.update { listOf(result) + it }
+                assignScanToCar(result)
                 persistHistory()
                 _chatMessages.update { emptyList() }
                 _lastRawLog.update { t.commandLog() }

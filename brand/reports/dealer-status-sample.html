@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dealer status sample</title>
+<!-- Proposal: WhatsApp Status image (1080x1920) a dealer shares from Dealer Sathi. Made-up dealer, registration, link and phones. -->
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; }
+  body { font-family: "Segoe UI", Roboto, Arial, sans-serif; background: #0A0B0D; color: #F5F5F7; position: relative; }
+  .top { display: flex; align-items: center; gap: 28px; padding: 70px 70px 0; }
+  .logo { width: 110px; height: 110px; border-radius: 24px; background: #FF6B2C; color: #0A0B0D; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 48px; }
+  .dname { font-size: 54px; font-weight: 700; }
+  .tag { font-size: 30px; color: #9BA1AC; }
+  .badge { margin: 44px 70px 0; display: inline-block; background: rgba(52,211,153,.14); color: #34D399; border-radius: 40px; padding: 14px 30px; font-size: 32px; font-weight: 600; }
+  /* The dealer's own photo after Gemini swaps its background for plain white. */
+  .car { margin: 40px 70px 0; height: 600px; background: #FFFFFF; border-radius: 36px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+  .car img { width: 860px; position: relative; }
+  .car small { position: absolute; right: 26px; bottom: 18px; font-size: 22px; color: #9BA1AC; }
+  .plate { display: inline-block; vertical-align: 2px; background: #FFFFFF; color: #0A0B0D; border-radius: 8px; padding: 0 12px; font-size: 32px; font-weight: 800; letter-spacing: 2px; font-family: "Consolas", "Courier New", monospace; }
+  .title { padding: 0 70px; }
+  .title h1 { font-size: 76px; margin: 0; font-weight: 700; letter-spacing: -1px; }
+  .title p { font-size: 36px; color: #9BA1AC; margin: 10px 0 0; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 56px 70px 0; }
+  .tile { background: #16181C; border-radius: 28px; padding: 30px 32px; display: flex; align-items: center; gap: 24px; }
+  .ico { width: 76px; height: 76px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 700; flex: none; }
+  .tile b { font-size: 40px; display: block; }
+  .tile span { font-size: 27px; color: #9BA1AC; }
+  .score { border: 7px solid #34D399; color: #F5F5F7; font-size: 30px; }
+  .tick { background: rgba(52,211,153,.16); color: #34D399; }
+  .foot { position: absolute; left: 70px; right: 70px; bottom: 70px; background: #FF6B2C; color: #0A0B0D; border-radius: 34px; padding: 34px 40px; display: flex; align-items: center; gap: 32px; }
+  .foot .txt { flex: 1; }
+  .foot .call { font-size: 52px; font-weight: 800; }
+  .foot .link { font-size: 30px; font-weight: 600; margin-top: 6px; }
+  .qr { width: 170px; height: 170px; background: #fff; border-radius: 16px; padding: 14px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .qr i { background: #0A0B0D; border-radius: 2px; }
+  .qr i.w { background: transparent; }
+  .by { position: absolute; left: 0; right: 0; bottom: 22px; text-align: center; font-size: 24px; color: #6B7280; }
+  .by em { color: #FF6B2C; font-style: normal; font-weight: 700; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="logo">SM</div>
+    <div><div class="dname">Sharma Motors</div><div class="tag">Koramangala, Bengaluru</div></div>
+  </div>
+
+  <div class="badge">✓ Scanned &amp; verified · 4 Nov 2026</div>
+
+  <div class="car"><img src="../../app/src/main/res/drawable-nodpi/car_tata_nexon_ev.png" alt="Tata Nexon EV"><small>Background cleaned · car not edited</small></div>
+
+  <div class="title" style="margin-top:44px">
+    <h1>Tata Nexon EV</h1>
+    <p>2023 · Electric · 18,240 km · 1st owner · <span class="plate">KA02</span></p>
+  </div>
+
+  <div class="grid">
+    <div class="tile"><div class="ico score">92</div><div><b>Health 92/100</b><span>Car computer scan</span></div></div>
+    <div class="tile"><div class="ico tick">✓</div><div><b>Odometer OK</b><span>No signs of tampering</span></div></div>
+    <div class="tile"><div class="ico tick">✓</div><div><b>No faults</b><span>0 fault codes found</span></div></div>
+    <div class="tile"><div class="ico tick">✓</div><div><b>Papers OK</b><span>Insurance, PUC, no loan</span></div></div>
+  </div>
+
+  <div class="foot">
+    <div class="txt">
+      <div class="call">📞 98450 12345</div>
+      <div class="link">Full report: getautosure.in/r/7F3K21</div>
+    </div>
+    <div class="qr">
+      <i></i><i></i><i></i><i class="w"></i><i></i><i></i><i></i>
+      <i></i><i class="w"></i><i></i><i></i><i class="w"></i><i class="w"></i><i></i>
+      <i></i><i></i><i></i><i class="w"></i><i></i><i></i><i></i>
+      <i class="w"></i><i></i><i class="w"></i><i></i><i class="w"></i><i></i><i class="w"></i>
+      <i></i><i></i><i></i><i class="w"></i><i></i><i class="w"></i><i></i>
+      <i></i><i class="w"></i><i></i><i></i><i class="w"></i><i></i><i></i>
+      <i></i><i></i><i></i><i class="w"></i><i></i><i></i><i></i>
+    </div>
+  </div>
+  <div class="by">Report by Get<em>Auto</em>Sure</div>
+</body>
+</html>

@@ -1,7 +1,7 @@
 <!doctype html>
 <meta charset="utf-8">
 <title>GetAutoSure quiet box render</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap">
+<link rel="stylesheet" href="fonts.css">
 <style>
   html,body{margin:0;width:1600px;height:1000px;overflow:hidden}
   body{background:radial-gradient(ellipse 70% 60% at 50% 45%, #EDEBE8 0%, #D6D2CC 55%, #BDB7AF 100%)}
@@ -20,7 +20,11 @@
 // Final box: 104 x 86 x 30 mm, soft-touch black, brand colours kept small, orange tray inside a black frame.
 // The dongle lies face up, plug toward the hinge, so its vertical silk-screen reads straight when the lid opens.
 const A = ART, Q = A.quiet, k = 4, BOX = "#17191D", INNER = "#0C0D0F", OR = A.ORANGE, OR_WALL = "#C24A15", NOTCH = "#A9431A";
-const view = location.hash.slice(1) || "open";
+// #open-eva-black / #open-eva-white: solid EVA insert in that colour instead of the printed orange card
+const hash = location.hash.slice(1) || "open", evaColour = (hash.match(/^open-eva-(black|white)$/) || [])[1];
+const view = evaColour ? "open" : hash;
+const EVA_COLOURS = { black: ["#202125", "#18191C", "#141518"], white: ["#E9E8E4", "#C9C8C3", "#B9B8B3"] };
+const grain = a => `url('data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="1.6" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 ' + a + ' 0"/></filter><rect width="160" height="160" filter="url(#n)"/></svg>').replace(/'/g, "%27")}')`;
 const svg = (w, h, body) => `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${body}</svg>`;
 // 104 x 80 and 80 x 30 artwork centred on the 86 mm depth
 const lid86 = body => svg(104, 86, `<g transform="translate(0 3)">${body}</g>`);
@@ -60,18 +64,21 @@ if (view !== "open") {
   const iy = rimY + 4 * k, hx = 23.5, hz = 33.5, ex = 45, ez = 36, bx = 50, bz = 41;
   const ISH = "linear-gradient(170deg, rgba(255,255,255,.10), rgba(0,0,0,.08))";
   const FR = "linear-gradient(170deg, rgba(255,255,255,.05), rgba(0,0,0,.1))";
-  const notch = `<div style="position:absolute;width:${12 * k}px;height:${12 * k}px;border-radius:50%;background:${NOTCH};left:${-6 * k}px;top:${(ez + 6 - 6) * k}px;box-shadow:inset 0 0 ${2.5 * k}px rgba(0,0,0,.5)"></div>`;
+  const [FIELD, WALL, NOTCH_IN, FRAME] = evaColour
+    ? [`${grain(evaColour === "white" ? .10 : .25)}, ${EVA_COLOURS[evaColour][0]}`, EVA_COLOURS[evaColour][1], EVA_COLOURS[evaColour][2], `${grain(evaColour === "white" ? .10 : .25)}, ${EVA_COLOURS[evaColour][0]}`]
+    : [OR, OR_WALL, NOTCH, INNER];
+  const notch = `<div style="position:absolute;width:${12 * k}px;height:${12 * k}px;border-radius:50%;background:${NOTCH_IN};left:${-6 * k}px;top:${(ez + 6 - 6) * k}px;box-shadow:inset 0 0 ${2.5 * k}px rgba(0,0,0,.5)"></div>`;
   const insert =
-    place(-(bx + ex) / 2 * k, iy, 0, flatPlane((bx - ex) * k, 2 * bz * k, "", INNER, FR)) +
-    place((bx + ex) / 2 * k, iy, 0, flatPlane((bx - ex) * k, 2 * bz * k, "", INNER, FR)) +
-    place(0, iy, (bz + ez) / 2 * k, flatPlane(2 * ex * k, (bz - ez) * k, "", INNER, FR)) +
-    place(0, iy, -(bz + ez) / 2 * k, flatPlane(2 * ex * k, (bz - ez) * k, "", INNER, FR)) +
-    place(-(ex + hx) / 2 * k, iy, 0, flatPlane((ex - hx) * k, 2 * ez * k, "", OR, ISH)) +
-    place((ex + hx) / 2 * k, iy, 0, flatPlane((ex - hx) * k, 2 * ez * k, notch, OR, ISH)) +
-    place(0, iy, (hz + ez) / 2 * k, flatPlane(2 * hx * k, (ez - hz) * k, "", OR, ISH)) +
-    place(0, iy, -(hz + ez) / 2 * k, flatPlane(2 * hx * k, (ez - hz) * k, "", OR, ISH)) +
-    place(0, iy + 13 * k, -hz * k, face(2 * hx * k, 26 * k, "", "", OR_WALL, "linear-gradient(180deg, rgba(0,0,0,.1), rgba(0,0,0,.5))")) +
-    place(-hx * k, iy + 13 * k, 0, face(2 * hz * k, 26 * k, "rotateY(90deg)", "", OR_WALL, "rgba(0,0,0,.4)"));
+    place(-(bx + ex) / 2 * k, iy, 0, flatPlane((bx - ex) * k, 2 * bz * k, "", FRAME, FR)) +
+    place((bx + ex) / 2 * k, iy, 0, flatPlane((bx - ex) * k, 2 * bz * k, "", FRAME, FR)) +
+    place(0, iy, (bz + ez) / 2 * k, flatPlane(2 * ex * k, (bz - ez) * k, "", FRAME, FR)) +
+    place(0, iy, -(bz + ez) / 2 * k, flatPlane(2 * ex * k, (bz - ez) * k, "", FRAME, FR)) +
+    place(-(ex + hx) / 2 * k, iy, 0, flatPlane((ex - hx) * k, 2 * ez * k, "", FIELD, ISH)) +
+    place((ex + hx) / 2 * k, iy, 0, flatPlane((ex - hx) * k, 2 * ez * k, notch, FIELD, ISH)) +
+    place(0, iy, (hz + ez) / 2 * k, flatPlane(2 * hx * k, (ez - hz) * k, "", FIELD, ISH)) +
+    place(0, iy, -(hz + ez) / 2 * k, flatPlane(2 * hx * k, (ez - hz) * k, "", FIELD, ISH)) +
+    place(0, iy + 13 * k, -hz * k, face(2 * hx * k, 26 * k, "", "", WALL, "linear-gradient(180deg, rgba(0,0,0,.1), rgba(0,0,0,.5))")) +
+    place(-hx * k, iy + 13 * k, 0, face(2 * hz * k, 26 * k, "rotateY(90deg)", "", WALL, "rgba(0,0,0,.4)"));
 
   // dongle: body 46 (x) x 25 (y) x 50 (z), plug 39 x 16 x 15 toward the hinge
   const lbl = `<div style="position:absolute;inset:${0.6 * k}px ${2 * k}px">${A.labelMinimal().replace('width="42mm" height="50.6mm"', 'width="100%" height="100%" preserveAspectRatio="xMidYMid meet"')}</div>`;

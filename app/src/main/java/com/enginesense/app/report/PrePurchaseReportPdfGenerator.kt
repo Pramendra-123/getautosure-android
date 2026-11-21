@@ -57,10 +57,11 @@ object PrePurchaseReportPdfGenerator {
         report: PrePurchaseReport,
         dealerProfile: DealerProfile? = null,
         dealerLogo: Bitmap? = null,
-        extras: DealerReportExtras? = null
+        extras: DealerReportExtras? = null,
+        buyerRatings: Map<String, Int> = emptyMap()
     ): File {
         val dir = File(context.cacheDir, "reports").apply { mkdirs() }
-        return generateTo(dir, result, report, dealerProfile, dealerLogo, LocalDate.now(), extras)
+        return generateTo(dir, result, report, dealerProfile, dealerLogo, LocalDate.now(), extras, buyerRatings)
     }
 
     /** [generate] into [dir] — also what the sample-report test calls, with a fixed [today]. */
@@ -71,7 +72,8 @@ object PrePurchaseReportPdfGenerator {
         dealerProfile: DealerProfile?,
         dealerLogo: Bitmap?,
         today: LocalDate,
-        extras: DealerReportExtras? = null
+        extras: DealerReportExtras? = null,
+        buyerRatings: Map<String, Int> = emptyMap()
     ): File {
         val doc = PdfDocument()
         val reportId = "GetAutoSure-PPI-" + SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date(result.timestampMillis))
@@ -83,6 +85,7 @@ object PrePurchaseReportPdfGenerator {
         if (extras != null && (extras.photos.isNotEmpty() || extras.condition != null)) drawPhotosPage(b, extras, dealerProfile?.name)
         drawFraudPage(b, report, today)
         drawCostPage(b, report, result)
+        drawBuyerRatings(b, buyerRatings)
         drawBeforeYouPay(b, result)
         b.finish()
 
@@ -139,7 +142,7 @@ object PrePurchaseReportPdfGenerator {
         val odo = report.odometer
         val left = listOf(
             "Registration" to (report.registration ?: "Not entered"),
-            "VIN (from the car's computer)" to (result.vehicleId.vin?.takeIf { it.isNotBlank() } ?: "Not reported by this car"),
+            "Make and model (RTO)" to (com.enginesense.app.dealerreport.CarNameFormatter.carName(rc?.make, rc?.model, rc?.fuelType) ?: "No RTO record"),
             "Manufactured" to (rc?.manufacturingMonth?.let { PurchaseRcCheckViewModel.formatMonth(it) } ?: report.manufactureYear?.toString() ?: "Not known")
         )
         val right = listOf(
@@ -474,19 +477,23 @@ object PrePurchaseReportPdfGenerator {
         }
     }
 
-    /** Scales [bitmap] to fit inside [box] (no cropping — a car photo shouldn't lose its bumper), centred, clipped to the rounded tile. */
-    private fun drawBitmapFit(canvas: Canvas, bitmap: Bitmap, box: RectF) {
-        val scale = minOf(box.width() / bitmap.width, box.height() / bitmap.height)
-        val w = bitmap.width * scale
-        val h = bitmap.height * scale
-        val dst = RectF(box.centerX() - w / 2, box.centerY() - h / 2, box.centerX() + w / 2, box.centerY() + h / 2)
-        canvas.save()
-        canvas.clipPath(android.graphics.Path().apply { addRoundRect(box, 8f, 8f, android.graphics.Path.Direction.CW) })
-        canvas.drawBitmap(bitmap, null, dst, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
-        canvas.restore()
-    }
-
     // ---------- before you pay ----------
+
+    /** The buyer's own 1–5 star ratings from the test drive, labelled as theirs. Nothing drawn when they rated nothing. */
+    private fun drawBuyerRatings(b: ReportBuilder, ratings: Map<String, Int>) {
+        if (ratings.isEmpty()) return
+        val page = "Your ratings"
+        b.ensure(60f + ratings.size * 22f, page)
+        drawSectionTitle(b, "Your ratings", "Your own look at the car on the test drive — not checked by GetAutoSure.", page)
+        ratings.forEach { (item, stars) ->
+            b.ensure(22f, page)
+            b.canvas.drawText(item, MARGIN + 4f, b.y + 14f, textPaint(INK, 9.5f))
+            b.canvas.drawText(DealerSaleReportPdfGenerator.starString(stars), CONTENT_RIGHT, b.y + 14f, textPaint(Color.parseColor("#D97706"), 12f).apply { textAlign = Paint.Align.RIGHT })
+            b.canvas.drawLine(MARGIN, b.y + 20f, CONTENT_RIGHT, b.y + 20f, strokePaint(BORDER, 0.5f))
+            b.y += 22f
+        }
+        b.y += 14f
+    }
 
     private fun drawBeforeYouPay(b: ReportBuilder, result: ScanResult) {
         val items = listOf(

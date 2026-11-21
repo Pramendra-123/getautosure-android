@@ -1,6 +1,12 @@
 package com.enginesense.app.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -8,6 +14,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.enginesense.app.GetAutoSureViewModel
@@ -45,6 +54,21 @@ fun AiMechanicScreen(viewModel: GetAutoSureViewModel, advancedMode: Boolean = fa
             },
             style = GetAutoSureType.Caption
         )
+        Spacer(Modifier.height(10.dp))
+        // Every mode keeps a real person one tap away (design: "Everyone · AI Mechanic tab").
+        Row(
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(GetAutoSureColors.Ink)
+                .clickable { onNavigate("expertList") }.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Filled.SupportAgent, contentDescription = null, tint = GetAutoSureColors.AccentBright, modifier = Modifier.size(22.dp))
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Talk to a real expert", color = GetAutoSureColors.OnInk, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text("15-minute video call on your scan", color = GetAutoSureColors.OnInkMuted, fontSize = 12.sp)
+            }
+            Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = GetAutoSureColors.AccentBright)
+        }
         if (advancedMode) {
             Spacer(Modifier.height(8.dp))
             Card(colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.AccentGold.copy(alpha = 0.12f))) {

@@ -1,5 +1,6 @@
 package com.enginesense.app.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -13,19 +14,38 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.enginesense.app.R
 import kotlin.math.abs
 
 /**
- * No licensed brand logos or model photos in this build — see the "Brand/model images"
- * decision this was built against. These are deliberately generic: a consistent color per
- * brand name and a plain car glyph for every model, not a real logo or photo. Swap in real
- * assets (keyed by the same brand/model strings already used in SetupScreens.kt) whenever
- * licensed ones are available — nothing else about the picker screens needs to change.
+ * Brand logos for the onboarding brand picker (source: the LOGOS folder of "car images final" on
+ * Drive, kept in brand/car-images-final). Each is pre-cut as a round white badge. A brand without
+ * a logo yet keeps the generic avatar: a consistent colour per brand name with its initials.
+ * Models still get the plain car glyph; model pictures live in [CarImages] for the Home card.
  */
+object BrandLogos {
+    private val logos = mapOf(
+        "audi" to R.drawable.logo_audi, "bmw" to R.drawable.logo_bmw, "byd" to R.drawable.logo_byd,
+        "citroen" to R.drawable.logo_citroen, "honda" to R.drawable.logo_honda, "hyundai" to R.drawable.logo_hyundai,
+        "jeep" to R.drawable.logo_jeep, "kia" to R.drawable.logo_kia, "mahindra" to R.drawable.logo_mahindra,
+        "maruti" to R.drawable.logo_maruti, "mercedes" to R.drawable.logo_mercedes, "mg" to R.drawable.logo_mg,
+        "nissan" to R.drawable.logo_nissan, "renault" to R.drawable.logo_renault, "skoda" to R.drawable.logo_skoda,
+        "tata" to R.drawable.logo_tata, "tesla" to R.drawable.logo_tesla, "toyota" to R.drawable.logo_toyota,
+        "vinfast" to R.drawable.logo_vinfast, "volkswagen" to R.drawable.logo_volkswagen, "volvo" to R.drawable.logo_volvo
+    )
+
+    /** The logo for a brand name like "MG Motor" or "Mercedes-Benz", or null when there isn't one yet. */
+    fun forBrand(brand: String): Int? {
+        val b = brand.lowercase().filter { it in 'a'..'z' || it in '0'..'9' }
+        return logos.entries.firstOrNull { b.startsWith(it.key) }?.value
+    }
+}
+
 private val BRAND_PALETTE = listOf(
     Color(0xFFFF6B2C), Color(0xFF4FD1C5), Color(0xFFA78BFA), Color(0xFFD4AF37),
     Color(0xFF34D399), Color(0xFFF87171), Color(0xFF60A5FA), Color(0xFFF472B6),
@@ -43,6 +63,10 @@ private fun initialsFor(name: String): String {
 
 @Composable
 fun BrandAvatar(brand: String, size: Dp = 56.dp, modifier: Modifier = Modifier) {
+    BrandLogos.forBrand(brand)?.let { logo ->
+        Image(painterResource(logo), contentDescription = brand, modifier = modifier.size(size).clip(CircleShape))
+        return
+    }
     val color = colorForKey(brand)
     Box(
         modifier = modifier.size(size).clip(CircleShape).background(color.copy(alpha = 0.18f)),

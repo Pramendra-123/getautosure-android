@@ -1,5 +1,7 @@
 package com.enginesense.app.ui.screens
 
+import androidx.compose.material.icons.filled.Share
+import kotlinx.coroutines.launch
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
@@ -84,7 +86,6 @@ private val PRO_ITEMS = listOf(
     DiscoverMoreItem("emissionsTrend", "Emissions Trend History", "Beyond this scan's free pass/fail status", Icons.Filled.ShowChart, isPremium = true),
     DiscoverMoreItem("repairCostReference", "Repair Cost Reference", "Beyond the free Service Cost Estimate above", Icons.Filled.RequestQuote, isPremium = true),
     DiscoverMoreItem("pro", "Advanced Live Data", "Logging, export & multi-session graphing", Icons.Filled.Insights, isPremium = true),
-    DiscoverMoreItem("pro", "Multi-Car Garage", "Track more than one vehicle", Icons.Filled.Garage, isPremium = true)
 )
 
 /**
@@ -98,6 +99,7 @@ fun ReportsScreen(viewModel: GetAutoSureViewModel, onNavigate: (String) -> Unit)
     val history by viewModel.history.collectAsState()
     val dateFormat = remember { SimpleDateFormat("d MMM, h:mm a", Locale.getDefault()) }
     val context = LocalContext.current
+    val shareScope = androidx.compose.runtime.rememberCoroutineScope()
 
     fun open(item: DiscoverMoreItem) {
         val url = item.externalUrl
@@ -112,6 +114,14 @@ fun ReportsScreen(viewModel: GetAutoSureViewModel, onNavigate: (String) -> Unit)
             Text("Everything about your car, beyond the summary", style = GetAutoSureType.Caption)
         }
 
+        item {
+            com.enginesense.app.ui.components.ListGroup {
+                com.enginesense.app.ui.components.ListRow(
+                    Icons.Filled.Share, "Share with my mechanic", "Send the latest report on WhatsApp",
+                    onClick = { shareScope.launch { com.enginesense.app.ui.components.shareLatestReport(context, viewModel) } }
+                )
+            }
+        }
         item { ReportsSection("Latest Scan", startExpanded = true) { LATEST_SCAN_ITEMS.forEach { DiscoverMoreRow(it) { open(it) } } } }
         item { ReportsSection("Diagnostic Details", startExpanded = true) { DIAGNOSTIC_ITEMS.forEach { DiscoverMoreRow(it) { open(it) } } } }
         item { ReportsSection("Performance & Live Data") { PERFORMANCE_ITEMS.forEach { DiscoverMoreRow(it) { open(it) } } } }

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dealer report sample v2</title>
+<!-- Proposal for the new customer-facing dealer report (Dealer Sathi). Made-up data: dealer, registration, RTO and phones are not real. -->
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", Roboto, Arial, sans-serif; color: #1A1A1A; background: #fff; font-size: 11pt; }
+  .page { width: 210mm; height: 297mm; padding: 0 16mm 14mm; position: relative; page-break-after: always; overflow: hidden; }
+  .page:last-child { page-break-after: auto; }
+  .head { background: #0A0B0D; color: #F5F5F7; margin: 0 -16mm; padding: 9mm 16mm 7mm; display: flex; align-items: center; gap: 5mm; }
+  .logo { width: 16mm; height: 16mm; border-radius: 3mm; background: #FF6B2C; color: #0A0B0D; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16pt; }
+  .dname { font-size: 17pt; font-weight: 600; }
+  .tag { color: #9BA1AC; font-size: 9.5pt; }
+  .phones { margin-left: auto; text-align: right; font-size: 10.5pt; line-height: 1.5; }
+  .addr { font-size: 9.5pt; color: #4B5563; padding: 3mm 0; border-bottom: 1px solid #EEE; }
+  .addr a { color: #E8590C; text-decoration: none; font-weight: 600; }
+  .kicker { font-size: 8.5pt; letter-spacing: .12em; color: #6B7280; margin-top: 6mm; }
+  h1 { font-size: 20pt; margin: 1mm 0 1mm; font-weight: 600; }
+  .sub { color: #4B5563; font-size: 10.5pt; }
+  .hero { display: grid; grid-template-columns: 1.35fr 1fr; gap: 6mm; margin-top: 5mm; }
+  .photo { border-radius: 3mm; background: linear-gradient(180deg,#EEF0F3,#DADDE2); height: 62mm; display: flex; align-items: center; justify-content: center; color: #6B7280; font-size: 10pt; position: relative; }
+  .photo small { position: absolute; bottom: 2mm; right: 3mm; font-size: 7.5pt; color: #6B7280; }
+  .score { border: 1px solid #E5E7EB; border-radius: 3mm; padding: 5mm; display: flex; flex-direction: column; justify-content: center; }
+  .ring { width: 30mm; height: 30mm; border-radius: 50%; border: 3mm solid #1D9E75; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 3mm; }
+  .ring b { font-size: 22pt; line-height: 1; } .ring span { font-size: 8pt; color: #6B7280; }
+  .good { color: #0F6E56; font-weight: 600; font-size: 13pt; }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; margin-top: 5mm; }
+  .tile { background: #F6F6F4; border-radius: 2.5mm; padding: 3mm; }
+  .tile .v { font-size: 15pt; font-weight: 600; } .tile .l { font-size: 8.5pt; color: #6B7280; }
+  h2 { font-size: 12.5pt; margin: 7mm 0 2mm; padding-bottom: 1.5mm; border-bottom: 2px solid #FF6B2C; font-weight: 600; display: flex; justify-content: space-between; align-items: baseline; }
+  h2 small { font-size: 8.5pt; color: #6B7280; font-weight: 400; }
+  table { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
+  td { padding: 1.8mm 0; border-bottom: 1px solid #F0F0F0; vertical-align: top; }
+  td:last-child { text-align: right; font-weight: 500; }
+  td.k { color: #4B5563; }
+  .ok { color: #0F6E56; } .warn { color: #B45309; } .stars { color: #D97706; letter-spacing: .08em; font-weight: 400; }
+  .note { font-size: 8.5pt; color: #6B7280; margin-top: 1.5mm; }
+  .chips span { display: inline-block; background: #E1F5EE; color: #085041; border-radius: 10mm; padding: 1mm 3mm; font-size: 9pt; margin: 1mm 1.5mm 0 0; }
+  .quote { font-style: italic; color: #374151; margin-top: 2mm; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3mm; }
+  .grid3 .photo { height: 30mm; font-size: 8.5pt; }
+  .price { margin-top: 6mm; background: #FFF4EC; border: 1px solid #FFD8BF; border-radius: 3mm; padding: 4mm 5mm; display: flex; justify-content: space-between; align-items: center; }
+  .price b { font-size: 16pt; }
+  .foot { position: absolute; left: 16mm; right: 16mm; bottom: 8mm; font-size: 8pt; color: #6B7280; display: flex; justify-content: space-between; border-top: 1px solid #EEE; padding-top: 2mm; }
+  .sample { position: absolute; top: 3mm; right: 4mm; font-size: 7pt; color: #9BA1AC; z-index: 2; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="sample">SAMPLE · made-up data</div>
+  <div class="head">
+    <div class="logo">SM</div>
+    <div><div class="dname">Sharma Motors</div><div class="tag">Quality used cars since 2009</div></div>
+    <div class="phones">📞 98450 12345<br>📞 98450 67890</div>
+  </div>
+  <div class="addr">📍 14, Hosur Road, Koramangala, Bengaluru 560034 · <a href="https://maps.google.com/?q=12.9352,77.6245">Open in Google Maps</a></div>
+
+  <div class="kicker">VEHICLE HEALTH REPORT</div>
+  <h1>Chevrolet Sail LS ABS TCDi</h1>
+  <div class="sub">KA02MH3313 · 2013 · Diesel · Silver grey · 78,420 km</div>
+
+  <div class="hero">
+    <div class="photo">Front photo of the car<small>Background cleaned · car not edited</small></div>
+    <div class="score">
+      <div class="ring"><b>92</b><span>/ 100</span></div>
+      <div class="good">Good health</div>
+      <div class="sub">Scanned with a GetAutoSure scanner, 4 Nov 2026</div>
+    </div>
+  </div>
+
+  <div class="tiles">
+    <div class="tile"><div class="v ok">0</div><div class="l">Faults found</div></div>
+    <div class="tile"><div class="v ok">0</div><div class="l">Red flags</div></div>
+    <div class="tile"><div class="v">7 / 7</div><div class="l">Self-tests complete</div></div>
+    <div class="tile"><div class="v stars">★★★★☆</div><div class="l">Dealer's inspection</div></div>
+  </div>
+
+  <h2>RTO record <small>From the official registration record</small></h2>
+  <table>
+    <tr><td class="k">Owner</td><td>2nd owner</td></tr>
+    <tr><td class="k">Registered</td><td>Mar 2013 · RTO Bengaluru West (KA02)</td></tr>
+    <tr><td class="k">Manufactured</td><td>Feb 2013</td></tr>
+    <tr><td class="k">Fuel · Colour</td><td>Diesel · Silver grey</td></tr>
+    <tr><td class="k">Insurance</td><td class="ok">Valid until 18 Mar 2027</td></tr>
+    <tr><td class="k">PUC</td><td class="ok">Valid until 2 May 2027</td></tr>
+    <tr><td class="k">Loan (hypothecation)</td><td class="ok">None</td></tr>
+    <tr><td class="k">Fitness · Road tax</td><td class="ok">Valid until Mar 2028</td></tr>
+    <tr><td class="k">Blacklist status</td><td class="ok">Clear</td></tr>
+  </table>
+
+  <div class="foot"><span>Sharma Motors · 98450 12345</span><span>Report GAS-7F3K21 · Page 1 of 2</span></div>
+</div>
+
+<div class="page">
+  <div class="sample">SAMPLE · made-up data</div>
+  <div style="height:9mm"></div>
+
+  <h2 style="margin-top:0">Scan results <small>Read from the car's own computer</small></h2>
+  <table>
+    <tr><td class="k">Engine</td><td class="ok">100 · Good</td></tr>
+    <tr><td class="k">Cooling</td><td class="ok">100 · Good</td></tr>
+    <tr><td class="k">Fuel and combustion</td><td class="ok">100 · Good</td></tr>
+    <tr><td class="k">Battery and charging</td><td class="ok">95 · 14.1 V while running</td></tr>
+    <tr><td class="k">Emissions self-tests</td><td class="ok">7 of 7 complete</td></tr>
+    <tr><td class="k">Fault codes (stored, pending, hidden)</td><td class="ok">None found</td></tr>
+    <tr><td class="k">Odometer: dashboard vs engine computer</td><td class="ok">Match · 78,420 km</td></tr>
+  </table>
+  <div class="note">If faults are found, each is listed here with a tentative workshop repair cost range.</div>
+
+  <h2>Dealer's inspection <small>Rated by Sharma Motors, not checked by GetAutoSure</small></h2>
+  <table>
+    <tr><td class="k">Exterior and paint</td><td class="stars">★★★★☆</td></tr>
+    <tr><td class="k">Interior and seats</td><td class="stars">★★★★★</td></tr>
+    <tr><td class="k">Tyres</td><td class="stars">★★★★☆</td></tr>
+    <tr><td class="k">AC</td><td class="stars">★★★★★</td></tr>
+    <tr><td class="k">Brakes and suspension</td><td class="stars">★★★★☆</td></tr>
+    <tr><td class="k">Test drive</td><td class="stars">★★★★★</td></tr>
+  </table>
+  <div class="chips"><span>✓ Accident-free</span><span>✓ Service records</span><span>✓ Single-owner use</span></div>
+  <div class="quote">"Well kept family car. Ready to drive away."</div>
+
+  <h2>Photos</h2>
+  <div class="grid3">
+    <div class="photo">Left side</div><div class="photo">Rear</div><div class="photo">Right side</div>
+    <div class="photo">Interior</div><div class="photo">Dashboard</div><div class="photo">Boot</div>
+  </div>
+
+  <div class="price"><span>Price <span class="sub">(shown only if the dealer adds it)</span></span><b>₹3,25,000</b></div>
+
+  <div class="foot"><span>Scan, RTO record and repair costs by GetAutoSure. Inspection, photos and price by the dealer.</span><span>Report GAS-7F3K21 · Page 2 of 2</span></div>
+</div>
+
+</body>
+</html>

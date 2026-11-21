@@ -37,32 +37,34 @@ val VEHICLE_MAKES = listOf(
     "Other / not sure",
     "Maruti Suzuki", "Hyundai", "Tata", "Mahindra", "Kia", "Honda", "Toyota",
     "Volkswagen", "Skoda", "Renault", "Nissan", "Ford", "MG Motor", "Jeep",
-    "Citroen", "BYD", "Mercedes-Benz", "BMW", "Audi", "Volvo", "Land Rover",
+    "Citroen", "BYD", "Mercedes-Benz", "BMW", "Audi", "Volvo", "Tesla", "VinFast", "Land Rover",
     "Jaguar", "Lexus", "Isuzu", "Fiat", "Mitsubishi", "Chevrolet", "Datsun"
 )
 
 /** Common models per make — current ones first, then older and discontinued ones, since used cars are mostly older. Not exhaustive; "Other / not sure" always available. */
 val MODELS_BY_MAKE: Map<String, List<String>> = mapOf(
-    "Maruti Suzuki" to listOf("Swift", "Baleno", "Dzire", "WagonR", "Alto", "Celerio", "Ertiga", "Brezza", "Ignis", "S-Presso", "XL6", "Fronx", "Jimny", "Grand Vitara", "Invicto", "Omni", "Eeco", "Gypsy", "Zen Estilo", "A-Star", "Ritz", "SX4", "Ciaz", "S-Cross", "Esteem", "Maruti 800"),
-    "Hyundai" to listOf("Grand i10 Nios", "i20", "Venue", "Creta", "Verna", "Alcazar", "Exter", "Aura", "Tucson", "Ioniq 5", "Santro", "Grand i10", "i10", "Eon", "Xcent", "Getz", "Accent", "Elantra", "Santa Fe"),
-    "Tata" to listOf("Nexon", "Punch", "Tiago", "Tigor", "Altroz", "Harrier", "Safari", "Curvv", "Indica", "Indigo", "Nano", "Zest", "Bolt", "Hexa", "Sumo"),
-    "Mahindra" to listOf("XUV300", "XUV700", "Scorpio Classic", "Scorpio-N", "Thar", "Bolero", "XUV400", "Marazzo", "XUV 3XO", "Scorpio", "XUV500", "KUV100", "TUV300", "Xylo", "Quanto"),
-    "Kia" to listOf("Seltos", "Sonet", "Carens", "Carnival", "EV6"),
-    "Honda" to listOf("City", "Amaze", "Elevate", "WR-V", "Jazz", "Brio", "Mobilio", "BR-V", "Civic", "Accord", "CR-V"),
-    "Toyota" to listOf("Innova Crysta", "Fortuner", "Glanza", "Urban Cruiser Hyryder", "Camry", "Rumion", "Hilux", "Innova", "Innova Hycross", "Etios", "Etios Liva", "Corolla Altis"),
-    "Volkswagen" to listOf("Polo", "Vento", "Taigun", "Virtus", "Tiguan", "Ameo", "Jetta", "Passat"),
-    "Skoda" to listOf("Slavia", "Kushaq", "Octavia", "Superb", "Kodiaq", "Rapid", "Fabia", "Laura"),
+    "Maruti Suzuki" to listOf("Swift", "Baleno", "Dzire", "WagonR", "Alto", "Celerio", "Ertiga", "Brezza", "Ignis", "S-Presso", "XL6", "Fronx", "Jimny", "Grand Vitara", "Invicto", "Omni", "Eeco", "Gypsy", "Zen Estilo", "A-Star", "Ritz", "SX4", "Ciaz", "S-Cross", "Esteem", "Maruti 800", "Alto K10", "Victoris", "e Vitara"),
+    "Hyundai" to listOf("Grand i10 Nios", "i20", "Venue", "Creta", "Verna", "Alcazar", "Exter", "Aura", "Tucson", "Ioniq 5", "Santro", "Grand i10", "i10", "Eon", "Xcent", "Getz", "Accent", "Elantra", "Santa Fe", "Creta N Line", "Venue N Line", "i20 N Line", "Kona Electric", "Sonata", "Bayon"),
+    "Tata" to listOf("Nexon", "Punch", "Tiago", "Tigor", "Altroz", "Harrier", "Safari", "Curvv", "Indica", "Indigo", "Nano", "Zest", "Bolt", "Hexa", "Sumo", "Sierra", "Aeris"),
+    "Mahindra" to listOf("XUV300", "XUV700", "Scorpio Classic", "Scorpio-N", "Thar", "Bolero", "XUV400", "Marazzo", "XUV 3XO", "Scorpio", "XUV500", "KUV100", "TUV300", "Xylo", "Quanto", "Thar Roxx", "Bolero Neo", "Bolero Neo Plus", "XUV 3XO EV", "BE 6", "XEV 9e", "XEV 9S"),
+    "Kia" to listOf("Seltos", "Sonet", "Carens", "Carnival", "EV6", "Syros", "Carens Clavis", "EV9", "Sorento"),
+    "Honda" to listOf("City", "Amaze", "Elevate", "WR-V", "Jazz", "Brio", "Mobilio", "BR-V", "Civic", "Accord", "CR-V", "City e:HEV", "ZR-V"),
+    "Toyota" to listOf("Innova Crysta", "Fortuner", "Glanza", "Urban Cruiser Hyryder", "Camry", "Rumion", "Hilux", "Innova", "Innova Hycross", "Etios", "Etios Liva", "Corolla Altis", "Urban Cruiser Taisor", "Urban Cruiser Ebella", "Vellfire", "Land Cruiser 300"),
+    "Volkswagen" to listOf("Polo", "Vento", "Taigun", "Virtus", "Tiguan", "Ameo", "Jetta", "Passat", "Golf GTI", "Tayron R-Line"),
+    "Skoda" to listOf("Slavia", "Kushaq", "Octavia", "Superb", "Kodiaq", "Rapid", "Fabia", "Laura", "Kylaq"),
     "Renault" to listOf("Kwid", "Triber", "Kiger", "Duster", "Pulse", "Scala", "Lodgy"),
-    "Nissan" to listOf("Magnite", "Kicks", "Micra", "Sunny", "Terrano"),
+    "Nissan" to listOf("Magnite", "Kicks", "Micra", "Sunny", "Terrano", "X-Trail", "Gravite", "Tekton"),
     "Ford" to listOf("EcoSport", "Figo", "Endeavour", "Aspire", "Fiesta", "Freestyle", "Ikon"),
-    "MG Motor" to listOf("Hector", "Astor", "ZS EV", "Comet", "Gloster"),
-    "Jeep" to listOf("Compass", "Meridian", "Wrangler"),
-    "Citroen" to listOf("C3", "C3 Aircross", "eC3", "Basalt"),
-    "BYD" to listOf("Atto 3", "Seal", "e6"),
-    "Mercedes-Benz" to listOf("C-Class", "E-Class", "GLA", "GLC", "S-Class"),
-    "BMW" to listOf("3 Series", "5 Series", "X1", "X3", "X5"),
-    "Audi" to listOf("A4", "A6", "Q3", "Q5", "Q7"),
-    "Volvo" to listOf("XC40", "XC60", "XC90", "S90"),
+    "MG Motor" to listOf("Hector", "Astor", "ZS EV", "Comet", "Gloster", "Windsor EV", "Hector Tomahawk EV", "Hector Tomahawk PHEV", "Cyberster", "M9", "Majestor"),
+    "Jeep" to listOf("Compass", "Meridian", "Wrangler", "Grand Cherokee"),
+    "Citroen" to listOf("C3", "C3 Aircross", "eC3", "Basalt", "C5 Aircross"),
+    "BYD" to listOf("Atto 3", "Seal", "e6", "Sealion 7", "eMAX 7"),
+    "Mercedes-Benz" to listOf("C-Class", "E-Class", "GLA", "GLC", "S-Class", "A-Class", "CLA", "CLE", "GLC Coupe", "GLE", "GLE Coupe", "GLS", "G-Class", "EQS", "Maybach S-Class"),
+    "BMW" to listOf("3 Series", "5 Series", "X1", "X3", "X5", "2 Series Gran Coupe", "3 Series LWB", "7 Series", "X1 LWB", "iX1 LWB", "X6", "X7", "XM", "M2", "M340i", "M4", "M5", "i5", "i5 LWB", "i7", "iX"),
+    "Audi" to listOf("A4", "A6", "Q3", "Q5", "Q7", "Q3 Sportback", "Q8", "SQ8", "RS Q8"),
+    "Tesla" to listOf("Model Y"),
+    "VinFast" to listOf("VF 6", "VF 7", "VF MPV 7"),
+    "Volvo" to listOf("XC40", "XC60", "XC90", "S90", "EX30", "EC40", "EX90"),
     "Land Rover" to listOf("Range Rover", "Range Rover Evoque", "Discovery Sport", "Defender"),
     "Jaguar" to listOf("XF", "F-Pace"),
     "Lexus" to listOf("ES", "NX", "RX"),
@@ -88,7 +90,7 @@ internal fun bluetoothPermissions(): Array<String> =
         arrayOf(Manifest.permission.BLUETOOTH, Manifest.permission.ACCESS_FINE_LOCATION)
     }
 
-private fun hasBluetoothPermission(context: Context): Boolean =
+internal fun hasBluetoothPermission(context: Context): Boolean =
     bluetoothPermissions().all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }
 
 @Composable
@@ -97,13 +99,17 @@ fun ConnectScreen(
     onScanStarted: () -> Unit,
     onLiveDataStarted: () -> Unit,
     onPerformanceTestStarted: () -> Unit,
-    onTripMileageStarted: () -> Unit
+    onTripMileageStarted: () -> Unit,
+    onOpenDriveLab: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val connectionState by viewModel.connectionState.collectAsState()
     val vehicleBrand by viewModel.vehicleBrand.collectAsState()
     // A Used Car Check scans the seller's car, so the wording mustn't say "my car".
-    val isPrePurchase by viewModel.scanIsPrePurchaseCheck.collectAsState()
+    val isUsedCarCheck by viewModel.scanIsPrePurchaseCheck.collectAsState()
+    val isDealerScan by viewModel.scanIsDealerReport.collectAsState()
+    // Same for a dealer's car — it's on their lot, not the user's own.
+    val isPrePurchase = isUsedCarCheck || isDealerScan
     var showDeviceSheet by remember { mutableStateOf(false) }
     var showSimSheet by remember { mutableStateOf(false) }
     var intent by remember { mutableStateOf(ConnectIntent.SCAN) }
@@ -129,7 +135,7 @@ fun ConnectScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState())) {
-        Text(if (isPrePurchase) "Scan the car you're buying" else "Scan your car", style = GetAutoSureType.ScreenTitle)
+        Text(if (isDealerScan) "Scan the car for its report" else if (isPrePurchase) "Scan the car you're buying" else "Scan your car", style = GetAutoSureType.ScreenTitle)
         Spacer(Modifier.height(16.dp))
         listOf(
             "Plug the GetAutoSure scanner into the port under the steering wheel.",
@@ -168,6 +174,10 @@ fun ConnectScreen(
         Spacer(Modifier.height(8.dp))
         OutlinedButton(onClick = { connectWithScanner(ConnectIntent.TRIP_MILEAGE) }, modifier = Modifier.fillMaxWidth()) {
             Text("Mileage (km/L) for a drive")
+        }
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(onClick = onOpenDriveLab, modifier = Modifier.fillMaxWidth()) {
+            Text("Drive lab (test): record every drive")
         }
         }
 

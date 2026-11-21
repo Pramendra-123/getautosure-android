@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Status v3 mockup</title>
+<!-- Proposal (6 Nov): Status picture with a bigger photo, the phone number once, and 4 badges the dealer picks; plus the picker in the app. Made-up data; car picture is a stand-in. -->
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 1640px; height: 1000px; background: #5f6368; font-family: "Segoe UI", Roboto, Arial, sans-serif; display: flex; gap: 40px; padding: 30px; align-items: flex-start; }
+  .lbl { color: #fff; font-size: 18px; font-weight: 600; margin-bottom: 10px; }
+  .st { width: 540px; height: 960px; background: #0A0B0D; color: #F5F5F7; position: relative; overflow: hidden; border-radius: 18px; }
+  .abs { position: absolute; }
+  .logo { left: 35px; top: 32px; width: 54px; height: 54px; border-radius: 12px; background: #1E3A8A; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 22px; }
+  .dn { left: 102px; top: 33px; font-size: 27px; font-weight: 700; } .da { left: 102px; top: 68px; font-size: 15px; color: #9BA1AC; }
+  .ver { left: 35px; top: 108px; height: 34px; line-height: 34px; padding: 0 15px; border-radius: 17px; background: rgba(52,211,153,.14); color: #34D399; font-size: 16px; font-weight: 600; }
+  .photo { left: 20px; top: 158px; width: 500px; height: 360px; border-radius: 22px; overflow: hidden; background: linear-gradient(#D9DBDE 0 60%, #A9ACB0 60%); }
+  .photo img { position: absolute; left: 50%; transform: translateX(-50%); top: 26px; width: 470px; filter: drop-shadow(0 16px 10px rgba(0,0,0,.35)); }
+  .tag { right: 34px; top: 170px; background: rgba(0,0,0,.6); color: #fff; font-size: 11px; padding: 3px 8px; border-radius: 10px; }
+  .price { left: 50%; transform: translateX(-50%); top: 497px; height: 42px; line-height: 42px; padding: 0 22px; border-radius: 21px; background: #FF6B2C; color: #0A0B0D; font-weight: 800; font-size: 24px; }
+  .title { left: 35px; top: 552px; font-size: 32px; white-space: nowrap; } .title b { font-weight: 700; } .title span { color: #D1D5DB; }
+  .chips { left: 35px; top: 600px; display: flex; gap: 7px; }
+  .chip { height: 28px; line-height: 28px; padding: 0 10px; background: #16181C; color: #D1D5DB; border-radius: 6px; font-size: 15px; }
+  .tiles { left: 35px; top: 645px; width: 470px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tile { height: 64px; background: #16181C; border-radius: 14px; display: flex; align-items: center; padding-left: 14px; gap: 12px; }
+  .ic { width: 38px; height: 38px; border-radius: 50%; background: rgba(52,211,153,.16); color: #34D399; font-size: 20px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .ring { width: 36px; height: 36px; border-radius: 50%; border: 4px solid #34D399; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .tt { font-size: 19px; font-weight: 700; } .td { font-size: 13px; color: #9BA1AC; }
+  .call { left: 35px; top: 795px; width: 470px; height: 62px; border-radius: 16px; background: #FF6B2C; color: #0A0B0D; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+  .call b { font-size: 25px; } .call span { font-size: 13px; font-weight: 600; text-align: right; }
+  .by { top: 868px; width: 540px; text-align: center; font-size: 12px; color: #6B7280; } .by b { color: #FF6B2C; }
+  .cap { left: 0; right: 0; top: 896px; padding: 10px 20px; background: rgba(0,0,0,.55); font-size: 15px; color: #fff; }
+  /* app */
+  .phone { width: 400px; background: #0f1115; color: #e9e9ea; border-radius: 30px; border: 9px solid #2a2d33; padding: 18px 16px; font-size: 14px; }
+  .mu { color: #9a9ca3; font-size: 12.5px; }
+  .fc { display: inline-block; border: 1px solid #3a3d44; border-radius: 8px; padding: 6px 10px; margin: 0 6px 8px 0; font-size: 13px; }
+  .fc.on { background: #3a2410; border-color: #FF6B2C; color: #ffb066; }
+  .fc.off { opacity: .45; }
+  .grp { font-size: 11px; letter-spacing: 1px; color: #9a9ca3; font-weight: 700; margin: 10px 0 6px; }
+</style>
+</head>
+<body>
+  <div>
+    <div class="lbl">Status picture (proposed)</div>
+    <div class="st">
+      <div class="abs logo">AM</div>
+      <div class="abs dn">Ajay motors</div>
+      <div class="abs da">Panathur Main Road, Panathur, Bengaluru</div>
+      <div class="abs ver">✓ Scanned &amp; verified · 6 Nov 2026</div>
+      <div class="abs photo"><img src="../../app/src/main/res/drawable-nodpi/car_tata_nexon_ev.png"></div>
+      <div class="abs tag">Background cleaned · car not edited</div>
+      <div class="abs price">₹5.60 Lakh</div>
+      <div class="abs title"><b>2020 Kia Seltos</b> <span>GTX PLUS</span></div>
+      <div class="abs chips"><span class="chip">45,000 km</span><span class="chip">1st owner</span><span class="chip">Automatic</span><span class="chip">Petrol</span><span class="chip">KA-03</span></div>
+      <div class="abs tiles">
+        <div class="tile"><div class="ring">100</div><div><div class="tt">Health 100/100</div><div class="td">Car computer scan</div></div></div>
+        <div class="tile"><div class="ic">✓</div><div><div class="tt">Accident-free</div><div class="td">Declared by dealer</div></div></div>
+        <div class="tile"><div class="ic">✓</div><div><div class="tt">Recently serviced</div><div class="td">Declared by dealer</div></div></div>
+        <div class="tile"><div class="ic">✓</div><div><div class="tt">Papers OK</div><div class="td">Insurance, PUC, no loan</div></div></div>
+      </div>
+      <div class="abs call"><b>Call 78999 27127</b><span>Ask for the<br>full report</span></div>
+      <div class="abs by">Report by Get<b>Auto</b>Sure</div>
+      <div class="abs cap">2020 Kia Seltos · Health 100/100<br>Full report: getautosure.com/GAS-1B0140</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="lbl">In the app, before "Make report"</div>
+    <div class="phone">
+      <div style="font-size:17px;font-weight:600;margin-bottom:4px">On your Status picture</div>
+      <div class="mu" style="margin-bottom:6px">Pick 4. Health score is always first. 4 of 4 chosen.</div>
+      <div class="grp">FROM THE SCAN</div>
+      <span class="fc on">✓ Health 100/100</span><span class="fc">No faults</span><span class="fc">Self-tests 5/5</span><span class="fc">No OBD red flags</span><span class="fc">Odometer OK</span>
+      <div class="grp">FROM THE RTO RECORD</div>
+      <span class="fc on">✓ Papers OK</span><span class="fc">1st owner</span><span class="fc">No loan</span>
+      <div class="grp">YOUR TICKS (DECLARED BY YOU)</div>
+      <span class="fc on">✓ Accident-free</span><span class="fc on">✓ Recently serviced</span><span class="fc off">Service records</span><span class="fc off">Spare key</span><span class="fc off">Well-kept family car</span>
+      <div class="mu" style="margin-top:6px">Only items that are true for this car can be picked: a failed check or a tick you didn't give stays greyed out.</div>
+      <div style="margin-top:14px;background:#ff8a1f;color:#1d0f00;border-radius:10px;text-align:center;padding:12px;font-weight:700">Make report</div>
+    </div>
+  </div>
+</body>
+</html>

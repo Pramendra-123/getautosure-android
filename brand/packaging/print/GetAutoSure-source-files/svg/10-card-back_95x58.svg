@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="101mm" height="64mm" viewBox="-3 -3 101 64">
+<g id="bleed"><rect x="-3" y="-3" width="101" height="64" fill="#fff"/></g>
+<g id="artwork"><rect width="95" height="58" fill="#fff"/>
+  <text x="6" y="10" font-family="Sora" font-weight="700" font-size="4" fill="#14171C">Where's my OBD port?</text>
+  <g fill="none" stroke="#14171C" stroke-width="0.5" stroke-linecap="round">
+    <path d="M6 28 q22 -9 44 0"/><circle cx="37" cy="29" r="7"/><circle cx="37" cy="29" r="1.6"/><path d="M37 36 v6"/><path d="M30 45 h4 M40 45 h4"/></g>
+  <rect x="40" y="36.5" width="7" height="4.2" rx="0.8" fill="#FF6B2C"/><path d="M50 38.5 h4" stroke="#FF6B2C" stroke-width="0.5"/>
+  <text x="55" y="39.4" font-family="IBM Plex Sans" font-size="2" fill="#14171C">Usually here</text>
+  <g font-family="IBM Plex Sans" font-size="2.3" fill="#3B4048">
+    <text x="57" y="18">Under the dashboard,</text><text x="57" y="22">near your right knee.</text>
+    <text x="57" y="28">Sometimes behind a</text><text x="57" y="32">small cover or fuse lid.</text></g>
+  <line x1="6" y1="49" x2="89" y2="49" stroke="#E2DED8" stroke-width="0.3"/>
+  <text x="6" y="54" font-family="IBM Plex Sans" font-size="2.1" fill="#3B4048">Help: getautosure.com/help</text></g>
+<g id="trim-line-do-not-print"><rect x="0" y="0" width="95" height="58" fill="none" stroke="#EC008C" stroke-width="0.2"/></g>
+</svg>

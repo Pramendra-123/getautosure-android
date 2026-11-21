@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="92mm" height="36mm" viewBox="-3 -3 92 36">
+<g id="bleed"><rect x="-3" y="-3" width="92" height="36" fill="#14171C"/></g>
+<g id="artwork"><g transform="translate(3 0)"><text x="40" y="16.5" text-anchor="middle" font-family="IBM Plex Sans" font-size="3" fill="#8C9199" letter-spacing="0.2">Don't guess. Be sure.</text></g></g>
+<g id="trim-line-do-not-print"><rect x="0" y="0" width="86" height="30" fill="none" stroke="#EC008C" stroke-width="0.2"/></g>
+</svg>

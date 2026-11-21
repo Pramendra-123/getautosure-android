@@ -1,8 +1,15 @@
 package com.enginesense.app.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.core.content.ContextCompat
+import com.enginesense.app.storage.ShowroomLocator
+import kotlinx.coroutines.launch
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -47,7 +54,31 @@ fun DealerProfileScreen(onSaved: () -> Unit = {}) {
     var name by remember { mutableStateOf(existing?.name ?: "") }
     var tagline by remember { mutableStateOf(existing?.tagline ?: "") }
     var phone by remember { mutableStateOf(existing?.phone ?: "") }
+    var phone2 by remember { mutableStateOf(existing?.phone2 ?: "") }
     var location by remember { mutableStateOf(existing?.location ?: "") }
+    var latLng by remember { mutableStateOf(existing?.latitude?.let { lat -> existing.longitude?.let { lat to it } }) }
+    var locating by remember { mutableStateOf(false) }
+    var locateError by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    fun fillFromLocation() {
+        locating = true
+        locateError = null
+        scope.launch {
+            val found = ShowroomLocator.locate(context)
+            locating = false
+            if (found == null) {
+                locateError = "Couldn't get your location. Turn on Location and try again, or type the address."
+            } else {
+                latLng = found.latitude to found.longitude
+                found.address?.let { location = it }
+            }
+        }
+    }
+
+    val askLocation = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) fillFromLocation() else locateError = "Location permission is off — type the address instead."
+    }
     var logoBitmap by remember {
         mutableStateOf(if (store.hasLogo()) BitmapFactory.decodeFile(store.logoFile.absolutePath) else null)
     }
@@ -110,14 +141,45 @@ fun DealerProfileScreen(onSaved: () -> Unit = {}) {
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(value = tagline, onValueChange = { tagline = it }, label = { Text("Tagline (optional)") }, placeholder = { Text("e.g. Certified Pre-Owned Dealer") }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(12.dp))
-        OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Phone") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(
+            value = phone, onValueChange = { phone = it }, label = { Text("Phone") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), singleLine = true, modifier = Modifier.fillMaxWidth()
+        )
         Spacer(Modifier.height(12.dp))
-        OutlinedTextField(value = location, onValueChange = { location = it }, label = { Text("Location") }, placeholder = { Text("e.g. Andheri West, Mumbai") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(
+            value = phone2, onValueChange = { phone2 = it }, label = { Text("Second phone (optional)") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), singleLine = true, modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(
+            value = location,
+            // Typing a new address drops the saved map point, so the map link never points somewhere else.
+            onValueChange = { location = it; latLng = null },
+            label = { Text("Showroom address") }, placeholder = { Text("e.g. Andheri West, Mumbai") }, modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(6.dp))
+        OutlinedButton(
+            onClick = {
+                val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                if (granted) fillFromLocation() else askLocation.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+            },
+            enabled = !locating,
+            modifier = Modifier.fillMaxWidth()
+        ) { Text(if (locating) "Finding your location…" else "📍 Use my location") }
+        when {
+            locateError != null -> Text(locateError!!, style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Attention))
+            latLng != null -> Text("Map location saved — the report gets an \"Open in Google Maps\" link.", style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Good))
+        }
         Spacer(Modifier.height(20.dp))
 
         Button(
             onClick = {
-                store.save(DealerProfile(name = name.trim(), tagline = tagline.trim(), phone = phone.trim(), location = location.trim()))
+                store.save(
+                    DealerProfile(
+                        name = name.trim(), tagline = tagline.trim(), phone = phone.trim(), location = location.trim(),
+                        phone2 = phone2.trim(), latitude = latLng?.first, longitude = latLng?.second
+                    )
+                )
                 saved = true
                 onSaved()
             },

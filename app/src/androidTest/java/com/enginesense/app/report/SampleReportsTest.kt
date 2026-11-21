@@ -6,9 +6,8 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.enginesense.app.dealerreport.DealerConditionInput
-import com.enginesense.app.dealerreport.DealerConditionItem
-import com.enginesense.app.vehicle.DealerPrice
+import com.enginesense.app.dealerreport.DealerInspection
+import com.enginesense.app.dealerreport.DealerSaleSummaryBuilder
 import androidx.test.platform.app.InstrumentationRegistry
 import com.enginesense.app.ScanResult
 import com.enginesense.app.obd.VehicleIdInfo
@@ -132,41 +131,42 @@ class SampleReportsTest {
         write("pre-purchase-sample", PrePurchaseReportPdfGenerator.generateTo(outDir, result, report, null, null, today))
     }
 
-    /** What a dealer hands a buyer: their own branding on the pre-purchase report, with the full (dealer-mode) RTO record. */
-    @Test
-    fun dealerReport() {
+    /** Dealer Sathi v2: a refurbished car's report for the dealer's customers, and its WhatsApp Status picture. Photos are stand-in drawings. */
+    private fun dealerSaleInput(): DealerSaleReportInput {
         val result = scan(realMaruti, emptyList(), readiness(), vin = "XX9SAMPLEK0123456", profile = "Real dongle")
         val report = PrePurchaseReportBuilder.build(
             result.findings, result.health.score, result.readiness, result.snapshot, vin = "XX9SAMPLEK0123456", dashboardKm = 48_500.0,
-            rc = rc(mode = "dealer", financed = false, ownerCount = 1), registration = null, exShowroomPriceInr = 750_000.0,
+            rc = rc(mode = "dealer", financed = false, ownerCount = 1), registration = null, exShowroomPriceInr = null,
             buyerEnteredYear = null, currentYear = 2026, today = today
         )
         val dealer = DealerProfile(
-            name = "AutoTrust Motors", tagline = "Certified pre-owned cars", phone = "+91 98765 43210", location = "Baner, Pune"
+            name = "AutoTrust Motors", tagline = "Certified pre-owned cars", phone = "+91 98765 43210", location = "Baner, Pune",
+            phone2 = "+91 98765 01234", latitude = 18.5590, longitude = 73.7868
         )
-        write("dealer-report-sample", PrePurchaseReportPdfGenerator.generateTo(outDir, result, report, dealer, null, today))
+        val inspection = DealerInspection(
+            ratings = mapOf("Exterior and paint" to 4, "Interior and seats" to 5, "Tyres" to 4, "AC" to 5, "Brakes and suspension" to 4, "Test drive" to 5),
+            extras = listOf("Accident-free", "Service records", "Single owner"),
+            note = "Well kept family car. Ready to drive away."
+        )
+        val photos = listOf("Front", "Rear", "Left side", "Right side").map { ReportPhoto(it, standInPhoto(it, 800, 520), backgroundCleaned = true) } +
+            listOf(ReportPhoto("Interior", standInPhoto("Interior", 600, 450), false), ReportPhoto("Dashboard", standInPhoto("Dashboard", 600, 450), false))
+        return DealerSaleReportInput(result, report, dealer, null, inspection, photos, priceInr = 425_000.0)
     }
 
-    /** The second Dealer Sathi option: photos (stand-in drawings here — the app uses the dealer's Gemini-cleaned photos), condition notes and the dealer's own price. */
     @Test
-    fun dealerPhotoReport() {
-        val result = scan(realMaruti, emptyList(), readiness(), vin = "XX9SAMPLEK0123456", profile = "Real dongle")
-        val dealer = DealerProfile(name = "AutoTrust Motors", tagline = "Certified pre-owned cars", phone = "+91 98765 43210", location = "Baner, Pune")
-        val report = PrePurchaseReportBuilder.build(
-            result.findings, result.health.score, result.readiness, result.snapshot, vin = "XX9SAMPLEK0123456", dashboardKm = 48_500.0,
-            rc = rc(mode = "dealer", financed = false, ownerCount = 1), registration = null, exShowroomPriceInr = 750_000.0,
-            buyerEnteredYear = null, currentYear = 2026, today = today
-        ).copy(dealerPrice = DealerPrice(395_000.0, 425_000.0, dealer.name))
-        val extras = DealerReportExtras(
-            photos = listOf("Front", "Rear", "Left Side", "Right Side").map { ReportPhoto(it, standInPhoto(it, 800, 520), backgroundCleaned = true) } +
-                listOf(ReportPhoto("Photo 1", standInPhoto("Interior", 600, 450), false), ReportPhoto("Photo 2", standInPhoto("Dashboard", 600, 450), false)),
-            condition = DealerConditionInput(
-                exterior = DealerConditionItem("Good", listOf("Minor scratches", "No visible damage")),
-                interior = DealerConditionItem("Good", listOf("Clean, no visible wear", "AC working well")),
-                tyres = DealerConditionItem("Fair", listOf("Moderate wear (~40-70%)", "Spare tyre available"))
-            )
-        )
-        write("dealer-photo-report-sample", PrePurchaseReportPdfGenerator.generateTo(outDir, result, report, dealer, null, today, extras))
+    fun dealerReport() {
+        write("dealer-report-sample", DealerSaleReportPdfGenerator.generateTo(outDir, dealerSaleInput(), today))
+    }
+
+    /** Pull with: adb exec-out run-as com.enginesense.app cat cache/sample-reports/dealer-status-sample.png > brand/reports/dealer-status-sample.png */
+    @Test
+    fun dealerStatusImage() {
+        val input = dealerSaleInput()
+        val summary = DealerSaleSummaryBuilder.build(input.result, input.report, today)
+        val image = DealerStatusImage.render(summary, input.dealer, null, input.photos.first(), input.result.timestampMillis)
+        val file = File(outDir, "dealer-status-sample.png")
+        file.outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        assertTrue(file.length() > 10_000)
     }
 
     /** A plain labelled drawing standing in for a car photo, so no real photo lives in the repo. */

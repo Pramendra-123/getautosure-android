@@ -18,38 +18,6 @@ import com.enginesense.app.vehicle.SensorRating
 import com.enginesense.app.vehicle.benchmark
 import com.enginesense.app.vehicle.rate
 
-/** Battery health from the last scan's real module-voltage reading. */
-@Composable
-fun BatteryScreen(viewModel: GetAutoSureViewModel) {
-    val result by viewModel.latestResult.collectAsState()
-
-    Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
-        Text("Battery", style = GetAutoSureType.ScreenTitle)
-        Spacer(Modifier.height(8.dp))
-
-        val reading = result?.snapshot?.readings?.get(PidId.CONTROL_MODULE_VOLTAGE)
-        if (reading?.status != PidStatus.VERIFIED || reading.value == null) {
-            Text("Run a scan first to see your battery/alternator voltage.", style = GetAutoSureType.Body)
-            return@Column
-        }
-
-        val rating = PidId.CONTROL_MODULE_VOLTAGE.rate(reading.value)
-        val color = when (rating) {
-            SensorRating.GOOD -> GetAutoSureColors.Good
-            SensorRating.WATCH -> GetAutoSureColors.Watch
-            SensorRating.ATTENTION -> GetAutoSureColors.Attention
-            SensorRating.NOT_RATED -> GetAutoSureColors.Unavailable
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            StatusDot(color)
-            Spacer(Modifier.width(10.dp))
-            Text("%.1fV".format(reading.value), style = GetAutoSureType.ScreenTitle)
-        }
-        Spacer(Modifier.height(6.dp))
-        PidId.CONTROL_MODULE_VOLTAGE.benchmark()?.let { Text(it.note, style = GetAutoSureType.Caption) }
-    }
-}
-
 /** Quick standalone view of the check-engine light + stored DTC count from the last scan's readiness data. */
 @Composable
 fun MilStatusScreen(viewModel: GetAutoSureViewModel) {

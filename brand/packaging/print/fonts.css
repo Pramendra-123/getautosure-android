@@ -1,0 +1,4 @@
+/* Brand fonts from local files so headless PDF export embeds them (Google Fonts doesn't load in time there). */
+@font-face { font-family: "Sora"; src: url("fonts/Sora-Variable.ttf") format("truetype"); font-weight: 100 800 }
+@font-face { font-family: "IBM Plex Sans"; src: url("fonts/IBMPlexSans-Variable.ttf") format("truetype"); font-weight: 100 700 }
+@font-face { font-family: "IBM Plex Mono"; src: url("fonts/IBMPlexMono-Regular.ttf") format("truetype"); font-weight: 400 }

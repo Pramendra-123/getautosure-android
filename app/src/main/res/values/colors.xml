@@ -1,4 +1,4 @@
 <resources>
-    <!-- Same as GetAutoSureColors.Background in Theme.kt. -->
-    <color name="app_background">#0A0B0D</color>
+    <!-- Same as GetAutoSureColors.Background in Theme.kt (warm white). -->
+    <color name="app_background">#F5F4F2</color>
 </resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="110mm" height="92mm" viewBox="-3 -3 110 92">
+<g id="bleed"><rect x="-3" y="-3" width="110" height="92" fill="#14171C"/></g>
+<g id="artwork"><g transform="translate(0 3)"><g transform="translate(44 23) scale(0.25)">
+      <path d="M10 32 A22 22 0 0 1 54 32" fill="none" stroke="#FF6B2C" stroke-width="5" stroke-linecap="round"/>
+      <path d="M22 28 L29 36 L44 16" fill="none" stroke="#FF6B2C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="10" cy="46" r="8" fill="#FFFFFF"/><circle cx="54" cy="46" r="8" fill="#FFFFFF"/></g><text x="52" y="48" text-anchor="middle" font-family="Sora" font-weight="700" font-size="6" letter-spacing="-0.02em"><tspan fill="#FFFFFF">GetAuto</tspan><tspan fill="#FF6B2C">Sure</tspan></text><text x="52" y="54" text-anchor="middle" font-family="IBM Plex Sans" font-size="2" fill="#8C9199" letter-spacing="0.8">OBD-II SCANNER</text></g></g>
+<g id="trim-line-do-not-print"><rect x="0" y="0" width="104" height="86" fill="none" stroke="#EC008C" stroke-width="0.2"/></g>
+</svg>

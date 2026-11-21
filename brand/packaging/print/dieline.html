@@ -1,0 +1,146 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>GetAutoSure packaging – dieline</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  @page { size: 420mm 297mm; margin: 0 }
+  html, body { margin: 0; background: #fff }
+  .page { width: 420mm; height: 297mm; page-break-after: always; overflow: hidden }
+  .page:last-child { page-break-after: auto }
+  .page svg { display: block }
+</style>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="art.js"></script>
+<script>
+// Flat (unfolded) flip-lid box, 104 W x 86 D x 30 H, in the printer's usual format: whole sheet in black,
+// artwork placed on each panel, red die lines on top (solid = cut, dashed = fold). Units are mm.
+// Reverse tuck: lid hinged to the back wall, tucks into the front; bottom hinged to the front, tucks into the back.
+const A = ART, F = A.flat, Q = A.quiet, RED = "#E3001B", INK = A.INK;
+const W = 104, D = 86, H = 30, GLUE = 14, TUCK = 15, DUST = 25;
+// panel x positions, outside view: glue | left | front | right | back
+const xL = GLUE, xF = xL + D, xR = xF + W, xB = xR + D, xEnd = xB + W;
+const yTuck = 0, yLid = TUCK, yWall = yLid + D, yBot = yWall + H, yBotTuck = yBot + D, yEndAll = yBotTuck + TUCK;
+
+const cut = d => `<path d="${d}" fill="none" stroke="${RED}" stroke-width="0.35" stroke-linejoin="round"/>`;
+const fold = (x1, y1, x2, y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${RED}" stroke-width="0.35" stroke-dasharray="2 1.2"/>`;
+const tuckPath = (x, yHinge, dir) => { // rounded tuck flap on a W-wide edge, dir -1 = up, +1 = down
+  const e = yHinge + dir * TUCK, r = 5;
+  return `M${x} ${yHinge} L${x + 1.5} ${e - dir * r} Q${x + 1.5} ${e} ${x + 1.5 + r} ${e} L${x + W - 1.5 - r} ${e} Q${x + W - 1.5} ${e} ${x + W - 1.5} ${e - dir * r} L${x + W} ${yHinge}`;
+};
+const dustPath = (x, yHinge, dir) => { // dust flap on a D-wide side wall
+  const e = yHinge + dir * DUST;
+  return `M${x + 1} ${yHinge} L${x + 1} ${yHinge + dir * 6} L${x + 14} ${e} L${x + D - 3} ${e} L${x + D - 1} ${yHinge + dir * 4} L${x + D - 1} ${yHinge}`;
+};
+
+function dieLines() {
+  return [
+    // walls: outer cut along glue flap and the free edges
+    cut(`M${xL} ${yWall} L0 ${yWall + 4} L0 ${yWall + H - 4} L${xL} ${yWall + H}`),
+    cut(`M${xEnd} ${yWall} L${xEnd} ${yWall + H}`),
+    // lid (on back) + tuck, bottom (on front) + tuck
+    cut(`M${xB} ${yWall} L${xB} ${yLid}`), cut(`M${xEnd} ${yWall} L${xEnd} ${yLid}`), cut(tuckPath(xB, yLid, -1)),
+    cut(`M${xF} ${yBot} L${xF} ${yBotTuck}`), cut(`M${xR} ${yBot} L${xR} ${yBotTuck}`), cut(tuckPath(xF, yBotTuck, 1)),
+    // dust flaps on the side walls, top and bottom
+    cut(dustPath(xL, yWall, -1)), cut(dustPath(xR, yWall, -1)), cut(dustPath(xL, yBot, 1)), cut(dustPath(xR, yBot, 1)),
+    // free top/bottom edges of the walls with no flap
+    cut(`M${xF} ${yWall} L${xR} ${yWall}`), cut(`M${xB} ${yBot} L${xEnd} ${yBot}`),
+    cut(`M${xL} ${yWall} L${xL + 1} ${yWall}`), cut(`M${xL + D - 1} ${yWall} L${xF} ${yWall}`),
+    cut(`M${xR} ${yWall} L${xR + 1} ${yWall}`), cut(`M${xR + D - 1} ${yWall} L${xB} ${yWall}`),
+    cut(`M${xL} ${yBot} L${xL + 1} ${yBot}`), cut(`M${xL + D - 1} ${yBot} L${xF} ${yBot}`),
+    cut(`M${xR} ${yBot} L${xR + 1} ${yBot}`), cut(`M${xR + D - 1} ${yBot} L${xB} ${yBot}`),
+    // folds
+    fold(xL, yWall, xL, yBot), fold(xF, yWall, xF, yBot), fold(xR, yWall, xR, yBot), fold(xB, yWall, xB, yBot),
+    fold(xB, yWall, xEnd, yWall), fold(xB, yLid, xEnd, yLid), fold(xF, yBot, xR, yBot), fold(xF, yBotTuck, xR, yBotTuck),
+    fold(xL + 1, yWall, xL + D - 1, yWall), fold(xR + 1, yWall, xR + D - 1, yWall),
+    fold(xL + 1, yBot, xL + D - 1, yBot), fold(xR + 1, yBot, xR + D - 1, yBot),
+  ].join("");
+}
+const sheet = `<rect x="-3" y="-3" width="${xEnd + 6}" height="${yEndAll + 6}" fill="${INK}"/>`;
+const at = (x, y, body, extra = "") => `<g transform="translate(${x} ${y}) ${extra}">${body}</g>`;
+const in86 = body => `<g transform="translate(0 3)">${body}</g>`;
+const side = body => `<g transform="translate(3 0)">${body}</g>`;
+const label = (x, y, t) => `<text x="${x}" y="${y}" text-anchor="middle" font-family="IBM Plex Mono" font-size="2.6" fill="#8A9099">${t}</text>`;
+
+// Lid is hinged on its lower edge (the back), so its artwork turns 180° in the flat layout to read right way up when closed.
+const outside = sheet +
+  at(xB + W, yLid + D, in86(Q.lidTop()), "rotate(180)") +
+  at(xL, yWall, side(Q.leftWall())) + at(xF, yWall, Q.frontWall()) + at(xR, yWall, side(Q.rightWall())) + at(xB, yWall, Q.backWall()) +
+  at(xF, yBot, in86(F.bottom())) + dieLines();
+
+// Inside view is the sheet flipped left to right. Only the inside of the lid is printed; the rest stays black.
+const insideLid = at(xEnd - xB - W, yLid, in86(Q.lidInside()));
+const inside = sheet + insideLid + `<g transform="translate(${xEnd} 0) scale(-1 1)">${dieLines()}</g>`;
+
+function page(title, specs, body, notes, legend = true) {
+  const ox = (420 - xEnd) / 2, oy = 40;
+  return `<section class="page"><svg width="420mm" height="297mm" viewBox="0 0 420 297">
+    <g font-family="IBM Plex Sans" fill="#14171C">
+      <text x="${ox}" y="16" font-family="Sora" font-weight="700" font-size="6">${title}</text>
+      ${specs.map((s, i) => `<text x="${ox}" y="${23 + i * 5}" font-size="3.6">${s}</text>`).join("")}
+    </g>
+    ${legend ? `<g font-family="IBM Plex Mono" font-size="3" fill="#5E636B">
+      <line x1="300" y1="12" x2="314" y2="12" stroke="${RED}" stroke-width="0.5"/><text x="317" y="13">CUT 刀线</text>
+      <line x1="300" y1="19" x2="314" y2="19" stroke="${RED}" stroke-width="0.5" stroke-dasharray="2 1.2"/><text x="317" y="20">FOLD 折线</text>
+      <text x="300" y="27">Bleed 出血 3 mm · units 单位 mm</text></g>` : ""}
+    <g transform="translate(${ox} ${oy})">${body}</g>
+    <g font-family="IBM Plex Sans" font-size="3.2" fill="#5E636B">${notes.map((n, i) => `<text x="${ox}" y="${287 + i * 5}">${n}</text>`).join("")}</g>
+  </svg></section>`;
+}
+
+const specs = [
+  "尺寸 Size: 104 × 86 × 30 mm (W × D × H, outside)",
+  "材质 Board: 350 g 双粉卡 C2S art card",
+  "工艺 Finish: 四色印刷 (外面 + 盖内) + 触感哑膜, 无开窗  4-colour outside + inside lid, soft-touch matte, no window",
+];
+const notes = [
+  "Flip-lid (reverse tuck): lid hinged to the back wall, tucks into the front. Bottom hinged to the front. Please adjust flaps to your standard die. 请按贵司标准刀模调整。",
+  "Right side is left plain for the Amazon label. Bottom text in [brackets] will be replaced before mass production. 底面[ ]内容量产前替换。",
+];
+
+const caption = (x, y, t) => `<text x="${x}" y="${y}" text-anchor="middle" font-family="IBM Plex Mono" font-size="3" fill="#5E636B">${t}</text>`;
+const captionsOutside =
+  caption(xL + D / 2, yEndAll + 8, "LEFT 左") + caption(xF + W / 2, yEndAll + 8, "FRONT 正面 / BOTTOM 底面") +
+  caption(xR + D / 2, yEndAll + 8, "RIGHT 右") + caption(xB + W / 2, yEndAll + 8, "BACK 背面 / LID 盖面");
+const captionsInside =
+  caption(xEnd - (xL + D / 2), yEndAll + 8, "LEFT 左") + caption(xEnd - (xF + W / 2), yEndAll + 8, "FRONT 正面") +
+  caption(xEnd - (xR + D / 2), yEndAll + 8, "RIGHT 右") + caption(xEnd - (xB + W / 2), yEndAll + 8, "BACK 背面 / INSIDE LID 盖内");
+
+// Page 3: inserts, card, sticker and dongle print, each at 1:1 with its own spec line.
+const evaW = 100, evaH = 82, px = (evaW - 45.5) / 2, py = (evaH - 65.5) / 2;
+const cardInsert = `<rect x="-3" y="-3" width="106" height="88" fill="#0C0D0F"/><rect x="5" y="5" width="90" height="72" fill="${A.ORANGE}"/>` +
+  cut(`M0 0 H100 V82 H0 Z`) + cut(`M26.5 7.5 h47 v67 h-47 z`) + cut(`M73.5 35 a6 6 0 0 1 0 12`);
+const evaInsert = `<rect x="0" y="0" width="${evaW}" height="${evaH}" fill="${A.ORANGE}"/>` +
+  cut(`M0 0 H100 V82 H0 Z`) + cut(`M${px + 2} ${py} h41.5 a2 2 0 0 1 2 2 v61.5 a2 2 0 0 1 -2 2 h-41.5 a2 2 0 0 1 -2 -2 v-61.5 a2 2 0 0 1 2 -2 z`) +
+  cut(`M${px + 45.5} ${evaH / 2 - 6} a6 6 0 0 1 0 12`) +
+  `<g font-family="IBM Plex Mono" fill="#fff" text-anchor="middle"><text x="50" y="40" font-size="2.4">POCKET 45.5 × 65.5</text><text x="50" y="44" font-size="2">26 mm deep</text></g>`;
+const cardBack = `<rect width="95" height="58" fill="#fff"/>
+  <text x="6" y="10" font-family="Sora" font-weight="700" font-size="4" fill="${INK}">Where's my OBD port?</text>
+  <g fill="none" stroke="${INK}" stroke-width="0.5" stroke-linecap="round">
+    <path d="M6 28 q22 -9 44 0"/><circle cx="37" cy="29" r="7"/><circle cx="37" cy="29" r="1.6"/><path d="M37 36 v6"/><path d="M30 45 h4 M40 45 h4"/></g>
+  <rect x="40" y="36.5" width="7" height="4.2" rx="0.8" fill="${A.ORANGE}"/><path d="M50 38.5 h4" stroke="${A.ORANGE}" stroke-width="0.5"/>
+  <text x="55" y="39.4" font-family="IBM Plex Sans" font-size="2" fill="${INK}">Usually here</text>
+  <g font-family="IBM Plex Sans" font-size="2.3" fill="#3B4048">
+    <text x="57" y="18">Under the dashboard,</text><text x="57" y="22">near your right knee.</text>
+    <text x="57" y="28">Sometimes behind a</text><text x="57" y="32">small cover or fuse lid.</text></g>
+  <line x1="6" y1="49" x2="89" y2="49" stroke="#E2DED8" stroke-width="0.3"/>
+  <text x="6" y="54" font-family="IBM Plex Sans" font-size="2.1" fill="#3B4048">Help: getautosure.com/help</text>`;
+const item = (x, y, body, t1, t2) => at(x, y, body) +
+  `<g font-family="IBM Plex Sans" fill="#14171C"><text x="${x}" y="${y - 8}" font-family="Sora" font-weight="700" font-size="3.6">${t1}</text>
+   <text x="${x}" y="${y - 3}" font-size="2.8" fill="#5E636B">${t2}</text></g>`;
+const dongle = A.labelMinimal().replace('width="42mm" height="50.6mm"', 'width="42" height="50.6"');
+const others =
+  item(0, 0, cardInsert, "A · Insert, printed card 卡纸内托", "100 × 82 · 350 g, black border + orange · cut-out 47 × 67 + thumb notch R6") +
+  item(120, 0, evaInsert, "B · Insert, orange EVA 橙色 EVA 内托", "100 × 82 × 26 · solid orange EVA, not printed · pocket 45.5 × 65.5") +
+  item(240, 0, A.cardFront() + cut("M0 0 H95 V58 H0 Z"), "Card front 卡片正面", "95 × 58 · 300 g matte, 2 sides") +
+  item(240, 82, cardBack + cut("M0 0 H95 V58 H0 Z"), "Card back 卡片背面", "") +
+  item(0, 112, A.sticker() + cut("M25 0 a25 25 0 1 1 0 50 a25 25 0 1 1 0 -50 z"), "Sticker 贴纸", "Ø 50 · clear static cling, reverse print 静电贴, 反印") +
+  item(120, 112, dongle, "Dongle silk-screen 外壳丝印", "42 × 50.6 · white + orange only, plug at the top");
+
+document.getElementById("root").innerHTML =
+  page("GetAutoSure box · OUTSIDE 外面", specs, outside + captionsOutside, notes) +
+  page("GetAutoSure box · INSIDE 里面 (back of sheet 反面)", ["Inside lid printed. Everything else plain black. 仅盖内印刷，其余黑色。"], inside + captionsInside,
+    ["Seen from the inside, so left and right are flipped. 从内侧看，左右相反。"]) +
+  page("Inserts, card, sticker, dongle 内托、卡片、贴纸、丝印", ["Please quote both insert options A and B. 内托 A 与 B 请分别报价。"],
+    `<g transform="translate(0 20)">${others}</g>`, ["All at 1:1. 均为 1:1。"], true);
+</script>

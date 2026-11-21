@@ -1,5 +1,6 @@
 package com.enginesense.app.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -36,11 +37,13 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.enginesense.app.BuildConfig
+import com.enginesense.app.R
 import com.enginesense.app.vehiclelookup.LookupState
 import com.enginesense.app.vehiclelookup.RcLookupResult
 import com.enginesense.app.vehiclelookup.RcPrefill
 import com.enginesense.app.vehiclelookup.RcPrefillMapper
 import com.enginesense.app.vehiclelookup.VehicleLookupViewModel
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
@@ -62,53 +65,76 @@ private const val FLOW_STEPS = 5
 // ---------------------------------------------------------------------------------------
 
 private val VALUE_PROPS = listOf(
-    "Scan & understand car health",
-    "Get AI mechanic guidance",
-    "Know repair costs before you pay",
-    "Video call a real mechanic (Pro)"
+    "Health score, hidden faults and repair costs in 2 minutes",
+    "RTO record: owners, loan, insurance and PUC",
+    "AI Mechanic and real experts on video call"
 )
 
+/** First launch: what GetAutoSure does, before any sign-in (design: canvas row "Steps 1–3 · everyone"). */
 @Composable
 fun SplashScreen(onGetStarted: () -> Unit) {
-    Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-        Spacer(Modifier.weight(1f))
+    Column(modifier = Modifier.fillMaxSize().background(GetAutoSureColors.Background).padding(horizontal = 20.dp, vertical = 24.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("GetAuto", style = GetAutoSureType.SectionTitle)
-            Text("Sure", style = GetAutoSureType.SectionTitle.copy(color = GetAutoSureColors.Accent))
+            Box(
+                Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(GetAutoSureColors.Ink),
+                contentAlignment = Alignment.Center
+            ) { Icon(Icons.Filled.Check, contentDescription = null, tint = GetAutoSureColors.AccentBright, modifier = Modifier.size(20.dp)) }
+            Spacer(Modifier.width(10.dp))
+            Text("GetAuto", style = GetAutoSureType.SectionTitle.copy(fontWeight = FontWeight.Bold))
+            Text("Sure", style = GetAutoSureType.SectionTitle.copy(color = GetAutoSureColors.Accent, fontWeight = FontWeight.Bold))
         }
-        Text("Your AI Car Health Expert", style = GetAutoSureType.Caption)
-        Spacer(Modifier.height(28.dp))
-        Box(
-            modifier = Modifier
-                .size(120.dp)
-                .clip(CircleShape)
-                .background(GetAutoSureColors.Accent.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center
+        Spacer(Modifier.height(22.dp))
+        // The black hero card from the design, showing what a scan tells you.
+        Column(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(GetAutoSureColors.Ink).padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(Icons.Filled.DirectionsCar, contentDescription = null, tint = GetAutoSureColors.Accent, modifier = Modifier.size(64.dp))
+            HeroChip(Alignment.Start) {
+                Text("82", color = GetAutoSureColors.AccentBright, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(10.dp))
+                Text("Health score\nMaruti Swift · 2019", color = GetAutoSureColors.OnInkMuted, fontSize = 12.sp)
+            }
+            HeroChip(Alignment.End) {
+                Text("P0171 · engine running lean\nRepair ₹800–3,500", color = GetAutoSureColors.OnInk, fontSize = 12.sp)
+            }
+            HeroChip(Alignment.Start) {
+                Text("RTO record matched\n1 owner · no loan · insured", color = GetAutoSureColors.OnInk, fontSize = 12.sp)
+            }
+            Image(
+                painterResource(R.drawable.model_maruti_grand_vitara), contentDescription = null,
+                modifier = Modifier.fillMaxWidth().height(110.dp)
+            )
         }
-        Spacer(Modifier.height(28.dp))
-        Text("Know your car better.", style = GetAutoSureType.ScreenTitle)
-        Text("Drive with confidence.", style = GetAutoSureType.ScreenTitle.copy(color = GetAutoSureColors.Accent))
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(22.dp))
+        Text("Know any car,\ninside out.", style = GetAutoSureType.ScreenTitle.copy(fontSize = 30.sp, lineHeight = 34.sp))
+        Spacer(Modifier.height(10.dp))
+        Text(
+            "Plug in the GetAutoSure scanner. In 2 minutes you see the car's health, hidden faults, repair costs and its RTO record.",
+            style = GetAutoSureType.Body.copy(color = GetAutoSureColors.TextSecondary)
+        )
+        Spacer(Modifier.height(14.dp))
         VALUE_PROPS.forEach { prop -> ValuePropRow(prop) }
         Spacer(Modifier.weight(1f))
-        Button(onClick = onGetStarted, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-            Text("Get Started")
+        Button(onClick = onGetStarted, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth().height(54.dp)) {
+            Text("Get started", fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
     }
 }
 
 @Composable
+private fun ColumnScope.HeroChip(align: Alignment.Horizontal, content: @Composable RowScope.() -> Unit) {
+    Row(
+        Modifier.align(align).clip(RoundedCornerShape(12.dp)).background(GetAutoSureColors.InkRaised).padding(horizontal = 12.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        content = content
+    )
+}
+
+@Composable
 private fun ValuePropRow(text: String) {
-    Row(modifier = Modifier.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier.size(28.dp).clip(CircleShape).background(GetAutoSureColors.Accent.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.Filled.Check, contentDescription = null, tint = GetAutoSureColors.Accent, modifier = Modifier.size(16.dp))
-        }
-        Spacer(Modifier.width(12.dp))
+    Row(modifier = Modifier.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(Icons.Filled.Check, contentDescription = null, tint = GetAutoSureColors.Good, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(10.dp))
         Text(text, style = GetAutoSureType.Body)
     }
 }
@@ -125,7 +151,15 @@ private fun ValuePropRow(text: String) {
  * done and sign-in has been verified on a real device.
  */
 @Composable
-fun LoginScreen(onSignedIn: (displayName: String?) -> Unit, onContinueWithPhone: () -> Unit, onSkip: () -> Unit) {
+fun LoginScreen(
+    onSignedIn: (displayName: String?) -> Unit,
+    onContinueWithPhone: () -> Unit,
+    onSkip: () -> Unit,
+    /** The mode picked on "Who are you?" — shown so the user knows what they're setting up. */
+    modeTitle: String? = null,
+    /** What sign-in saves for this mode, e.g. "your car" or "your reports". */
+    savesWhat: String = "your car, reports and bookings"
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var isSigningIn by remember { mutableStateOf(false) }
@@ -138,10 +172,18 @@ fun LoginScreen(onSignedIn: (displayName: String?) -> Unit, onContinueWithPhone:
             Text("GetAuto", style = GetAutoSureType.SectionTitle)
             Text("Sure", style = GetAutoSureType.SectionTitle.copy(color = GetAutoSureColors.Accent))
         }
-        Spacer(Modifier.height(32.dp))
-        Text("Let's get you started", style = GetAutoSureType.ScreenTitle)
+        Spacer(Modifier.height(24.dp))
+        if (modeTitle != null) {
+            Text(
+                "Setting up for: $modeTitle",
+                style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Accent, fontWeight = FontWeight.SemiBold),
+                modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(GetAutoSureColors.AccentSoft).padding(horizontal = 10.dp, vertical = 6.dp)
+            )
+            Spacer(Modifier.height(14.dp))
+        }
+        Text("Sign in to save $savesWhat", style = GetAutoSureType.ScreenTitle)
         Spacer(Modifier.height(8.dp))
-        Text("Sign in to save your car, reports and bookings.", style = GetAutoSureType.Caption)
+        Text("Your scans, reports and expert bookings stay with your account, even on a new phone.", style = GetAutoSureType.Caption)
         Spacer(Modifier.height(32.dp))
 
         Button(

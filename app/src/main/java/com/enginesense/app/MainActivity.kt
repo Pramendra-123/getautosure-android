@@ -3,6 +3,8 @@ package com.enginesense.app
 import android.os.Bundle
 import androidx.activity.compose.BackHandler
 import androidx.compose.ui.platform.LocalContext
+import com.enginesense.app.storage.AppMode
+import com.enginesense.app.storage.AppModePrefs
 import com.enginesense.app.storage.OnboardingPrefs
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -30,6 +32,8 @@ import androidx.navigation.NavType
 import com.enginesense.app.consultation.ConsultationViewModel
 import com.enginesense.app.consultation.LoadState
 import com.enginesense.app.ui.components.LocalMechanicAvailable
+import com.enginesense.app.ui.components.ModeBottomBar
+import com.enginesense.app.ui.components.ModeTabs
 import com.enginesense.app.ui.components.AiAssistantButton
 import com.enginesense.app.ui.components.AiAssistantSheet
 import com.enginesense.app.ui.components.aiContextFor
@@ -45,6 +49,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Free renewal reminders: a daily on-phone check of every car's saved dates.
+        com.enginesense.app.owner.RenewalReminders.schedule(this)
+        receiveShare(intent)
         // Bluetooth permission is asked for on the Scan screen, when the user first connects a
         // scanner, so the app opens straight into onboarding or Home.
         setContent {
@@ -55,20 +62,23 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        receiveShare(intent)
+    }
+
+    /** A payment SMS shared from the SMS app (Share → GetAutoSure) opens the "Add this payment?" dialog. */
+    private fun receiveShare(intent: android.content.Intent?) {
+        if (intent?.action == android.content.Intent.ACTION_SEND && intent.type == "text/plain") {
+            viewModel.receiveSharedText(intent.getStringExtra(android.content.Intent.EXTRA_TEXT))
+        }
+    }
 }
 
 /** Brand/model names contain spaces ("Maruti Suzuki") and need to survive as a single nav-route segment. */
 private fun encodeRouteArg(value: String): String = java.net.URLEncoder.encode(value, "UTF-8")
 private fun decodeRouteArg(value: String?): String = java.net.URLDecoder.decode(value ?: "", "UTF-8")
-
-private data class BottomTab(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
-
-private val BOTTOM_TABS = listOf(
-    BottomTab("home", "Home", Icons.Filled.Home),
-    BottomTab("connect", "Scan", Icons.Filled.Build),
-    BottomTab("reports", "Reports", Icons.Filled.List),
-    BottomTab("aiMechanic", "AI Mechanic", Icons.Filled.Chat)
-)
 
 @Composable
 fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
@@ -81,7 +91,30 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
-    val showBottomBar = BOTTOM_TABS.any { it.route == currentRoute }
+    // Own car / buying / dealer, picked once on "Who are you?" — it decides Home and the bottom tabs.
+    var appMode by remember { mutableStateOf(AppModePrefs.get(context)) }
+    fun switchMode(mode: AppMode) {
+        AppModePrefs.set(context, mode)
+        appMode = mode
+    }
+    val modeTabs = ModeTabs.forMode(appMode)
+    val showBottomBar = currentRoute in modeTabs.tabRoutes
+    /** Leaves onboarding for Home, clearing the welcome and sign-in screens from Back. */
+    fun finishOnboarding() {
+        OnboardingPrefs.markDone(context)
+        navController.navigate("home") {
+            popUpTo(navController.graph.id) { inclusive = true }
+            launchSingleTop = true
+        }
+    }
+    /** After sign-in, each mode sets up something different: the car, nothing, or the showroom. */
+    fun afterSignIn() {
+        when (appMode) {
+            AppMode.OWN_CAR -> navController.navigate("enterRegistration")
+            AppMode.BUYING -> finishOnboarding()
+            AppMode.DEALER -> navController.navigate("dealerOnboarding")
+        }
+    }
     // A plate typed on the lookup screen before choosing to enter the car by hand.
     var manualPlate by rememberSaveable { mutableStateOf<String?>(null) }
 
@@ -96,6 +129,8 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
     val screenFinding = latestResult?.findings?.firstOrNull { it.id == screenFindingId }
 
     CompositionLocalProvider(LocalMechanicAvailable provides mechanicAvailable) {
+    CarQuestionDialog(viewModel, onAddDetails = { navController.navigate("enterRegistration") }, onUsedCarCheck = { navController.navigate("prePurchaseResult") })
+    SharedPaymentDialog(viewModel)
     if (assistantOpen) {
         AiAssistantSheet(
             viewModel = viewModel,
@@ -106,23 +141,15 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
     }
     Scaffold(
         floatingActionButton = {
+            // AI Mechanic has no tab any more: this button is its way in, on every screen.
             if (showsAssistant(currentRoute)) AiAssistantButton(onClick = { assistantOpen = true })
         },
         bottomBar = {
             if (showBottomBar) {
-                NavigationBar {
-                    BOTTOM_TABS.forEach { tab ->
-                        NavigationBarItem(
-                            selected = backStackEntry?.destination?.hierarchy?.any { it.route == tab.route } == true,
-                            onClick = {
-                                navController.navigate(tab.route) {
-                                    popUpTo("home") { inclusive = false }
-                                    launchSingleTop = true
-                                }
-                            },
-                            icon = { Icon(tab.icon, contentDescription = tab.label) },
-                            label = { Text(tab.label) }
-                        )
+                ModeBottomBar(modeTabs, currentRoute) { route ->
+                    navController.navigate(route) {
+                        popUpTo("home") { inclusive = false }
+                        launchSingleTop = true
                     }
                 }
             }
@@ -134,23 +161,35 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
             modifier = Modifier.padding(padding)
         ) {
             composable("splash") {
-                SplashScreen(onGetStarted = { navController.navigate("login") })
+                SplashScreen(onGetStarted = { navController.navigate("chooseMode") })
+            }
+            composable("chooseMode") {
+                ChooseModeScreen(initial = null) { mode ->
+                    switchMode(mode)
+                    navController.navigate("login")
+                }
             }
             composable("login") {
                 LoginScreen(
                     // A real Google credential already identifies the user, so it skips
                     // straight past phoneOtp. "Skip" is the temporary testing bypass — see
                     // the note on LoginScreen — and lands in the same place.
-                    onSignedIn = { navController.navigate("enterRegistration") },
+                    onSignedIn = { afterSignIn() },
                     onContinueWithPhone = { navController.navigate("phoneOtp") },
-                    onSkip = { navController.navigate("enterRegistration") }
+                    onSkip = { afterSignIn() },
+                    modeTitle = appMode.title,
+                    savesWhat = when (appMode) {
+                        AppMode.OWN_CAR -> "your car"
+                        AppMode.BUYING -> "the cars you check"
+                        AppMode.DEALER -> "your reports"
+                    }
                 )
             }
             composable("phoneOtp") {
                 PhoneOtpScreen(
                     onBack = { navController.popBackStack() },
-                    onVerified = { navController.navigate("enterRegistration") },
-                    onSkip = { navController.navigate("enterRegistration") }
+                    onVerified = { afterSignIn() },
+                    onSkip = { afterSignIn() }
                 )
             }
             composable("enterRegistration") {
@@ -233,7 +272,7 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                             launchSingleTop = true
                         }
                     },
-                    onAddAnother = { navController.navigate("enterRegistration") }
+                    onAddAnother = { viewModel.addCar(); navController.navigate("enterRegistration") }
                 )
             }
             composable("connect") {
@@ -243,9 +282,11 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                     onScanStarted = { navController.navigate("scanning") },
                     onLiveDataStarted = { navController.navigate("liveData") },
                     onPerformanceTestStarted = { navController.navigate("performance") },
-                    onTripMileageStarted = { navController.navigate("tripMileage") }
+                    onTripMileageStarted = { navController.navigate("tripMileage") },
+                    onOpenDriveLab = { navController.navigate("driveLab") }
                 )
             }
+            composable("driveLab") { DriveLabScreen() }
             composable("liveData") {
                 LiveDataScreen(viewModel, onStop = { navController.popBackStack() })
             }
@@ -260,10 +301,18 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 val result by viewModel.latestResult.collectAsState()
                 val isPrePurchase by viewModel.scanIsPrePurchaseCheck.collectAsState()
                 val prePurchaseResult by viewModel.prePurchaseResult.collectAsState()
+                val isDealer by viewModel.scanIsDealerReport.collectAsState()
+                val dealerResult by viewModel.dealerResult.collectAsState()
 
-                LaunchedEffect(connectionState, result, prePurchaseResult) {
+                LaunchedEffect(connectionState, result, prePurchaseResult, dealerResult) {
                     when (connectionState) {
-                        is ConnectionFlowState.Idle -> if ((if (isPrePurchase) prePurchaseResult else result) != null) {
+                        is ConnectionFlowState.Idle -> if (isDealer) {
+                            // Back to the dealer flow, which picks up where it left off.
+                            if (dealerResult != null) navController.navigate("dealerFlow") {
+                                popUpTo("dealerFlow") { inclusive = false }
+                                launchSingleTop = true
+                            }
+                        } else if ((if (isPrePurchase) prePurchaseResult else result) != null) {
                             if (isPrePurchase) {
                                 navController.navigate("prePurchaseResult") {
                                     popUpTo("prePurchaseCheck") { inclusive = false }
@@ -311,15 +360,47 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 // incorrectly land on the pre-purchase result screen.
                 LaunchedEffect(Unit) {
                     viewModel.clearPrePurchaseCheck()
+                    viewModel.clearDealerScan()
                     OnboardingPrefs.markDone(context)
                 }
-                HomeScreen(
-                    viewModel,
-                    onRunScan = { navController.navigate("connect") },
-                    onOpenIssues = { navController.navigate("issues") },
+                when (appMode) {
+                    AppMode.OWN_CAR -> GarageScreen(
+                        viewModel,
+                        onRunScan = { navController.navigate("connect") },
+                        onAddCar = { viewModel.addCar(); navController.navigate("enterRegistration") },
+                        onNavigate = { route -> navController.navigate(route) }
+                    )
+                    AppMode.BUYING -> BuyerHomeScreen(
+                        viewModel,
+                        onStartCheck = { navController.navigate("prePurchaseCheck") },
+                        onOpenLastCheck = { navController.navigate("prePurchaseResult") },
+                        onExpert = { navController.navigate("expertList") },
+                        onBoughtIt = { switchMode(AppMode.OWN_CAR) }
+                    )
+                    AppMode.DEALER -> DealerScreen(
+                        onSetUpDealerProfile = { navController.navigate("dealerProfile") },
+                        onStartReport = { navController.navigate("dealerFlow") },
+                        onUsedCarCheck = { navController.navigate("prePurchaseCheck") },
+                        onBuyPack = { cars -> navController.navigate("dealerCheckout/$cars") },
+                        onMyReports = { navController.navigate("dealerReports") }
+                    )
+                }
+            }
+            composable("profile") {
+                ProfileScreen(
+                    appMode,
+                    onSwitchMode = { mode ->
+                        switchMode(mode)
+                        navController.navigate("home") {
+                            popUpTo(navController.graph.id) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
                     onNavigate = { route -> navController.navigate(route) }
                 )
             }
+            // Dealer mode, first launch: the showroom profile is the setup step, then Dealer Saathi home.
+            composable("dealerOnboarding") { DealerProfileScreen(onSaved = { finishOnboarding() }) }
             composable("issues") {
                 IssuesScreen(viewModel, onOpenIssue = { id -> navController.navigate("issueDetail/$id") })
             }
@@ -440,30 +521,41 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
             }
             composable("allSensors") { AllSensorsScreen(viewModel) }
             composable("milStatus") { MilStatusScreen(viewModel) }
-            composable("battery") { BatteryScreen(viewModel) }
+            composable("battery") { BatteryScreen(viewModel, onNavigate = { route -> navController.navigate(route) }) }
+            composable("pucCheck") { PucCheckScreen(viewModel) }
+            composable("trips") { TripsScreen(viewModel, onNavigate = { route -> navController.navigate(route) }) }
             composable("warranty") { WarrantyScreen() }
             composable("marketplace") { MarketplaceScreen() }
             composable("pro") { ProScreen() }
             composable("dealer") {
                 DealerScreen(
                     onSetUpDealerProfile = { navController.navigate("dealerProfile") },
-                    onOpenPricingCalculator = { navController.navigate("dealerPricing") },
-                    onPublishWebReport = { navController.navigate("publishReport") },
-                    onDealerReport = { navController.navigate("dealerReport/plain") },
-                    onDealerPhotoReport = { navController.navigate("dealerReport/photos") }
+                    onStartReport = { navController.navigate("dealerFlow") },
+                    onUsedCarCheck = { navController.navigate("prePurchaseCheck") },
+                    onBuyPack = { cars -> navController.navigate("dealerCheckout/$cars") },
+                    onMyReports = { navController.navigate("dealerReports") }
                 )
             }
-            composable(
-                "dealerReport/{kind}",
-                arguments = listOf(navArgument("kind") { type = NavType.StringType })
-            ) { entry ->
-                DealerReportScreen(
+            composable("dealerCheckout/{cars}") { entry ->
+                DealerCheckoutScreen(
+                    cars = entry.arguments?.getString("cars")?.toIntOrNull() ?: 5,
+                    onDone = { navController.popBackStack() },
+                    onStartReport = { navController.navigate("dealerFlow") { popUpTo("dealer") } }
+                )
+            }
+            // Dealer Sathi v2 — scan, car number, inspection, photos; see docs/dealer-sathi-v2.md.
+            composable("dealerFlow") {
+                DealerFlowScreen(
                     viewModel,
-                    withPhotos = entry.arguments?.getString("kind") == "photos",
+                    onStartScan = { navController.navigate("connect") },
                     onSetUpDealerProfile = { navController.navigate("dealerProfile") },
+                    onMyReports = { navController.navigate("dealerReports") },
+                    onBuyPack = { navController.navigate("dealerCheckout/5") },
                     onViewPdf = { file -> navController.navigate("pdfViewer/${encodeRouteArg(file.absolutePath)}") }
                 )
             }
+            // Dealer Saathi "My reports": every report made, credits left, send again.
+            composable("dealerReports") { MyReportsScreen(onBuy = { navController.navigate("dealerCheckout/5") }) }
             composable("dealerProfile") { DealerProfileScreen(onSaved = { navController.popBackStack() }) }
             composable("dealerPricing") { DealerPricingScreen() }
 

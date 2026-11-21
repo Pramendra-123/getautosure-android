@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="106mm" height="88mm" viewBox="-3 -3 106 88">
+<g id="bleed"><rect x="-3" y="-3" width="106" height="88" fill="#0C0D0F"/></g>
+<g id="artwork"><rect x="-3" y="-3" width="106" height="88" fill="#0C0D0F"/><rect x="5" y="5" width="90" height="72" fill="#FF6B2C"/></g>
+<g id="trim-line-do-not-print"><rect x="0" y="0" width="100" height="82" fill="none" stroke="#EC008C" stroke-width="0.2"/><rect x="26.5" y="7.5" width="47" height="67" fill="none" stroke="#EC008C" stroke-width="0.25" stroke-dasharray="1.2 .8"/>
+  <path d="M73.5 35 a6 6 0 0 1 0 12" fill="none" stroke="#EC008C" stroke-width="0.25" stroke-dasharray="1.2 .8"/></g>
+</svg>

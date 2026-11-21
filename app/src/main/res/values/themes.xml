@@ -1,8 +1,9 @@
 <resources>
-    <!-- Dark window background so the app doesn't flash white before the first screen draws. -->
+    <!-- Warm white window background, the same as the app, with dark status-bar icons. -->
     <style name="Theme.EngineSense" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/app_background</item>
         <item name="android:statusBarColor">@color/app_background</item>
         <item name="android:navigationBarColor">@color/app_background</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 </resources>

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "report-site-preview",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd /d C:\\Users\\hp\\Desktop\\Code\\report-app && set REPORTS_FUNCTION_URL=http://localhost:4010 && npx next dev -p 3005"],
+      "port": 3005
+    }
+  ]
+}

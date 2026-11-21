@@ -1,0 +1,90 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>GetAutoSure EVA insert sample</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap">
+<style>
+  html,body{margin:0;width:1600px;height:1000px;overflow:hidden}
+  body{background:radial-gradient(ellipse 70% 60% at 50% 45%, #EDEBE8 0%, #D6D2CC 55%, #BDB7AF 100%)}
+  .stage{position:absolute;inset:0;perspective:2600px;perspective-origin:50% 20%}
+  .world{position:absolute;left:44%;top:52%;transform-style:preserve-3d;transform:rotateX(-34deg) rotateY(-24deg) scale3d(.95,.95,.95)}
+  .obj{position:absolute;left:0;top:0;transform-style:preserve-3d}
+  .f{position:absolute;left:0;top:0;overflow:hidden}
+  .f svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .f i{position:absolute;inset:0;pointer-events:none}
+  .shadow{position:absolute;left:0;top:0;border-radius:40px;filter:blur(18px)}
+  h1{position:absolute;left:56px;top:40px;margin:0;font:700 32px/1.1 Sora,sans-serif;color:#14171C}
+  h1 small{display:block;font:400 16px/1.4 "IBM Plex Sans",sans-serif;color:#5E636B;margin-top:8px}
+  .tag{position:absolute;font:600 16px/1.3 "IBM Plex Sans",sans-serif;color:#14171C;display:flex;gap:10px;align-items:flex-start;max-width:300px}
+  .tag b{font:700 13px/1 "IBM Plex Mono",monospace;color:#fff;background:#FF6B2C;border-radius:50%;width:24px;height:24px;display:grid;place-items:center;flex:none}
+  .tag span{font-weight:400;color:#5E636B;font-size:14px;display:block}
+</style>
+<h1>EVA insert · reference<small>Solid orange EVA foam, 100 × 82 × 26 mm, with a press-fit pocket for the V02H4. 橙色 EVA 内托参考图</small></h1>
+<div class="stage"><div class="world" id="world"></div></div>
+<div id="tags"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="art.js"></script>
+<script>
+// Exploded view: dongle above the EVA pocket, EVA block, card + sticker underneath. 1 mm = 4 px.
+const A = ART, k = 4, OR = A.ORANGE;
+// fine foam grain: SVG noise tinted orange
+const grain = `url('data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="1.6" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .22 0"/></filter><rect width="160" height="160" filter="url(#n)"/></svg>').replace(/'/g, "%27")}')`;
+const EVA = `${grain}, ${OR}`;
+const svg = (w, h, body) => `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${body}</svg>`;
+function face(w, h, t, content, bg, shade = "transparent", r = 0) {
+  return `<div class="f" style="width:${w}px;height:${h}px;margin:${-h / 2}px 0 0 ${-w / 2}px;transform:${t};background:${bg};border-radius:${r}px">${content}<i style="background:${shade}"></i></div>`;
+}
+const place = (x, y, z, html) => `<div class="obj" style="transform:translate3d(${x}px,${y}px,${z}px)">${html}</div>`;
+const flat = (w, d, content, bg, shade) => face(w, d, "rotateX(90deg)", content, bg, shade);
+function cuboid(W, H, D, f, bg, shades = {}) {
+  return face(W, H, `translateZ(${D / 2}px)`, f.front || "", bg, shades.front || "linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.22))") +
+    face(D, H, `rotateY(90deg) translateZ(${W / 2}px)`, f.right || "", bg, shades.right || "rgba(0,0,0,.34)") +
+    face(D, H, `rotateY(-90deg) translateZ(${W / 2}px)`, "", bg, "rgba(0,0,0,.45)") +
+    face(W, D, `rotateX(90deg) translateZ(${H / 2}px)`, f.top || "", f.topBg || bg, f.topShade || "linear-gradient(170deg, rgba(255,255,255,.12), rgba(0,0,0,.06))");
+}
+const shadow = (w, d, a) => `<div class="shadow" style="width:${w}px;height:${d}px;margin:${-d / 2}px 0 0 ${-w / 2}px;transform:rotateX(90deg);background:rgba(40,30,20,${a})"></div>`;
+
+// ---- EVA block: 100 x 82 x 26, pocket 45.5 x 65.5 centred, thumb notch R6 on the right ----
+const T = 26, ex = 50, ez = 41, hx = 22.75, hz = 32.75, topY = -T / 2 * k, LIT = "linear-gradient(170deg, rgba(255,255,255,.14), rgba(0,0,0,.05))";
+const notch = `<div style="position:absolute;width:${12 * k}px;height:${12 * k}px;border-radius:50%;left:${-6 * k}px;top:${(ez - 6) * k}px;background:#9C3C12;box-shadow:inset 0 0 ${3 * k}px rgba(0,0,0,.55)"></div>`;
+const eva =
+  // outer sides
+  face(2 * ex * k, T * k, `translateZ(${ez * k}px)`, "", EVA, "linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.20))") +
+  face(2 * ez * k, T * k, `rotateY(90deg) translateZ(${ex * k}px)`, "", EVA, "rgba(0,0,0,.30)") +
+  face(2 * ez * k, T * k, `rotateY(-90deg) translateZ(${ex * k}px)`, "", EVA, "rgba(0,0,0,.42)") +
+  // top surface around the pocket
+  place(-(ex + hx) / 2 * k, topY, 0, flat((ex - hx) * k, 2 * ez * k, "", EVA, LIT)) +
+  place((ex + hx) / 2 * k, topY, 0, flat((ex - hx) * k, 2 * ez * k, notch, EVA, LIT)) +
+  place(0, topY, (ez + hz) / 2 * k, flat(2 * hx * k, (ez - hz) * k, "", EVA, LIT)) +
+  place(0, topY, -(ez + hz) / 2 * k, flat(2 * hx * k, (ez - hz) * k, "", EVA, LIT)) +
+  // pocket walls (seen: back wall and left wall), darker inside the cut
+  place(0, 0, -hz * k, face(2 * hx * k, T * k, "", "", EVA, "linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.55))")) +
+  place(-hx * k, 0, 0, face(2 * hz * k, T * k, "rotateY(90deg)", "", EVA, "linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.6))")) +
+  // through the pocket you see the card lying underneath
+  place(0, T / 2 * k - 1, 0, flat(2 * hx * k, 2 * hz * k, "", "#1C1F24", "rgba(0,0,0,.35)"));
+
+// ---- dongle hovering above the pocket, plug toward the back (hinge) ----
+const lbl = `<div style="position:absolute;inset:${0.6 * k}px ${2 * k}px">${A.labelMinimal().replace('width="42mm" height="50.6mm"', 'width="100%" height="100%" preserveAspectRatio="xMidYMid meet"')}</div>`;
+const dongle =
+  place(0, 0, 8 * k, cuboid(45 * k, 25 * k, 50 * k, { top: lbl, topBg: "#141619", topShade: "linear-gradient(170deg, rgba(255,255,255,.07), rgba(0,0,0,.14))" }, "#141619")) +
+  place(0, 0, -24.5 * k, cuboid(39 * k, 16 * k, 15 * k, {}, "#0F1013"));
+
+// ---- card + sticker below, slid out to the front so they're visible ----
+const card = flat(95 * k, 58 * k, svg(95, 58, A.cardFront()), "transparent", "rgba(0,0,0,.08)");
+const sticker = flat(50 * k, 50 * k, `<div style="position:absolute;inset:0;border-radius:50%;overflow:hidden">${svg(50, 50, A.sticker())}</div>`, "transparent");
+
+const floorY = 44 * k;
+document.getElementById("world").innerHTML =
+  place(0, floorY + 1, 30 * k, shadow(130 * k, 120 * k, .32)) +
+  place(-4 * k, floorY, 34 * k, card) +
+  place(48 * k, floorY - 0.6, 52 * k, sticker) +
+  place(0, floorY - 32 * k, 0, eva) +
+  place(0, floorY - 32 * k - 13 * k - 34 * k, 0, dongle);
+
+const tags = [
+  [1090, 170, 1, "V02H4 scanner", "Presses into the pocket, face up, plug toward the lid hinge"],
+  [1090, 420, 2, "Orange EVA foam · 26 mm", "Pocket 45.5 × 65.5 mm, full depth, press-fit. Thumb notch R6 on the right"],
+  [1090, 680, 3, "Card + sticker", "Lie flat under the EVA block"],
+];
+document.getElementById("tags").innerHTML = tags.map(t =>
+  `<div class="tag" style="left:${t[0]}px;top:${t[1]}px"><b>${t[2]}</b><div>${t[3]}<span>${t[4]}</span></div></div>`).join("");
+</script>

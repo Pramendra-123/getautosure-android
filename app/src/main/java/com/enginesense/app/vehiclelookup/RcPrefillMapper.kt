@@ -49,6 +49,8 @@ object RcPrefillMapper {
         "BMW" to listOf("BMW"),
         "Audi" to listOf("AUDI"),
         "Volvo" to listOf("VOLVO"),
+        "Tesla" to listOf("TESLA"),
+        "VinFast" to listOf("VINFAST"),
         "Land Rover" to listOf("LAND ROVER"),
         "Jaguar" to listOf("JAGUAR"),
         "Lexus" to listOf("LEXUS"),

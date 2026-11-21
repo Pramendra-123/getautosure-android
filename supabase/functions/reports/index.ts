@@ -37,6 +37,12 @@ const REPORT_BASE_URL = "https://getautosure.com";
 // server never trusts that; a buggy or malicious client could send anything.
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024; // 8 MB per photo, post-decode
 const ALLOWED_PHOTO_CONTENT_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+// A report's PDF (with its photos) or Status picture.
+const MAX_OUTPUT_BYTES = 15 * 1024 * 1024;
+
+// Until Razorpay is live, a dealer with no credits still gets their report (recorded as
+// "free_period"); set the DEALER_PAYMENTS_LIVE secret to "true" once packs can be bought.
+const PAYMENTS_LIVE = Deno.env.get("DEALER_PAYMENTS_LIVE") === "true";
 
 export function jsonError(status: number, code: string, message: string): Response {
   return new Response(JSON.stringify({ error: { code, message } }), {
@@ -216,6 +222,21 @@ async function publishReport(supabase: SupabaseClient, dealerSub: string, body: 
   }
   const slug = slugData as string;
 
+  // One credit per report, charged before anything is saved (see charge_report_credit in
+  // ../../migrations/20261108000000_dealer_reports_and_credits.sql). Remaking the same car within
+  // 30 days is free, and so is everything while payments aren't open.
+  const registration = typeof body.registrationNo === "string" ? body.registrationNo : null;
+  const { data: charge, error: chargeError } = await supabase.rpc("charge_report_credit", {
+    p_dealer: dealer.id, p_slug: slug, p_registration: registration, p_payments_live: PAYMENTS_LIVE,
+  });
+  if (chargeError) {
+    console.error("credit charge failed", chargeError);
+    return jsonError(500, "publish_failed", "Could not check your report credits");
+  }
+  if (charge === "no_credits") {
+    return jsonError(402, "no_credits", "You've used all your report credits. Buy a pack to make this report.");
+  }
+
   const photos = Array.isArray(body.photos) ? (body.photos as PhotoInput[]) : [];
   const { urls: photoUrls, warnings: photoWarnings } =
     photos.length > 0 ? await uploadPhotos(supabase, dealerSub, slug, photos) : { urls: [], warnings: [] };
@@ -242,13 +263,132 @@ async function publishReport(supabase: SupabaseClient, dealerSub: string, body: 
   const { error: insertError } = await supabase.from("vehicle_reports").insert(row);
   if (insertError) {
     console.error("vehicle_reports insert failed", insertError);
+    // The credit was spent on a report that doesn't exist — give it back.
+    if (charge === "charged") {
+      await supabase.from("dealer_credit_ledger").insert({ dealer_id: dealer.id, delta: 1, reason: "refund", report_slug: slug });
+    }
     return jsonError(500, "publish_failed", "Could not save the report");
   }
 
+  const { data: balance } = await supabase.rpc("dealer_credit_balance", { p_dealer: dealer.id });
   return new Response(
-    JSON.stringify({ slug, url: `${REPORT_BASE_URL}/${slug}`, photoWarnings }),
+    JSON.stringify({ slug, url: `${REPORT_BASE_URL}/${slug}`, photoWarnings, charge, credits: balance ?? 0 }),
     { headers: { "Content-Type": "application/json" } }
   );
+}
+
+/** The signed-in dealer's own row id, or null when they've never published (no profile yet). */
+async function dealerIdFor(supabase: SupabaseClient, dealerSub: string): Promise<string | null> {
+  const { data } = await supabase.from("dealers").select("id").eq("dealer_sub", dealerSub).maybeSingle();
+  return (data as { id: string } | null)?.id ?? null;
+}
+
+/** A report owned by this dealer, or an error response to return as-is. */
+async function ownedReport(supabase: SupabaseClient, dealerSub: string, slug: unknown): Promise<{ id: string; slug: string } | Response> {
+  if (typeof slug !== "string" || !slug) return jsonError(400, "invalid_request", "slug is required");
+  const dealerId = await dealerIdFor(supabase, dealerSub);
+  if (!dealerId) return jsonError(403, "forbidden", "No dealer profile found for this account");
+  const { data, error } = await supabase.from("vehicle_reports").select("id, dealer_id").eq("slug", slug).maybeSingle();
+  if (error || !data) return jsonError(404, "not_found", "Report not found");
+  if ((data as { dealer_id: string }).dealer_id !== dealerId) return jsonError(403, "forbidden", "This report isn't yours");
+  return { id: (data as { id: string }).id, slug };
+}
+
+/**
+ * "My reports": every report this dealer has made, newest first, with the counts and credits for
+ * the top of the screen. The dealer's own view, so the number plate is full, not masked, and the
+ * saved PDF and Status picture come with each report (see save_outputs).
+ */
+async function listReports(supabase: SupabaseClient, dealerSub: string): Promise<Response> {
+  const dealerId = await dealerIdFor(supabase, dealerSub);
+  const empty = { reports: [], made: 0, thisMonth: 0, credits: 0, paymentsLive: PAYMENTS_LIVE };
+  if (!dealerId) return new Response(JSON.stringify(empty), { headers: { "Content-Type": "application/json" } });
+
+  const { data, error } = await supabase
+    .from("vehicle_reports")
+    .select("id, slug, status, make, model, variant, year, registration_no, dealer_condition, photo_urls, created_at, sold_at, vehicle_report_outputs(pdf_path, status_path)")
+    .eq("dealer_id", dealerId)
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if (error) {
+    console.error("list_reports query failed", error);
+    return jsonError(500, "query_failed", "Could not load your reports");
+  }
+  const publicUrl = (path: string | null | undefined) => path ? supabase.storage.from(PHOTOS_BUCKET).getPublicUrl(path).data.publicUrl : null;
+  // deno-lint-ignore no-explicit-any
+  const rows = (data ?? []) as any[];
+  const reports = rows.map((r) => {
+    const outputs = Array.isArray(r.vehicle_report_outputs) ? r.vehicle_report_outputs[0] : r.vehicle_report_outputs;
+    return {
+      slug: r.slug,
+      url: `${REPORT_BASE_URL}/${r.slug}`,
+      live: r.status === "published",
+      make: r.make, model: r.model, variant: r.variant, year: r.year,
+      registrationNo: r.registration_no,
+      priceInr: r.dealer_condition?.priceInr ?? null,
+      photoUrl: Array.isArray(r.photo_urls) ? r.photo_urls[0] ?? null : null,
+      createdAt: r.created_at,
+      soldAt: r.sold_at,
+      pdfUrl: publicUrl(outputs?.pdf_path),
+      statusUrl: publicUrl(outputs?.status_path),
+    };
+  });
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
+  const { data: balance } = await supabase.rpc("dealer_credit_balance", { p_dealer: dealerId });
+  return new Response(JSON.stringify({
+    reports,
+    made: reports.length,
+    thisMonth: rows.filter((r) => new Date(r.created_at) >= monthStart).length,
+    credits: balance ?? 0,
+    paymentsLive: PAYMENTS_LIVE,
+  }), { headers: { "Content-Type": "application/json" } });
+}
+
+/**
+ * Saves a report's PDF and Status picture, so "My reports" can send them again from any phone.
+ * Each file gets a random name: the bucket is public-read and the PDF shows the full number plate,
+ * so its address mustn't be guessable from the report's photo addresses.
+ */
+async function saveOutputs(supabase: SupabaseClient, dealerSub: string, body: Record<string, unknown>): Promise<Response> {
+  const report = await ownedReport(supabase, dealerSub, body.slug);
+  if (report instanceof Response) return report;
+  const update: Record<string, unknown> = { report_id: report.id, updated_at: new Date().toISOString() };
+  const files: [string, string, string, string][] = [["pdf", "pdf_path", "application/pdf", "pdf"], ["status", "status_path", "image/png", "png"]];
+  for (const [key, column, contentType, extension] of files) {
+    const file = body[key] as PhotoInput | undefined;
+    if (!file?.base64) continue;
+    const bytes = decodeBase64(file.base64);
+    if (bytes.byteLength === 0 || bytes.byteLength > MAX_OUTPUT_BYTES) return jsonError(400, "invalid_request", `${key} is empty or too large`);
+    const path = `${dealerSub}/${report.slug}/${key}-${crypto.randomUUID()}.${extension}`;
+    const { error } = await supabase.storage.from(PHOTOS_BUCKET).upload(path, bytes, { contentType, upsert: false });
+    if (error) {
+      console.error("output upload failed", path, error);
+      return jsonError(500, "upload_failed", `Could not save the ${key}`);
+    }
+    update[column] = path;
+  }
+  if (Object.keys(update).length === 2) return jsonError(400, "invalid_request", "Nothing to save");
+  const { error } = await supabase.from("vehicle_report_outputs").upsert(update, { onConflict: "report_id" });
+  if (error) {
+    console.error("vehicle_report_outputs upsert failed", error);
+    return jsonError(500, "update_failed", "Could not save the report files");
+  }
+  return new Response(JSON.stringify({ slug: report.slug, saved: true }), { headers: { "Content-Type": "application/json" } });
+}
+
+/** Marks a car sold (or not). The report stays live — a buyer may still be holding the link. */
+async function setSold(supabase: SupabaseClient, dealerSub: string, body: Record<string, unknown>): Promise<Response> {
+  const report = await ownedReport(supabase, dealerSub, body.slug);
+  if (report instanceof Response) return report;
+  const soldAt = body.sold === true ? new Date().toISOString() : null;
+  const { error } = await supabase.from("vehicle_reports").update({ sold_at: soldAt, updated_at: new Date().toISOString() }).eq("id", report.id);
+  if (error) {
+    console.error("set_sold failed", error);
+    return jsonError(500, "update_failed", "Could not update this report");
+  }
+  return new Response(JSON.stringify({ slug: report.slug, soldAt }), { headers: { "Content-Type": "application/json" } });
 }
 
 async function getReport(supabase: SupabaseClient, slug: unknown): Promise<Response> {
@@ -323,18 +463,31 @@ async function removeBackground(body: Record<string, unknown>): Promise<Response
   const photo = body.photo as PhotoInput | undefined;
   if (!photo?.base64) return jsonError(400, "invalid_request", "photo is required");
 
+  // "white" (default, and what older app versions get): plain white backdrop.
+  // "studio": the used-car-portal look — light grey wall, round grey turntable floor, soft shadow.
+  const style = body.style === "studio" ? "studio" : "white";
+  const keepCar =
+    "Keep the vehicle exactly as it is — same color, shape, badges, number plate, reflections, " +
+    "scratches and dents, every detail unchanged. Keep the same camera angle and framing. Do not " +
+    "alter, retouch, or regenerate the vehicle itself in any way.";
+  // hidePlate: the one allowed change to the car — the plate's characters are blanked, nothing else.
+  const plate = body.hidePlate === true
+    ? " One exception: cover the number plate by replacing its letters and numbers with a plain blank " +
+      "plate of the same shape and colour, so the registration number cannot be read. Change nothing else."
+    : "";
+  const instruction = (style === "studio"
+    ? "Replace the background of this car photo with a professional car-dealership photo studio: " +
+      "a seamless light grey wall, a large round matte grey turntable floor under the car, soft even " +
+      "studio lighting, and a natural soft shadow beneath the tyres so the car sits on the floor. " +
+      "Nothing else in the scene — no people, signs, buildings or other cars. " + keepCar
+    : "Remove the background from this car photo and replace only the background with a plain, " +
+      "pure white studio backdrop (seamless white, like a product-photography cyclorama). " + keepCar) + plate;
+
   const geminiBody = {
     contents: [
       {
         parts: [
-          {
-            text:
-              "Remove the background from this car photo. Keep the vehicle exactly as it is — " +
-              "same color, shape, badges, reflections, every detail unchanged — and replace only " +
-              "the background with a plain, pure white studio backdrop (seamless white, like a " +
-              "product-photography cyclorama). Do not alter, retouch, or regenerate the vehicle " +
-              "itself in any way.",
-          },
+          { text: instruction },
           { inlineData: { mimeType: photo.contentType || "image/jpeg", data: photo.base64 } },
         ],
       },
@@ -412,6 +565,12 @@ Deno.serve(async (req: Request) => {
       return await updateReport(supabase, dealerSub, body);
     case "remove_background":
       return await removeBackground(body);
+    case "list_reports":
+      return await listReports(supabase, dealerSub);
+    case "save_outputs":
+      return await saveOutputs(supabase, dealerSub, body);
+    case "set_sold":
+      return await setSold(supabase, dealerSub, body);
     default:
       return jsonError(400, "invalid_request", `Unknown action: ${action}`);
   }

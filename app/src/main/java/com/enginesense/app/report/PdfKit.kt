@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.pdf.PdfDocument
 import android.text.Layout
@@ -315,9 +316,10 @@ internal fun ellipsize(text: String, width: Float, paint: TextPaint): String {
 internal fun drawRtoSection(
     b: ReportBuilder, rc: RcLookupResult, today: LocalDate, pageTitle: String,
     /** One closing line in [footnoteColor], e.g. the buyer report's chassis-match result — kept on the same page as the dates. */
-    footnote: String? = null, footnoteColor: Int = GRAY
+    footnote: String? = null, footnoteColor: Int = GRAY,
+    subtitle: String = "The official registration record for this car, from the RTO (VAHAN). Check it against the RC the seller hands you."
 ) {
-    drawSectionTitle(b, "RTO record", "The official registration record for this car, from the RTO (VAHAN). Check it against the RC the seller hands you.", pageTitle)
+    drawSectionTitle(b, "RTO record", subtitle, pageTitle)
     drawRowGrid(b, RtoRecord.vehicleRows(rc), pageTitle)
     b.y += 4f
 
@@ -482,6 +484,144 @@ internal fun drawReadiness(b: ReportBuilder, readiness: ReadinessStatus?, pageTi
     b.y += 8f
 }
 
+/** Scales [bitmap] to fit inside [box] (no cropping — a car photo shouldn't lose its bumper), centred, clipped to the rounded tile. */
+internal fun drawBitmapFit(canvas: Canvas, bitmap: Bitmap, box: RectF, radius: Float = 8f) {
+    val scale = minOf(box.width() / bitmap.width, box.height() / bitmap.height)
+    val w = bitmap.width * scale
+    val h = bitmap.height * scale
+    val dst = RectF(box.centerX() - w / 2, box.centerY() - h / 2, box.centerX() + w / 2, box.centerY() + h / 2)
+    canvas.save()
+    canvas.clipPath(Path().apply { addRoundRect(box, radius, radius, Path.Direction.CW) })
+    canvas.drawBitmap(bitmap, null, dst, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+    canvas.restore()
+}
+
+/**
+ * Shows the whole car in [box]: scaled to fit (a [maxZoom] above 1 enlarges it, trimming the edges —
+ * off by default, as even 15% cut off bumpers and wheels), and the gap on either side filled with
+ * the photo's own edge colour — on a studio photo that's the grey wall, so the photo looks wider
+ * instead of floating in white. Cropping to fill cut off half the car on a real phone photo.
+ *
+ * An upright photo of a car on the studio floor is mostly wall and floor, so the photo is first cut
+ * down to the car (found by [carBounds]) plus a margin, shaped like the box — the car fills the
+ * picture instead of sitting small between grey bars. Only for a cleaned studio photo ([trimToCar]):
+ * on a raw photo the busy background can fool [carBounds] into trimming part of the car.
+ */
+internal fun drawBitmapSmart(canvas: Canvas, bitmap: Bitmap, box: RectF, radius: Float = 8f, maxZoom: Float = 1f, trimToCar: Boolean = true, carMargin: Float = 0.12f) {
+    val src = if (trimToCar) carCrop(bitmap, box.width() / box.height(), carMargin) else Rect(0, 0, bitmap.width, bitmap.height)
+    val fit = minOf(box.width() / src.width(), box.height() / src.height())
+    val cover = maxOf(box.width() / src.width(), box.height() / src.height())
+    val scale = minOf(cover, fit * maxZoom)
+    val w = src.width() * scale
+    val h = src.height() * scale
+    canvas.save()
+    canvas.clipPath(Path().apply { addRoundRect(box, radius, radius, Path.Direction.CW) })
+    // Left and right halves take the colour of the photo's left and right edges at mid-height.
+    val mid = src.centerY()
+    canvas.drawRect(box.left, box.top, box.centerX(), box.bottom, fillPaint(bitmap.getPixel(src.left + 2, mid)))
+    canvas.drawRect(box.centerX(), box.top, box.right, box.bottom, fillPaint(bitmap.getPixel(src.right - 3, mid)))
+    val left = box.centerX() - w / 2
+    val top = box.centerY() - h / 2
+    canvas.drawBitmap(bitmap, src, RectF(left, top, left + w, top + h), Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+    canvas.restore()
+}
+
+/**
+ * The part of [bitmap] to show for a box of [aspect] (width / height): the car plus a margin,
+ * ([margin] of the car's size on each side), widened or heightened to the box's shape while it stays inside the photo. The whole photo when no
+ * car stands out (an uncleaned photo has detail everywhere, so it comes back whole).
+ */
+internal fun carCrop(bitmap: Bitmap, aspect: Float, margin: Float = 0.12f): Rect {
+    val whole = Rect(0, 0, bitmap.width, bitmap.height)
+    val car = carBounds(bitmap) ?: return whole
+    var w = car.width() * (1 + 2 * margin)
+    var h = car.height() * (1 + 2 * margin)
+    if (w / h < aspect) w = h * aspect else h = w / aspect
+    // Never more than the photo itself; if one side runs out, the box's edge fill covers the rest.
+    w = w.coerceAtMost(bitmap.width.toFloat())
+    h = h.coerceAtMost(bitmap.height.toFloat())
+    val cx = car.exactCenterX().coerceIn(w / 2, bitmap.width - w / 2)
+    val cy = car.exactCenterY().coerceIn(h / 2, bitmap.height - h / 2)
+    val crop = Rect((cx - w / 2).toInt(), (cy - h / 2).toInt(), (cx + w / 2).toInt(), (cy + h / 2).toInt())
+    crop.intersect(whole)
+    // Only worth it when the car really was small in the frame.
+    return if (crop.width() * crop.height() < whole.width() * whole.height() * 0.85f) crop else whole
+}
+
+/**
+ * Where the car is in a studio photo. A pixel is car when it differs from the studio at both ends
+ * of its row (the wall and floor run the same colour across the photo) and is also sharp detail,
+ * dark, or coloured — that leaves out the soft ceiling light and the floor's shading. Then the
+ * longest band of rows with enough car, and the longest band of columns within those rows; the
+ * turntable's edge line is a separate band, so it's left out. Sharp detail alone missed the smooth
+ * bonnet and roof of a black car and cut the car in half. Null when nothing stands out or
+ * everything does. It may take in some floor under the car, which only shows a bit more floor.
+ */
+internal fun carBounds(bitmap: Bitmap): Rect? {
+    val sw = 160
+    val sh = (bitmap.height * sw / bitmap.width.toFloat()).toInt().coerceAtLeast(2)
+    val small = Bitmap.createScaledBitmap(bitmap, sw, sh, true)
+    val px = IntArray(sw * sh).also { small.getPixels(it, 0, sw, 0, 0, sw, sh) }
+    if (small !== bitmap) small.recycle()
+    fun lum(c: Int) = (Color.red(c) * 3 + Color.green(c) * 6 + Color.blue(c)) / 10
+    val car = BooleanArray(sw * sh)
+    val ends = 6
+    for (y in 0 until sh) {
+        val row = y * sw
+        fun avg(xs: IntRange, channel: (Int) -> Int) = xs.sumOf { channel(px[row + it]) } / xs.count()
+        val left = intArrayOf(avg(0 until ends, Color::red), avg(0 until ends, Color::green), avg(0 until ends, Color::blue))
+        val right = (sw - ends until sw).let { intArrayOf(avg(it, Color::red), avg(it, Color::green), avg(it, Color::blue)) }
+        for (x in 0 until sw) {
+            val c = px[row + x]
+            val rgb = intArrayOf(Color.red(c), Color.green(c), Color.blue(c))
+            fun diff(b: IntArray) = (0..2).maxOf { kotlin.math.abs(rgb[it] - b[it]) }
+            if (minOf(diff(left), diff(right)) <= 28) continue
+            val l = lum(c)
+            val edge = x < sw - 1 && y < sh - 1 &&
+                maxOf(kotlin.math.abs(l - lum(px[row + x + 1])), kotlin.math.abs(l - lum(px[row + sw + x]))) > 20
+            car[row + x] = edge || l < 90 || rgb.max() - rgb.min() > 60
+        }
+    }
+    val rows = IntArray(sh) { y -> (0 until sw).count { car[y * sw + it] } }
+    val (top, bottom) = longestBand(rows, sw * 0.06f) ?: return null
+    val cols = IntArray(sw) { x -> (top..bottom).count { car[it * sw + x] } }
+    val (left, right) = longestBand(cols, (bottom - top) * 0.06f) ?: return null
+    if (bottom - top < sh * 0.1f || right - left < sw * 0.15f) return null
+    val f = bitmap.width / sw.toFloat()
+    val r = Rect((left * f).toInt(), (top * f).toInt(), ((right + 1) * f).toInt().coerceAtMost(bitmap.width), ((bottom + 1) * f).toInt().coerceAtMost(bitmap.height))
+    if (r.width() > bitmap.width * 0.97f && r.height() > bitmap.height * 0.97f) return null
+    return r
+}
+
+/** First and last index of the longest stretch where [counts] is above [minCount], allowing gaps of up to 3. */
+private fun longestBand(counts: IntArray, minCount: Float): Pair<Int, Int>? {
+    val threshold = maxOf(minCount, 2f)
+    var best: Pair<Int, Int>? = null
+    var start = -1
+    var last = -1
+    counts.forEachIndexed { i, n ->
+        if (n > threshold) {
+            if (start < 0 || i - last > 3) start = i
+            last = i
+            if (best == null || last - start > best!!.second - best!!.first) best = start to last
+        }
+    }
+    return best
+}
+
+/** Fills [box] with [bitmap], cropping the overflow — a little below centre, where the car usually sits — instead of shrinking it. */
+internal fun drawBitmapCrop(canvas: Canvas, bitmap: Bitmap, box: RectF, radius: Float = 8f) {
+    val scale = maxOf(box.width() / bitmap.width, box.height() / bitmap.height)
+    val w = bitmap.width * scale
+    val h = bitmap.height * scale
+    val left = box.centerX() - w / 2
+    val top = (box.top - (h - box.height()) * 0.6f).coerceAtMost(box.top)
+    canvas.save()
+    canvas.clipPath(Path().apply { addRoundRect(box, radius, radius, Path.Direction.CW) })
+    canvas.drawBitmap(bitmap, null, RectF(left, top, left + w, top + h), Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+    canvas.restore()
+}
+
 /** Tracks the current page/canvas/y-cursor across a variable-length report, starting a new page (re-drawing the header) whenever content would overflow. */
 internal class ReportBuilder(
     private val doc: PdfDocument,
@@ -493,6 +633,12 @@ internal class ReportBuilder(
     lateinit var canvas: Canvas
     var y = 0f
     private var currentTitle = ""
+    /** Draws a report's own header on every page after the first (returns the height used); null = the standard header. */
+    var customHeader: ((Canvas, String) -> Float)? = null
+    /** Left footer text on every page; null = the standard dealer line. */
+    var footerLeft: String? = null
+    /** Fills every page before anything is drawn; null = white. */
+    var pageColor: Int? = null
 
     fun newPage(title: String, drawBrandHeader: Boolean = true) {
         if (::page.isInitialized) {
@@ -503,8 +649,11 @@ internal class ReportBuilder(
         currentTitle = title
         page = doc.startPage(PdfDocument.PageInfo.Builder(PAGE_W, PAGE_H, pageNum).create())
         canvas = page.canvas
+        pageColor?.let { canvas.drawColor(it) }
         y = MARGIN
-        if (drawBrandHeader) {
+        if (drawBrandHeader && customHeader != null) {
+            y = customHeader!!.invoke(canvas, title)
+        } else if (drawBrandHeader) {
             if (dealerProfile != null) {
                 drawDealerCompactHeader(canvas, y, dealerProfile, dealerLogo, title)
             } else {
@@ -532,7 +681,10 @@ internal class ReportBuilder(
     private fun drawFooter() {
         val p = textPaint(GRAY, 7.5f)
         canvas.drawText("Page $pageNum", CONTENT_RIGHT - 30f, PAGE_H - 24f, p)
-        if (dealerProfile != null) {
+        val custom = footerLeft
+        if (custom != null) {
+            canvas.drawText(custom, MARGIN, PAGE_H - 24f, textPaint(Color.parseColor("#9BA1AC"), 7.5f))
+        } else if (dealerProfile != null) {
             canvas.drawText(
                 "Shared by ${dealerProfile.name} · Report data verified by GetAutoSure",
                 MARGIN, PAGE_H - 24f, textPaint(Color.parseColor("#9BA1AC"), 7.5f)

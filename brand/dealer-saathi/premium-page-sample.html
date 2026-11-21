@@ -1,0 +1,181 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 412px; background: #0A0B0D; color: #F2F2F3; font-family: "Segoe UI", Roboto, sans-serif; font-size: 13px; line-height: 1.4; }
+  .or { color: #FF6B2C; } .mu { color: #9A9CA3; }
+  .bar { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid #1E2127; }
+  .bar .back { font-size: 20px; color: #C9CACE; }
+  .bar .t { font-size: 17px; font-weight: 600; }
+  .prem { background: #FF6B2C; color: #1A0A00; font-size: 10px; font-weight: 700; letter-spacing: .5px; padding: 3px 8px; border-radius: 10px; }
+  .hero { position: relative; height: 490px; overflow: hidden; background: radial-gradient(120% 70% at 70% 30%, #3A2A1C 0%, #16171B 55%, #0A0B0D 100%); }
+  .hero .floor { position: absolute; left: 0; right: 0; bottom: 0; height: 170px; background: linear-gradient(#1B1C20, #0D0E10); }
+  .hero .glass { position: absolute; top: 0; left: 0; right: 0; height: 250px; background: repeating-linear-gradient(90deg, rgba(255,190,120,.07) 0 2px, transparent 2px 62px); }
+  .hero .lamp { position: absolute; top: 18px; width: 6px; height: 6px; border-radius: 50%; background: #FFD7A8; box-shadow: 0 0 14px 6px rgba(255,190,120,.35); }
+  .hero .car { position: absolute; right: -36px; top: 112px; width: 360px; filter: drop-shadow(0 22px 18px rgba(0,0,0,.7)); }
+  .hero .refl { position: absolute; right: -36px; top: 300px; width: 360px; transform: scaleY(-1); opacity: .12; }
+  .hero .txt { position: absolute; left: 16px; top: 22px; right: 16px; }
+  .eyebrow { font-size: 11px; letter-spacing: 1.4px; color: #B9BBC0; font-weight: 600; }
+  h1 { font-size: 32px; line-height: 1.08; font-weight: 800; margin-top: 6px; }
+  .hero .sub { position: absolute; left: 16px; right: 16px; bottom: 16px; }
+  .sub p { color: #D3D4D8; font-size: 13.5px; margin-bottom: 12px; }
+  .pills { display: flex; gap: 14px; margin-bottom: 14px; font-size: 12px; color: #E6E6E8; }
+  .pills span { display: flex; align-items: center; gap: 5px; }
+  .ic { width: 18px; height: 18px; stroke: #FF6B2C; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; background: #FF6B2C; color: #1A0A00; font-weight: 700; font-size: 15px; border-radius: 12px; padding: 14px; }
+  .btn2 { border: 1px solid #3A3D44; color: #F2F2F3; background: transparent; font-weight: 600; }
+  .sec { padding: 22px 16px 4px; }
+  .h2 { font-size: 20px; font-weight: 700; text-align: center; }
+  .h2s { text-align: center; color: #9A9CA3; margin: 4px 0 14px; }
+  .card { background: #15171C; border: 1px solid #262930; border-radius: 16px; padding: 12px; margin-bottom: 12px; }
+  .out { display: flex; gap: 12px; align-items: center; }
+  .thumb { width: 116px; height: 140px; border-radius: 10px; overflow: hidden; position: relative; flex: none; }
+  .out h3 { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+  .out p { color: #A9ABB1; font-size: 12.5px; }
+  .link { color: #FF6B2C; font-size: 12.5px; font-weight: 600; margin-top: 6px; display: inline-block; }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+  .ba div { height: 92px; border-radius: 8px; position: relative; overflow: hidden; }
+  .ba img { position: absolute; left: 6%; width: 88%; bottom: 10px; }
+  .ba .tag { position: absolute; left: 6px; top: 6px; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 6px; }
+  .price { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 4px; }
+  .pk { border: 1px solid #2E3138; border-radius: 12px; padding: 14px 4px 10px; text-align: center; position: relative; background: #121418; }
+  .pk.pop { border: 2px solid #FF6B2C; background: #1C140E; }
+  .pk .badge { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #FF6B2C; color: #1A0A00; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 8px; }
+  .pk .n { font-size: 12px; color: #D3D4D8; }
+  .pk .p { font-size: 20px; font-weight: 800; margin: 2px 0; }
+  .pk .e { font-size: 11px; color: #9A9CA3; }
+  ul { list-style: none; } li { display: flex; gap: 8px; padding: 4px 0; font-size: 13px; }
+  .ok { color: #3DCB7F; font-weight: 700; } .no { color: #7A7C83; font-weight: 700; }
+  .vid { height: 150px; border-radius: 12px; position: relative; overflow: hidden; background: #1B1D22; }
+  .vid img { position: absolute; width: 240px; left: 80px; top: 20px; opacity: .55; }
+  .play { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 54px; height: 54px; border-radius: 50%; background: #FF6B2C; display: flex; align-items: center; justify-content: center; }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; font-size: 11px; color: #C9CACE; }
+  .steps b { display: flex; margin: 0 auto 4px; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid #FF6B2C; color: #FF6B2C; align-items: center; justify-content: center; font-size: 12px; }
+  .foot { padding: 12px 16px 26px; }
+  .note { text-align: center; color: #7A7C83; font-size: 11px; margin-top: 10px; }
+</style></head>
+<body>
+<div class="bar"><span class="back">←</span><span class="t">Dealer <span class="or">Saathi</span></span><span class="prem">PREMIUM</span><span style="margin-left:auto" class="mu">Sharma Motors ▾</span></div>
+
+<div class="hero">
+  <div class="glass"></div>
+  <div class="lamp" style="left:170px"></div><div class="lamp" style="left:250px"></div><div class="lamp" style="left:330px"></div>
+  <div class="floor"></div>
+  <img class="refl" src="../../app/src/main/res/drawable-nodpi/car_tata_nexon_ev.png">
+  <img class="car" src="../../app/src/main/res/drawable-nodpi/car_tata_nexon_ev.png">
+  <div class="txt">
+    <div class="eyebrow">FOR USED CAR DEALERS</div>
+    <h1>List like a pro.<br><span class="or">Sell faster.</span></h1>
+  </div>
+  <div class="sub">
+    <p>A verified health report, studio-white photos and a WhatsApp Status poster, made in one flow.</p>
+    <div class="pills">
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>Build trust</span>
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Save time</span>
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M4 20V14M10 20V9M16 20V12M22 20V4"/></svg>More leads</span>
+    </div>
+    <div class="btn">Create a report →</div>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="h2">One car. Three ready outputs.</div>
+  <div class="h2s">Tap any sample to see it full size.</div>
+
+  <div class="card out">
+    <div class="thumb" style="background:#fff">
+      <img src="report-thumb.png" style="width:100%;position:absolute;top:0;left:0">
+      <img src="../../app/src/main/res/drawable-nodpi/car_tata_nexon_ev.png" style="position:absolute;left:8%;top:28%;width:45%">
+    </div>
+    <div>
+      <h3>Vehicle report</h3>
+      <p>Branded PDF with health score, RTO record, faults with repair costs and odometer check.</p>
+      <span class="link">Open sample PDF →</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="out">
+      <div>
+        <h3>Photo studio</h3>
+        <p>Gemini cleans the background to studio white. The car itself is never edited.</p>
+      </div>
+    </div>
+    <div class="ba">
+      <div style="background:linear-gradient(#8FA3B5 0 45%, #6B6E70 45% 100%)">
+        <div style="position:absolute;left:0;right:0;top:20px;height:30px;background:repeating-linear-gradient(90deg,#4C5A63 0 30px,#9AA7AF 30px 34px)"></div>
+        <img src="../../app/src/main/res/drawable-nodpi/car_tata_nexon_ev.png">
+        <span class="tag" style="background:#2B2D33;color:#E6E6E8">Before</span>
+      </div>
+      <div style="background:#F4F4F5">
+        <img src="../../app/src/main/res/drawable-nodpi/car_tata_nexon_ev.png" style="filter:drop-shadow(0 6px 5px rgba(0,0,0,.25))">
+        <span class="tag" style="background:#FF6B2C;color:#1A0A00">After</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card out">
+    <div class="thumb" style="background:#000;border:1.5px solid #FF6B2C">
+      <img src="../reports/dealer-status-sample.png" style="width:100%;position:absolute;top:0;left:0">
+    </div>
+    <div>
+      <h3>WhatsApp Status</h3>
+      <p>A ready poster with your logo, phone and badges. Post it to Status and groups.</p>
+      <span class="link">See sample Status →</span>
+    </div>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="h2">How it works</div>
+  <div class="h2s">45 seconds</div>
+  <div class="vid">
+    <img src="../../app/src/main/res/drawable-nodpi/car_tata_nexon_ev.png">
+    <div class="play"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="#1A0A00"/></svg></div>
+    <span style="position:absolute;right:10px;bottom:8px;font-size:11px;background:#000a;padding:2px 6px;border-radius:6px">0:45</span>
+  </div>
+  <div class="steps" style="margin-top:14px">
+    <div><b>1</b>Scan the car</div><div><b>2</b>Car number</div><div><b>3</b>Rate it</div><div><b>4</b>Photos</div>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="card" style="padding:16px 12px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/></svg>
+      <span style="font-size:17px;font-weight:700">Simple pricing</span>
+    </div>
+    <p class="mu" style="margin-bottom:16px">Buy a pack. One credit makes one car's report.</p>
+    <div class="price">
+      <div class="pk"><div class="n">1 car</div><div class="p">₹199</div><div class="e">per car</div></div>
+      <div class="pk pop"><span class="badge">Popular</span><div class="n">5 cars</div><div class="p">₹899</div><div class="e">₹180 / car</div></div>
+      <div class="pk"><div class="n">20 cars</div><div class="p">₹3,299</div><div class="e">₹165 / car</div></div>
+    </div>
+    <p class="mu" style="font-size:11px;margin-top:10px;text-align:center">Sample prices, not final · Credits never expire · Scan and RTO check are free</p>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:700;margin-bottom:4px">What you get</div>
+    <ul>
+      <li><span class="ok">✓</span>PDF report with your logo, two phones and map link</li>
+      <li><span class="ok">✓</span>RTO record: owner, insurance, PUC, loan, blacklist</li>
+      <li><span class="ok">✓</span>Engine scan, fault codes and tentative repair costs</li>
+      <li><span class="ok">✓</span>Odometer check and self-tests</li>
+      <li><span class="ok">✓</span>Up to 6 studio-white photos</li>
+      <li><span class="ok">✓</span>WhatsApp Status poster with your price</li>
+    </ul>
+    <div style="font-weight:700;margin:10px 0 4px">Not included</div>
+    <ul>
+      <li class="mu"><span class="no">✕</span>Body, tyre or brake check by us (you rate these)</li>
+      <li class="mu"><span class="no">✕</span>Challans and service history</li>
+      <li class="mu"><span class="no">✕</span>Warranty on the car</li>
+    </ul>
+  </div>
+</div>
+
+<div class="foot">
+  <div class="btn">Buy pack →</div>
+  <div class="btn btn2" style="margin-top:10px">Start a report · 0 credits left</div>
+  <div class="note">Profile: Sharma Motors · Edit &nbsp;·&nbsp; Buying a car? Use Used Car Check</div>
+</div>
+</body></html>

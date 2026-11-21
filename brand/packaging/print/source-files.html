@@ -1,0 +1,84 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>GetAutoSure packaging – source files</title>
+<link rel="stylesheet" href="fonts.css">
+<style id="pages"></style>
+<style>
+  html, body { margin: 0; background: #fff }
+  section { page-break-after: always; overflow: hidden }
+  section:last-child { page-break-after: auto }
+  section svg { display: block }
+</style>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="art.js"></script>
+<script>
+// Every printed piece as its own 1:1 vector file (mm units), for the printer's designer to place on their die.
+// Each file has three layers: bleed (3 mm), artwork, and the magenta trim line, which is not printed.
+const A = ART, F = A.flat, Q = A.quiet, MAGENTA = "#EC008C";
+const BLEED = 3;
+
+function piece(name, w, h, body, bg = A.INK, extra = "") {
+  const W = w + 2 * BLEED, H = h + 2 * BLEED;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}mm" height="${H}mm" viewBox="${-BLEED} ${-BLEED} ${W} ${H}">
+<g id="bleed"><rect x="${-BLEED}" y="${-BLEED}" width="${W}" height="${H}" fill="${bg}"/></g>
+<g id="artwork">${body}</g>
+<g id="trim-line-do-not-print"><rect x="0" y="0" width="${w}" height="${h}" fill="none" stroke="${MAGENTA}" stroke-width="0.2"/>${extra}</g>
+</svg>`;
+  return { name, w: W, h: H, svg };
+}
+const in86 = body => `<g transform="translate(0 3)">${body}</g>`;
+const side = body => `<g transform="translate(3 0)">${body}</g>`;
+
+const cardBack = `<rect width="95" height="58" fill="#fff"/>
+  <text x="6" y="10" font-family="Sora" font-weight="700" font-size="4" fill="${A.INK}">Where's my OBD port?</text>
+  <g fill="none" stroke="${A.INK}" stroke-width="0.5" stroke-linecap="round">
+    <path d="M6 28 q22 -9 44 0"/><circle cx="37" cy="29" r="7"/><circle cx="37" cy="29" r="1.6"/><path d="M37 36 v6"/><path d="M30 45 h4 M40 45 h4"/></g>
+  <rect x="40" y="36.5" width="7" height="4.2" rx="0.8" fill="${A.ORANGE}"/><path d="M50 38.5 h4" stroke="${A.ORANGE}" stroke-width="0.5"/>
+  <text x="55" y="39.4" font-family="IBM Plex Sans" font-size="2" fill="${A.INK}">Usually here</text>
+  <g font-family="IBM Plex Sans" font-size="2.3" fill="#3B4048">
+    <text x="57" y="18">Under the dashboard,</text><text x="57" y="22">near your right knee.</text>
+    <text x="57" y="28">Sometimes behind a</text><text x="57" y="32">small cover or fuse lid.</text></g>
+  <line x1="6" y1="49" x2="89" y2="49" stroke="#E2DED8" stroke-width="0.3"/>
+  <text x="6" y="54" font-family="IBM Plex Sans" font-size="2.1" fill="#3B4048">Help: getautosure.com/help</text>`;
+
+// Option A: printed card insert, 100 x 82. Black 5 mm border, orange field; cut-out 47 x 67 and thumb notch R6 are die lines.
+const cardInsertArt = `<rect x="-3" y="-3" width="106" height="88" fill="#0C0D0F"/><rect x="5" y="5" width="90" height="72" fill="${A.ORANGE}"/>`;
+const cardInsertDie = `<rect x="26.5" y="7.5" width="47" height="67" fill="none" stroke="${MAGENTA}" stroke-width="0.25" stroke-dasharray="1.2 .8"/>
+  <path d="M73.5 35 a6 6 0 0 1 0 12" fill="none" stroke="${MAGENTA}" stroke-width="0.25" stroke-dasharray="1.2 .8"/>`;
+
+// Option B: solid orange EVA foam, 100 x 82 x 26, not printed. Pocket 45.5 x 65.5 centred, thumb notch R6 on the right.
+const evaW = 100, evaH = 82, px = (evaW - 45.5) / 2, py = (evaH - 65.5) / 2;
+const evaArt = `<rect x="-3" y="-3" width="106" height="88" fill="#fff"/><rect x="0" y="0" width="${evaW}" height="${evaH}" fill="${A.ORANGE}"/>
+  <g font-family="IBM Plex Mono" fill="#fff" text-anchor="middle">
+    <text x="50" y="39" font-size="2.2">POCKET 45.5 × 65.5</text><text x="50" y="42.5" font-size="1.8">26 mm deep · not printed</text>
+    <text x="50" y="14" font-size="1.8">▲ plug toward the hinge</text></g>`;
+const evaDie = `<rect x="${px}" y="${py}" width="45.5" height="65.5" rx="2" fill="none" stroke="${MAGENTA}" stroke-width="0.25" stroke-dasharray="1.2 .8"/>
+  <path d="M${px + 45.5} ${evaH / 2 - 6} a6 6 0 0 1 0 12" fill="none" stroke="${MAGENTA}" stroke-width="0.25" stroke-dasharray="1.2 .8"/>`;
+
+const pieces = [
+  piece("01-lid-top_104x86", 104, 86, in86(Q.lidTop())),
+  piece("02-lid-inside_104x86", 104, 86, in86(Q.lidInside())),
+  piece("03-front_104x30", 104, 30, Q.frontWall()),
+  piece("04-back_104x30", 104, 30, Q.backWall()),
+  piece("05-left_86x30", 86, 30, side(Q.leftWall())),
+  piece("06-right_86x30", 86, 30, side(Q.rightWall())),
+  piece("07-bottom_104x86", 104, 86, in86(F.bottom())),
+  piece("08a-insert-card-printed_100x82", 100, 82, cardInsertArt, "#0C0D0F", cardInsertDie),
+  piece("08b-insert-EVA-foam-cut_100x82x26", 100, 82, evaArt, "#fff", evaDie),
+  piece("09-card-front_95x58", 95, 58, A.cardFront()),
+  piece("10-card-back_95x58", 95, 58, cardBack, "#fff"),
+  piece("11-sticker_50-round", 50, 50, A.sticker(), A.INK),
+  piece("12-dongle-silkscreen_42x50.6", 42, 50.6, A.labelMinimal().replace('width="42mm" height="50.6mm"', 'width="42" height="50.6"'), "#2A2D33"),
+];
+
+// One PDF page per piece, each page exactly the piece's size with bleed.
+document.getElementById("pages").textContent = pieces.map((p, i) =>
+  `@page p${i} { size: ${p.w}mm ${p.h}mm; margin: 0 } .p${i} { page: p${i}; width: ${p.w}mm; height: ${p.h}mm }`).join("\n");
+document.getElementById("root").innerHTML = pieces.map((p, i) => `<section class="p${i}">${p.svg}</section>`).join("");
+
+const out = document.createElement("script");
+out.type = "application/json"; out.id = "out";
+out.textContent = JSON.stringify(pieces.map(({ name, svg }) => ({ name, svg })));
+document.body.appendChild(out);
+</script>

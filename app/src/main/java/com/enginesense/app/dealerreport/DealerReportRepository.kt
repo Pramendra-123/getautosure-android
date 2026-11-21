@@ -50,7 +50,7 @@ class DealerReportRepository(
         ownership: String?,
         registrationNo: String?,
         healthSummary: JSONObject,
-        dealerCondition: DealerConditionInput,
+        dealerCondition: JSONObject,
         photos: List<PhotoUpload>,
         scannedAtIso: String?
     ): Result<PublishedReport> = runCatchingApi {
@@ -71,7 +71,7 @@ class DealerReportRepository(
             put("ownership", ownership ?: JSONObject.NULL)
             put("registrationNo", registrationNo ?: JSONObject.NULL)
             put("healthSummary", healthSummary)
-            put("dealerCondition", dealerCondition.toJson())
+            put("dealerCondition", dealerCondition)
             put("photos", JSONArray(photos.map { it.toJson() }))
             put("scannedAt", scannedAtIso ?: JSONObject.NULL)
         }
@@ -99,9 +99,11 @@ class DealerReportRepository(
     }
 
     /** Previews background removal on one exterior photo — never stored server-side, never attached to a report on its own. The caller decides whether to use the result or keep the original; publishReport only ever uploads whichever bytes it's given. */
-    suspend fun removeBackground(photo: PhotoUpload): Result<PhotoUpload> = runCatchingApi {
+    suspend fun removeBackground(photo: PhotoUpload, style: String = "white", hidePlate: Boolean = false): Result<PhotoUpload> = runCatchingApi {
         val body = JSONObject().apply {
             put("action", "remove_background")
+            put("style", style)
+            put("hidePlate", hidePlate)
             put("photo", photo.toJson())
         }
         val token = try {
@@ -152,6 +154,46 @@ class DealerReportRepository(
         Unit
     }
 
+    /** "My reports": every report this dealer has made, with the counts and credits. */
+    suspend fun listReports(): Result<MyReports> = runCatchingApi {
+        val text = postAuthed(JSONObject().put("action", "list_reports"))
+        try {
+            parseMyReports(JSONObject(text))
+        } catch (e: Exception) {
+            throw DealerReportApiExceptionParse(e)
+        }
+    }
+
+    /** Saves the report's PDF and Status picture to the dealer's account, so they can be sent again from any phone. */
+    suspend fun saveOutputs(slug: String, pdf: ByteArray?, statusPng: ByteArray?): Result<Unit> = runCatchingApi {
+        val body = JSONObject().apply {
+            put("action", "save_outputs")
+            put("slug", slug)
+            pdf?.let { put("pdf", PhotoUpload("report.pdf", "application/pdf", java.util.Base64.getEncoder().encodeToString(it)).toJson()) }
+            statusPng?.let { put("status", PhotoUpload("status.png", "image/png", java.util.Base64.getEncoder().encodeToString(it)).toJson()) }
+        }
+        postAuthed(body)
+        Unit
+    }
+
+    suspend fun setSold(slug: String, sold: Boolean): Result<Unit> = runCatchingApi {
+        postAuthed(JSONObject().put("action", "set_sold").put("slug", slug).put("sold", sold))
+        Unit
+    }
+
+    private suspend fun postAuthed(body: JSONObject): String {
+        val token = try {
+            idTokenProvider()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            throw DealerReportNotAuthenticatedException(e)
+        }
+        return executeAwait(
+            Request.Builder().url(endpointUrl).post(body.toString().toRequestBody(JSON_MEDIA_TYPE)).header("Authorization", "Bearer $token").build()
+        )
+    }
+
     /** Same bridging pattern as RemoteAiMechanicChatService/SupabaseExpertRepository's executeAwait. */
     private suspend fun executeAwait(request: Request): String = suspendCancellableCoroutine { continuation ->
         val call = httpClient.newCall(request)
@@ -188,11 +230,18 @@ class DealerReportRepository(
     }
 
     companion object {
-        const val DEFAULT_TIMEOUT_MILLIS = 30_000L // Higher than the other repositories' default — this call uploads photo bytes, not just text.
+        // Gemini's background removal often takes 10–30 s, longer with several photos at once.
+        const val DEFAULT_TIMEOUT_MILLIS = 90_000L
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
 
+        // Read/write timeouts must be raised too: OkHttp's 10 s default read timeout cut off the
+        // wait for Gemini's reply on a real phone (SocketTimeoutException in readResponseHeaders).
         fun defaultHttpClient(timeoutMillis: Long): OkHttpClient =
-            OkHttpClient.Builder().callTimeout(timeoutMillis, TimeUnit.MILLISECONDS).build()
+            OkHttpClient.Builder()
+                .callTimeout(timeoutMillis, TimeUnit.MILLISECONDS)
+                .readTimeout(timeoutMillis, TimeUnit.MILLISECONDS)
+                .writeTimeout(timeoutMillis, TimeUnit.MILLISECONDS)
+                .build()
     }
 }
 
@@ -202,7 +251,7 @@ private fun PhotoUpload.toJson(): JSONObject = JSONObject().apply {
     put("base64", base64)
 }
 
-private fun DealerConditionInput.toJson(): JSONObject = JSONObject().apply {
+internal fun DealerConditionInput.toJson(): JSONObject = JSONObject().apply {
     put("exterior", exterior.toJson())
     put("interior", interior.toJson())
     put("tyres", tyres.toJson())
@@ -211,6 +260,38 @@ private fun DealerConditionInput.toJson(): JSONObject = JSONObject().apply {
 private fun DealerConditionItem.toJson(): JSONObject = JSONObject().apply {
     put("rating", rating)
     put("options", JSONArray(options))
+}
+
+/** The list_reports response; a missing field is null or zero, never a crash. */
+internal fun parseMyReports(json: JSONObject): MyReports {
+    fun JSONObject.str(key: String): String? = if (isNull(key)) null else optString(key).ifBlank { null }
+    val array = json.optJSONArray("reports") ?: JSONArray()
+    val reports = (0 until array.length()).map { i ->
+        val r = array.getJSONObject(i)
+        MyReport(
+            slug = r.getString("slug"),
+            url = r.getString("url"),
+            live = r.optBoolean("live", true),
+            make = r.str("make"),
+            model = r.str("model"),
+            variant = r.str("variant"),
+            year = if (r.isNull("year")) null else r.optInt("year").takeIf { it > 0 },
+            registrationNo = r.str("registrationNo"),
+            priceInr = if (r.isNull("priceInr")) null else r.optDouble("priceInr").takeIf { !it.isNaN() && it > 0 },
+            photoUrl = r.str("photoUrl"),
+            createdAtIso = r.optString("createdAt"),
+            soldAtIso = r.str("soldAt"),
+            pdfUrl = r.str("pdfUrl"),
+            statusUrl = r.str("statusUrl")
+        )
+    }
+    return MyReports(
+        reports = reports,
+        made = json.optInt("made", reports.size),
+        thisMonth = json.optInt("thisMonth"),
+        credits = json.optInt("credits"),
+        paymentsLive = json.optBoolean("paymentsLive", false)
+    )
 }
 
 private class DealerReportApiExceptionParse(cause: Throwable) : DealerReportApiException("reports backend returned a response that wasn't valid JSON", cause)

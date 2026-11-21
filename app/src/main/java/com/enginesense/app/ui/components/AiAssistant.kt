@@ -31,7 +31,10 @@ data class AiScreenContext(
     val aboutUsedCar: Boolean = false
 )
 
-/** Screens where the floating button would get in the way: sign-up, a scan in progress, full-screen tools, or the chat itself. */
+/**
+ * Screens where the floating button would get in the way: sign-up, a scan in progress, full-screen
+ * tools, or the chat itself.
+ */
 private val NO_ASSISTANT_ROUTES = listOf(
     "splash", "login", "phoneOtp", "enterRegistration", "selectBrand", "selectModel", "addVehicle",
     "scanning", "aiMechanic", "liveData", "performance", "tripMileage", "pdfViewer", "booking"

@@ -31,6 +31,17 @@ window.ART = (function () {
 
   // Dongle front label, 42 x 50.6 mm (same proportions as the vendor's current label).
   // LED window and the three LED circles sit exactly where the vendor's are, so the light holes line up.
+  // CE, FCC and RoHS marks in a row, h mm tall, top-left at (x, y). The printer may swap in their standard vector marks.
+  function complianceMarks(x, y, h, color = WHITE) {
+    const r = h / 2, sw = h * 0.13, cy = y + r;
+    const half = cx => `M${cx} ${cy - r + sw / 2} A${r - sw / 2} ${r - sw / 2} 0 0 0 ${cx} ${cy + r - sw / 2}`;
+    const c1 = x + r, c2 = x + r + h * 0.95;
+    const ce = `<g fill="none" stroke="${color}" stroke-width="${sw}"><path d="${half(c1)}"/><path d="${half(c2)}"/>` +
+      `<path d="M${c2 - r + sw / 2} ${cy} H${c2 - r * 0.15}"/></g>`;
+    const fcc = `<text x="${c2 + h * 0.75}" y="${y + h * 0.86}" font-family="Sora" font-weight="700" font-size="${h * 1.1}" fill="${color}" letter-spacing="-0.2">FC</text>`;
+    const rohs = `<text x="${c2 + h * 2.75}" y="${y + h * 0.8}" font-family="Sora" font-weight="700" font-size="${h * 0.78}" fill="${color}">RoHS</text>`;
+    return ce + fcc + rohs;
+  }
   function label() {
     const W = 42, H = 50.6;
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}mm" height="${H}mm">
@@ -199,7 +210,7 @@ window.ART = (function () {
       rows.push(`<text x="7" y="${y.toFixed(2)}" font-family="IBM Plex Sans" font-size="2.1" fill="#C9CDD3">vary by vehicle make, model, year and protocol.</text>`); y += L;
       row("Website:", "getautosure.com");
       return `<text x="7" y="10" font-family="Sora" font-weight="700" font-size="3.2" fill="${WHITE}">GetAutoSure OBD-II Diagnostic Scanner</text>` +
-        rows.join("") +
+        rows.join("") + complianceMarks(7, 73.6, 4.6) +
         `<g transform="translate(82 60)" stroke="${GREY}" stroke-width="0.4" fill="none"><path d="M1 1.8 h5 l-.6 6.2 h-3.8 z"/><path d="M.4 1.8 h6.2"/><path d="M-.3 0 l7.6 9 M7.3 0 l-7.6 9"/></g>` +
         sans(86, 73, 1.7, GREY, "Do not dispose with", "middle") + sans(86, 75.6, 1.7, GREY, "household waste", "middle");
     },

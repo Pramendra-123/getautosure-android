@@ -10,6 +10,8 @@
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30" />
+    <!-- Dealer profile's "Use my location": showroom address and map link on the dealer report. Coarse is enough. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <!-- API 31+ runtime Bluetooth permissions -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
@@ -23,6 +25,11 @@
          — required at runtime on API 33+; requested from BookingScreen when the user starts a
          reservation, not at app launch. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Drive lab (test): stays connected to the scanner in the background to record trips. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:allowBackup="true"
@@ -41,7 +48,18 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- A payment SMS shared from the SMS app (long-press, Share) to add as a car cost. -->
+            <intent-filter android:label="Add to car costs">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
         </activity>
+
+        <service
+            android:name=".drivelab.DriveRecorderService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
 
         <!-- Lets the generated PDF report be shared to WhatsApp/Gmail/etc. via a content:// URI
              instead of a raw file:// path, which is blocked across apps since Android 7. -->

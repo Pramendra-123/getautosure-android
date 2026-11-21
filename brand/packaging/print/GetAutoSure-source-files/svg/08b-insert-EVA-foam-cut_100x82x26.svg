@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="106mm" height="88mm" viewBox="-3 -3 106 88">
+<g id="bleed"><rect x="-3" y="-3" width="106" height="88" fill="#fff"/></g>
+<g id="artwork"><rect x="-3" y="-3" width="106" height="88" fill="#fff"/><rect x="0" y="0" width="100" height="82" fill="#FF6B2C"/>
+  <g font-family="IBM Plex Mono" fill="#fff" text-anchor="middle">
+    <text x="50" y="39" font-size="2.2">POCKET 45.5 × 65.5</text><text x="50" y="42.5" font-size="1.8">26 mm deep · not printed</text>
+    <text x="50" y="14" font-size="1.8">▲ plug toward the hinge</text></g></g>
+<g id="trim-line-do-not-print"><rect x="0" y="0" width="100" height="82" fill="none" stroke="#EC008C" stroke-width="0.2"/><rect x="27.25" y="8.25" width="45.5" height="65.5" rx="2" fill="none" stroke="#EC008C" stroke-width="0.25" stroke-dasharray="1.2 .8"/>
+  <path d="M72.75 35 a6 6 0 0 1 0 12" fill="none" stroke="#EC008C" stroke-width="0.25" stroke-dasharray="1.2 .8"/></g>
+</svg>

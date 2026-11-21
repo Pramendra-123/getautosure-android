@@ -62,7 +62,7 @@ fun DealerPricingScreen() {
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
         Text("Max Buy Price", style = GetAutoSureType.ScreenTitle)
         Spacer(Modifier.height(4.dp))
-        Text("Dealer Sathi", style = GetAutoSureType.Caption)
+        Text("Dealer Saathi", style = GetAutoSureType.Caption)
         Spacer(Modifier.height(18.dp))
 
         Text("Vehicle", style = GetAutoSureType.SectionTitle)

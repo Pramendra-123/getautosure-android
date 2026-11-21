@@ -248,7 +248,7 @@ internal fun ConditionRow(label: String, field: ConditionFieldState, options: Li
 }
 
 @Composable
-internal fun ExteriorPhotoSlotRow(slot: ExteriorPhotoSlot, viewModel: PublishReportViewModel) {
+internal fun ExteriorPhotoSlotRow(slot: ExteriorPhotoSlot, viewModel: PublishReportViewModel, style: String = "white", hidePlate: Boolean = false) {
     val context = LocalContext.current
     val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
@@ -263,7 +263,7 @@ internal fun ExteriorPhotoSlotRow(slot: ExteriorPhotoSlot, viewModel: PublishRep
             val bitmap = remember(slot.originalUri, slot.processedPhoto) {
                 slot.processedPhoto?.let { decodeBase64Bitmap(it.base64) }
                     ?: slot.originalUri?.let { uri ->
-                        runCatching { context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) } }.getOrNull()
+                        decodeUriUpright(context, uri, 400)
                     }
             }
             if (bitmap != null) {
@@ -327,11 +327,14 @@ internal fun ExteriorPhotoSlotRow(slot: ExteriorPhotoSlot, viewModel: PublishRep
                             }
                             slot.processing = true
                             slot.error = null
-                            viewModel.removeBackground(context, photo) { result ->
+                            viewModel.removeBackground(context, photo, style, hidePlate) { result ->
                                 slot.processing = false
                                 result.fold(
                                     onSuccess = { slot.processedPhoto = it },
-                                    onFailure = { slot.error = "Background removal failed — kept the original photo" }
+                                    onFailure = { e ->
+                                        android.util.Log.w("RemoveBackground", "failed", e)
+                                        slot.error = "Background removal failed — kept the original photo"
+                                    }
                                 )
                             }
                         }
@@ -352,7 +355,7 @@ internal fun PhotoThumbnail(uri: Uri, onRemove: () -> Unit) {
     val context = LocalContext.current
     val bitmap = remember(uri) {
         runCatching {
-            context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }
+            decodeUriUpright(context, uri, 400)
         }.getOrNull()
     }
     Box(modifier = Modifier.size(84.dp)) {
@@ -485,7 +488,7 @@ private fun generateQrBitmap(content: String, sizePx: Int): Bitmap? = runCatchin
 
 /** Downscales, JPEG-compresses and base64-encodes a picked photo — same budget-conscious approach as DealerProfileScreen's logo handling, just for a larger "listing photo" size instead of a small logo. */
 internal fun encodeUriAsPhoto(context: android.content.Context, uri: Uri): PhotoUpload? = runCatching {
-    val source = context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) } ?: return null
+    val source = decodeUriUpright(context, uri, MAX_PHOTO_DIMENSION_PX) ?: return null
     val scaled = downscaleBitmap(source, MAX_PHOTO_DIMENSION_PX)
     val bytes = ByteArrayOutputStream().apply { scaled.compress(Bitmap.CompressFormat.JPEG, 80, this) }.toByteArray()
     PhotoUpload(filename = "photo.jpg", contentType = "image/jpeg", base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP))
@@ -494,6 +497,37 @@ internal fun encodeUriAsPhoto(context: android.content.Context, uri: Uri): Photo
 private fun encodeFileAsPhoto(path: String, filename: String, contentType: String): PhotoUpload? = runCatching {
     val bytes = java.io.File(path).readBytes()
     PhotoUpload(filename = filename, contentType = contentType, base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP))
+}.getOrNull()
+
+/**
+ * Decodes a picked photo the right way up, no bigger than about [maxDimension] on its longer edge.
+ * Phone cameras save the pixels sideways and record how the phone was held in the EXIF tag; ignoring
+ * it put a dealer's portrait photo on its side in the Status picture. Sampling while decoding also
+ * keeps a 50–200 MP camera photo from using hundreds of MB.
+ */
+internal fun decodeUriUpright(context: android.content.Context, uri: Uri, maxDimension: Int): Bitmap? = runCatching {
+    val resolver = context.contentResolver
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+    var sample = 1
+    while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxDimension) sample *= 2
+    val bitmap = resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample }) }
+        ?: return null
+    val orientation = resolver.openInputStream(uri)?.use {
+        android.media.ExifInterface(it).getAttributeInt(android.media.ExifInterface.TAG_ORIENTATION, android.media.ExifInterface.ORIENTATION_NORMAL)
+    } ?: android.media.ExifInterface.ORIENTATION_NORMAL
+    val matrix = android.graphics.Matrix()
+    when (orientation) {
+        android.media.ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+        android.media.ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+        android.media.ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+        android.media.ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.postScale(-1f, 1f)
+        android.media.ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.postScale(1f, -1f)
+        android.media.ExifInterface.ORIENTATION_TRANSPOSE -> { matrix.postRotate(90f); matrix.postScale(-1f, 1f) }
+        android.media.ExifInterface.ORIENTATION_TRANSVERSE -> { matrix.postRotate(270f); matrix.postScale(-1f, 1f) }
+        else -> return bitmap
+    }
+    Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
 }.getOrNull()
 
 private fun downscaleBitmap(source: Bitmap, maxDimension: Int): Bitmap {

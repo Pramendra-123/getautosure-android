@@ -90,7 +90,7 @@ class PublishReportViewModel(application: Application) : AndroidViewModel(applic
                 val result = repo.publishReport(
                     dealerName, dealerTagline, dealerPhone, dealerLocation, dealerLogo,
                     make, model, variant, year, fuelType, transmission, odometerKm, ownership, registrationNo,
-                    healthSummary, dealerCondition, photos, scannedAtIso
+                    healthSummary, dealerCondition.toJson(), photos, scannedAtIso
                 )
                 _publishState.value = result.fold(
                     onSuccess = { PublishState.Success(it) },
@@ -105,7 +105,7 @@ class PublishReportViewModel(application: Application) : AndroidViewModel(applic
     }
 
     /** Per-photo preview, independent of [publishState] — several exterior slots can be processing at once, each tracked by the screen itself. */
-    fun removeBackground(uiContext: Context, photo: PhotoUpload, onResult: (Result<PhotoUpload>) -> Unit) {
+    fun removeBackground(uiContext: Context, photo: PhotoUpload, style: String = "white", hidePlate: Boolean = false, onResult: (Result<PhotoUpload>) -> Unit) {
         val repo = repository
         if (repo == null) {
             onResult(Result.failure(DealerReportNotAuthenticatedException(IllegalStateException("backend not configured"))))
@@ -113,7 +113,7 @@ class PublishReportViewModel(application: Application) : AndroidViewModel(applic
         }
         viewModelScope.launch {
             withAuthContext(uiContext) {
-                onResult(repo.removeBackground(photo))
+                onResult(repo.removeBackground(photo, style, hidePlate))
             }
         }
     }
@@ -129,6 +129,39 @@ class PublishReportViewModel(application: Application) : AndroidViewModel(applic
                 )
             }
         }
+    }
+
+    /**
+     * Publishes a Dealer Saathi report and returns its web link — waited on by "Make report", so the
+     * WhatsApp Status text can carry the link. [request] is the publish_report body minus "action".
+     */
+    suspend fun publishSaleReport(uiContext: Context, request: SaleReportPublishRequest): Result<PublishedReport> {
+        val repo = repository ?: return Result.failure(DealerReportNotAuthenticatedException(IllegalStateException("backend not configured")))
+        var out: Result<PublishedReport> = Result.failure(IllegalStateException("not run"))
+        withAuthContext(uiContext) {
+            out = with(request) {
+                repo.publishReport(
+                    dealerName, dealerTagline, dealerPhone, dealerLocation, dealerLogo,
+                    make, model, variant, year, fuelType, transmission, odometerKm, ownership, registrationNo,
+                    healthSummary, dealerCondition, photos, scannedAtIso
+                )
+            }
+        }
+        return out
+    }
+
+    suspend fun listMyReports(uiContext: Context): Result<MyReports> = authed(uiContext) { it.listReports() }
+
+    suspend fun saveOutputs(uiContext: Context, slug: String, pdf: ByteArray?, statusPng: ByteArray?): Result<Unit> =
+        authed(uiContext) { it.saveOutputs(slug, pdf, statusPng) }
+
+    suspend fun setSold(uiContext: Context, slug: String, sold: Boolean): Result<Unit> = authed(uiContext) { it.setSold(slug, sold) }
+
+    private suspend fun <T> authed(uiContext: Context, call: suspend (DealerReportRepository) -> Result<T>): Result<T> {
+        val repo = repository ?: return Result.failure(DealerReportNotAuthenticatedException(IllegalStateException("backend not configured")))
+        var out: Result<T> = Result.failure(IllegalStateException("not run"))
+        withAuthContext(uiContext) { out = call(repo) }
+        return out
     }
 
     /** Ref-counted so concurrent calls (e.g. several exterior slots processing at once) don't clear authUiContext out from under one another. */
