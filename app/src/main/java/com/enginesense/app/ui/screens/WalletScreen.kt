@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -21,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -38,6 +40,9 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Toll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -188,6 +193,7 @@ fun WalletScreen(viewModel: GetAutoSureViewModel, onNavigate: (String) -> Unit) 
     val autoOn = rememberAutoCaptureOn()
     var askKm by rememberSaveable { mutableStateOf(false) }
     var addingFuel by remember { mutableStateOf(false) }
+    var addSheet by remember { mutableStateOf(false) }
     var addingExpense by remember { mutableStateOf<ExpenseCategory?>(null) }
     var addingInsurance by remember { mutableStateOf(false) }
     var whyOpen by rememberSaveable { mutableStateOf(false) }
@@ -260,34 +266,87 @@ fun WalletScreen(viewModel: GetAutoSureViewModel, onNavigate: (String) -> Unit) 
         }
         if (whyOpen) item { WhyMileage(wallet, result) }
 
-        item { SectionTitle("Add a payment") }
+        // One small way in for payments: auto-capture and fill-up spotting cover the rest.
         item {
-            ListGroup {
-                ListRow(Icons.Filled.LocalGasStation, "Add fuel", "Amount, litres and odometer", onClick = { addingFuel = true })
-                ListDivider()
-                ListRow(Icons.Filled.Receipt, "Add expense", "Service, insurance, toll, parking, wash", onClick = { addingExpense = ExpenseCategory.TOLL })
-                ListDivider()
-                ListRow(Icons.Filled.Sms, "Add from a payment SMS", "In your SMS app, long-press a bank, UPI or FASTag message, then Share → GetAutoSure")
-            }
-        }
-        val recent = recentEntries(owner)
-        if (recent.isNotEmpty()) {
-            item { SectionTitle("Recent") }
-            item {
-                ListGroup {
-                    recent.forEachIndexed { i, r ->
-                        if (i > 0) ListDivider()
-                        ListRow(r.icon, r.title, r.sub)
-                    }
+            Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Recent", style = OwnerText.Section, modifier = Modifier.weight(1f))
+                Row(
+                    Modifier.clip(RoundedCornerShape(16.dp)).background(GetAutoSureColors.AccentSoft).clickable { addSheet = true }.padding(horizontal = 12.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = null, tint = GetAutoSureColors.Accent, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Add payment", style = OwnerText.RowSub.copy(color = GetAutoSureColors.Accent, fontWeight = FontWeight.SemiBold))
                 }
             }
         }
+        val recent = recentEntries(owner)
+        item {
+            if (recent.isEmpty()) GroupNote("Your payments will show here.")
+            else ListGroup {
+                recent.forEachIndexed { i, r ->
+                    if (i > 0) ListDivider()
+                    ListRow(r.icon, r.title, r.sub)
+                }
+            }
+        }
+    }
+    if (addSheet) {
+        AddPaymentSheet(
+            autoOn = autoOn,
+            onDismiss = { addSheet = false },
+            onFuel = { addSheet = false; addingFuel = true },
+            onExpense = { addSheet = false; addingExpense = ExpenseCategory.SERVICE },
+            onAutoCapture = { addSheet = false; onNavigate("autoCapture") }
+        )
     }
     if (addingFuel) AddFuelDialog(onDismiss = { addingFuel = false }) { e -> addingFuel = false; viewModel.updateOwnerData { it.copy(fuel = it.fuel + e) } }
     addingExpense?.let { start ->
         AddExpenseDialog(initial = start, onDismiss = { addingExpense = null }) { e -> addingExpense = null; viewModel.updateOwnerData { it.copy(expenses = it.expenses + e) } }
     }
     if (addingInsurance) InsuranceDialog(onDismiss = { addingInsurance = false }) { e -> addingInsurance = false; viewModel.updateOwnerData { it.copy(expenses = it.expenses + e) } }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddPaymentSheet(autoOn: Boolean, onDismiss: () -> Unit, onFuel: () -> Unit, onExpense: () -> Unit, onAutoCapture: () -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = GetAutoSureColors.Surface) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+            Text("Add a payment", style = OwnerText.Section)
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SheetChoice(Icons.Filled.LocalGasStation, "Fuel", "Amount, litres, km", onFuel, Modifier.weight(1f))
+                SheetChoice(Icons.Filled.Receipt, "Other expense", "Service, insurance, toll, parking", onExpense, Modifier.weight(1f))
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(GetAutoSureColors.AccentSoft).padding(12.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Icon(Icons.Filled.Sms, contentDescription = null, tint = GetAutoSureColors.Accent, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(10.dp))
+                Text("Tip: in your SMS app, long-press a bank or UPI message and share it to GetAutoSure to add it in one tap.", style = OwnerText.RowSub.copy(fontSize = 13.sp))
+            }
+            if (!autoOn) {
+                Text(
+                    "Turn on auto-capture for fuel, toll and parking",
+                    style = OwnerText.RowSub.copy(color = GetAutoSureColors.Accent, fontWeight = FontWeight.SemiBold),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().clickable(onClick = onAutoCapture).padding(top = 14.dp, bottom = 4.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SheetChoice(icon: ImageVector, title: String, sub: String, onClick: () -> Unit, modifier: Modifier) {
+    Column(modifier.clip(RoundedCornerShape(14.dp)).background(GetAutoSureColors.SurfaceRaised).clickable(onClick = onClick).padding(14.dp)) {
+        Icon(icon, contentDescription = null, tint = GetAutoSureColors.Accent, modifier = Modifier.size(28.dp))
+        Spacer(Modifier.height(6.dp))
+        Text(title, style = OwnerText.RowTitle)
+        Text(sub, style = OwnerText.RowSub.copy(fontSize = 13.sp))
+    }
 }
 
 private fun roundTo(amount: Int, step: Int): Int = ((amount + step / 2) / step) * step
