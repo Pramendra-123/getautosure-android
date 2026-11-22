@@ -1,5 +1,6 @@
 package com.enginesense.app.drivelab
 
+import com.enginesense.app.owner.O2Check
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -187,6 +188,7 @@ class DriveRecorderService : Service() {
         var engineOffAt = System.currentTimeMillis()
         var lastSlowAt = 0L
         var lastVerySlowAt = 0L
+        var lastO2At = 0L
         var hasMaf = true
         val slow = mutableMapOf<PidId, PidReading>()
 
@@ -247,6 +249,10 @@ class DriveRecorderService : Service() {
                     fuelTrimPercent = if (slowNow) fuelTrim(slow) else null
                 )
                 record(sample, DriveRecorderStatus.Phase.DRIVING)
+                if (now - lastO2At >= O2_EVERY_MS && (slow[PidId.COOLANT_TEMP_C].verified() ?: 0.0) >= 70.0) {
+                    lastO2At = now
+                    o2Check(reader)?.let { store.appendEvent(DriveEvent(now, O2Check.EVENT, it.toEventDetail())) }
+                }
                 delay(DRIVING_PAUSE_MS)
             } else {
                 if (engineOn && now - lastEngineOnAt >= ENGINE_OFF_AFTER_MS) {
@@ -321,6 +327,24 @@ class DriveRecorderService : Service() {
         }
         store.saveSupport(rows)
         store.appendEvent(DriveEvent(System.currentTimeMillis(), "pids_checked", "${rows.count { "VERIFIED" in it }} answered"))
+    }
+
+    /**
+     * A few seconds of front and rear oxygen sensor readings on a warm engine, for the catalytic
+     * converter check. Null when the car has no rear sensor PID or nothing switched.
+     */
+    private fun o2Check(reader: PidReader): O2Check? {
+        if (reader.read(PidId.O2_SENSOR_B1S2_VOLTAGE).status != PidStatus.VERIFIED) return null
+        val wideband = reader.read(PidId.O2_SENSOR_B1S1_VOLTAGE).status != PidStatus.VERIFIED
+        val front = if (wideband) PidId.O2_WIDEBAND_B1S1_LAMBDA else PidId.O2_SENSOR_B1S1_VOLTAGE
+        val fronts = mutableListOf<Double>()
+        val rears = mutableListOf<Double>()
+        repeat(O2_READINGS) {
+            reader.read(front).verified()?.let { fronts += it }
+            reader.read(PidId.O2_SENSOR_B1S2_VOLTAGE).verified()?.let { rears += it }
+        }
+        if (fronts.size < O2_READINGS / 2 || rears.size < O2_READINGS / 2) return null
+        return O2Check(System.currentTimeMillis(), O2Check.switches(fronts, if (wideband) 1.0 else 0.45), O2Check.switches(rears, 0.45))
     }
 
     /** Short + long-term trim when the car reports either; most diesels report neither. */
@@ -403,6 +427,9 @@ class DriveRecorderService : Service() {
 
         private const val DRIVING_PAUSE_MS = 150L
         private const val SLOW_EVERY_MS = 10_000L
+        /** The converter check runs every few minutes of warm driving: a few seconds each. */
+        private const val O2_EVERY_MS = 5 * 60_000L
+        private const val O2_READINGS = 20
         private const val VERY_SLOW_EVERY_MS = 120_000L
         /** No RPM for this long while it was running = engine switched off (not a dropped reply). */
         private const val ENGINE_OFF_AFTER_MS = 20_000L

@@ -4,7 +4,10 @@ package com.enginesense.app.obd
 data class VehicleIdInfo(
     val vin: String?,
     val ecuName: String?,
-    val calibrationId: String?
+    val calibrationId: String?,
+    /** Calibration verification numbers (PID 06), one per calibration, as 8 hex digits. A CVN that
+     *  changes between scans of the same car means the ECU software was changed — remapped or updated. */
+    val cvns: List<String> = emptyList()
 )
 
 /**
@@ -22,8 +25,31 @@ object Mode09Reader {
     fun read(transport: ObdTransport): VehicleIdInfo = VehicleIdInfo(
         vin = readAsciiField(transport, "0902", pidEcho = 0x02),
         ecuName = readAsciiField(transport, "090A", pidEcho = 0x0A),
-        calibrationId = readAsciiField(transport, "0904", pidEcho = 0x04)
+        calibrationId = readAsciiField(transport, "0904", pidEcho = 0x04),
+        cvns = runCatching { parseCvns(transport.sendCommand("0906")) }.getOrDefault(emptyList())
     )
+
+    /**
+     * "49 06 01 1A 2B 3C 4D" → ["1A2B3C4D"]. On CAN the byte after the PID echo is the count of
+     * CVNs; each is 4 bytes. Several ECUs answering each start with their own "49 06".
+     */
+    fun parseCvns(raw: String): List<String> {
+        val b = ObdFrames.bytes(raw)
+        val out = mutableListOf<String>()
+        var i = 0
+        while (i < b.size - 2) {
+            if (b[i] == 0x49 && b[i + 1] == 0x06) {
+                val count = b[i + 2]
+                var j = i + 3
+                repeat(count) {
+                    if (j + 4 <= b.size) out += b.subList(j, j + 4).joinToString("") { "%02X".format(it) }
+                    j += 4
+                }
+                i = j
+            } else i++
+        }
+        return out.filter { it != "00000000" }.distinct()
+    }
 
     private val HEX_PAIR = Regex("[0-9A-Fa-f]{2}")
 

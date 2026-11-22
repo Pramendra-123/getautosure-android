@@ -46,11 +46,13 @@ fun ScanResultsScreen(
     onOpenFullReport: () -> Unit,
     onOpenAiMechanic: () -> Unit,
     onTalkToMechanic: () -> Unit,
-    onDone: () -> Unit
+    onDone: () -> Unit,
+    onOpenChanges: () -> Unit = {}
 ) {
     val result by viewModel.latestResult.collectAsState()
     val r = result
     val context = androidx.compose.ui.platform.LocalContext.current
+    val changes = rememberScanComparison(viewModel)
 
     if (r == null) {
         Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
@@ -98,6 +100,17 @@ fun ScanResultsScreen(
                         style = GetAutoSureType.Caption
                     )
                 }
+            }
+        }
+
+        // Since the last scan: what happened in between — codes cleared, converter, ECU software.
+        changes?.let { c ->
+            item {
+                ScanChangesCard(
+                    c, onOpen = onOpenChanges,
+                    onAskAi = { viewModel.askAiMechanic(aiQuestionFor(c), context); onOpenAiMechanic() },
+                    onExpert = onTalkToMechanic
+                )
             }
         }
 

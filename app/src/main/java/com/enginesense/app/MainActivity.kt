@@ -355,6 +355,7 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                     onOpenFullReport = { navController.navigate("aiReport") },
                     onOpenAiMechanic = { navController.navigate("aiMechanic") },
                     onTalkToMechanic = { navController.navigate("expertList") },
+                    onOpenChanges = { navController.navigate("sinceLastScan") },
                     onDone = {
                         navController.navigate("home") {
                             popUpTo(navController.graph.id) { inclusive = true }
@@ -508,6 +509,9 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 AiMechanicScreen(viewModel, advancedMode = true, onNavigate = { route -> navController.navigate(route) })
             }
             composable("issueForecast") { IssueForecastScreen(viewModel) }
+            composable("sinceLastScan") {
+                SinceLastScanScreen(viewModel, onAskAi = { navController.navigate("aiMechanic") }, onExpert = { navController.navigate("expertList") })
+            }
             composable("attention") {
                 AttentionScreen(viewModel, onOpen = { route ->
                     if (route in GARAGE_CHIP_ROUTES) { garageChipRequest.value = route; navController.popBackStack() } else navController.navigate(route)

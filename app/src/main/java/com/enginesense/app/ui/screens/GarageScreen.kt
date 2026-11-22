@@ -177,7 +177,7 @@ fun GarageScreen(
         when (chip) {
             0 -> healthItems(viewModel, result, history, drives, onNavigate)
             1 -> fuelItems(fuel, onNavigate)
-            2 -> serviceItems(viewModel, owner)
+            2 -> serviceItems(viewModel, owner, onNavigate)
             else -> renewalItems(viewModel, owner)
         }
     }
@@ -363,12 +363,12 @@ private fun LazyListScope.healthItems(
 
 // ---------- Service ----------
 
-private fun LazyListScope.serviceItems(viewModel: GetAutoSureViewModel, owner: OwnerCarData) {
-    item { ServiceSection(viewModel, owner) }
+private fun LazyListScope.serviceItems(viewModel: GetAutoSureViewModel, owner: OwnerCarData, onNavigate: (String) -> Unit) {
+    item { ServiceSection(viewModel, owner, onNavigate) }
 }
 
 @Composable
-private fun ServiceSection(viewModel: GetAutoSureViewModel, owner: OwnerCarData) {
+private fun ServiceSection(viewModel: GetAutoSureViewModel, owner: OwnerCarData, onNavigate: (String) -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var adding by remember { mutableStateOf(false) }
@@ -411,7 +411,7 @@ private fun ServiceSection(viewModel: GetAutoSureViewModel, owner: OwnerCarData)
         ListGroup {
             ListRow(Icons.Filled.CalendarMonth, "Book a service", "Garages near you", onClick = { openNearby(context, "car service centre") })
             ListDivider()
-            ListRow(Icons.Filled.Share, "Share with my mechanic", "Send the latest report on WhatsApp", onClick = { scope.launch { shareLatestReport(context, viewModel) } })
+            ListRow(Icons.Filled.SupportAgent, "Talk to a real expert", "15-minute video call about your car", onClick = { onNavigate("expertList") })
         }
     }
     if (adding) {

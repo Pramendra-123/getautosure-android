@@ -51,6 +51,8 @@ fun aiContextFor(route: String?, findingTitle: String?): AiScreenContext = when 
     route == "home" -> AiScreenContext("Home", listOf("Is my car healthy?", "What should I fix first?", "Is it safe for a long drive?"))
     route == "wallet" ->
         AiScreenContext("Your car wallet", listOf("How can I cut my fuel cost?", "Is my car getting expensive to run?", "Why is my mileage low?"))
+    route == "sinceLastScan" ->
+        AiScreenContext("What changed since your last scan", listOf("What happened to my car since the last scan?", "Is it safe to drive?", "What should I do first?"))
     route == "connect" -> AiScreenContext("Scan", listOf("How do I connect the scanner?", "Where is the OBD port in my car?", "Can I scan with the engine off?"))
     route.startsWith("issueDetail") || route.startsWith("repairGuidance") -> {
         val t = findingTitle ?: "this problem"

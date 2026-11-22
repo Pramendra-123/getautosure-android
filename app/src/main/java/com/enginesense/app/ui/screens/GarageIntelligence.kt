@@ -144,7 +144,17 @@ fun rememberFuelIntel(viewModel: GetAutoSureViewModel, drives: DriveLabSummary?,
     )
 }
 
-class AttentionState(val items: List<AttentionItem>, val allGood: String?, val learning: Learning?, val stale: String?)
+class AttentionState(
+    val items: List<AttentionItem>,
+    val allGood: String?,
+    val learning: Learning?,
+    val stale: String?,
+    /** The newest scan against the one before; null with fewer than two scans. */
+    val changes: com.enginesense.app.owner.ScanComparison? = null,
+    /** The owner tapped "Got it" on these changes. */
+    val changesSeen: Boolean = false,
+    val markChangesSeen: () -> Unit = {}
+)
 
 @Composable
 fun rememberAttention(viewModel: GetAutoSureViewModel): AttentionState {
@@ -186,7 +196,9 @@ fun rememberAttention(viewModel: GetAutoSureViewModel): AttentionState {
         firstSeen = firstSeen,
         today = today
     )
-    return AttentionState(CarAttention.items(inputs), CarAttention.allGoodLine(inputs), learning, CarAttention.staleLine(lastSeen, today))
+    val changes = rememberScanComparison(viewModel)
+    val (seen, markSeen) = rememberChangesSeen(viewModel, changes?.let { result?.timestampMillis })
+    return AttentionState(CarAttention.items(inputs), CarAttention.allGoodLine(inputs), learning, CarAttention.staleLine(lastSeen, today), changes, seen, markSeen)
 }
 
 /** Garage chips an attention line can open instead of a screen. */
@@ -248,7 +260,8 @@ private fun LearningStrip(learning: Learning) {
 /** The app's own conclusion, right under the Scan button: what needs you now and what's coming up. */
 @Composable
 fun AttentionCard(state: AttentionState, onOpen: (String) -> Unit, onSeeAll: () -> Unit) {
-    val urgent = state.items.any { it.now && it.level != Level.GOOD }
+    val showChanges = state.changes?.changes?.isNotEmpty() == true && !state.changesSeen
+    val urgent = showChanges || state.items.any { it.now && it.level != Level.GOOD }
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(GetAutoSureColors.Surface)
             .then(if (urgent) Modifier.border(1.5.dp, GetAutoSureColors.AccentBright, RoundedCornerShape(16.dp)) else Modifier)
@@ -265,8 +278,16 @@ fun AttentionCard(state: AttentionState, onOpen: (String) -> Unit, onSeeAll: () 
             Text(it, style = OwnerText.RowSub.copy(fontSize = 13.sp, color = GetAutoSureColors.Watch))
             Spacer(Modifier.height(6.dp))
         }
+        if (showChanges) {
+            SinceLastScanBlock(state.changes!!, onOpen = { onOpen("sinceLastScan") }, onGotIt = state.markChangesSeen)
+            Spacer(Modifier.height(8.dp))
+        } else if (state.changes != null && state.changes.changes.isEmpty()) {
+            NothingChangedLine(state.changes)
+            Spacer(Modifier.height(8.dp))
+        }
         when {
             state.items.isNotEmpty() -> AttentionList(state.items.take(CARD_ITEMS), onOpen)
+            showChanges -> {}
             state.allGood != null -> Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.CheckCircle, null, tint = GetAutoSureColors.Good, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
@@ -397,7 +418,11 @@ fun AttentionScreen(viewModel: GetAutoSureViewModel, onOpen: (String) -> Unit) {
         item {
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(GetAutoSureColors.Surface).padding(16.dp)) {
                 state.stale?.let { Text(it, style = OwnerText.RowSub.copy(color = GetAutoSureColors.Watch)); HorizontalDivider(color = GetAutoSureColors.SurfaceRaised, modifier = Modifier.padding(vertical = 8.dp)) }
-                if (state.items.isEmpty()) Text(state.allGood ?: "Run your first scan and we'll tell you here what needs your attention.", style = OwnerText.RowSub)
+                state.changes?.takeIf { it.changes.isNotEmpty() }?.let { c ->
+                    SinceLastScanBlock(c, onOpen = { onOpen("sinceLastScan") }, onGotIt = state.markChangesSeen)
+                    Spacer(Modifier.height(8.dp))
+                }
+                if (state.items.isEmpty() && state.changes?.changes.isNullOrEmpty()) Text(state.allGood ?: "Run your first scan and we'll tell you here what needs your attention.", style = OwnerText.RowSub)
                 else AttentionList(state.items, onOpen)
             }
         }

@@ -53,6 +53,32 @@ enum class PidId(
     ENGINE_OIL_TEMP_C(0x5C, "Engine Oil Temperature", "°C", 1, { b -> (b[0] - 40).toDouble() }, -40.0..210.0),
     ACTUAL_ENGINE_TORQUE_PERCENT(0x62, "Actual Engine Torque", "%", 1, { b -> (b[0] - 125).toDouble() }, -125.0..130.0),
     ENGINE_REFERENCE_TORQUE(0x63, "Engine Reference Torque", "N·m", 2, { b -> (b[0] * 256.0) + b[1] }, 0.0..65535.0),
+    // ---- Added for fuel intelligence, catalyst health and BS6 diesels. Most cars answer only
+    // some of these; the supported-PID bitmask means the rest are skipped, never guessed. ----
+    // Bit flags: 1 open loop (cold), 2 closed loop, 4 open loop (load), 8 open loop (fault), 16 closed loop (sensor fault).
+    FUEL_SYSTEM_STATUS(0x03, "Fuel System Status", "", 1, { b -> b[0].toDouble() }, 0.0..31.0),
+    SHORT_TERM_FUEL_TRIM_2(0x08, "Short-Term Fuel Trim (Bank 2)", "%", 1, { b -> (b[0] - 128) * 100.0 / 128.0 }, -100.0..99.2),
+    LONG_TERM_FUEL_TRIM_2(0x09, "Long-Term Fuel Trim (Bank 2)", "%", 1, { b -> (b[0] - 128) * 100.0 / 128.0 }, -100.0..99.2),
+    // The sensor after the catalytic converter: a healthy converter keeps it steady while the front one switches.
+    O2_SENSOR_B1S2_VOLTAGE(0x15, "Oxygen Sensor Voltage (After Catalyst)", "V", 2, { b -> b[0] / 200.0 }, 0.0..1.275),
+    FUEL_RAIL_GAUGE_PRESSURE(0x23, "Fuel Rail Pressure (Diesel/Direct Injection)", "kPa", 2, { b -> ((b[0] * 256.0) + b[1]) * 10.0 }, 0.0..655350.0),
+    COMMANDED_EGR(0x2C, "Commanded EGR", "%", 1, { b -> b[0] * 100.0 / 255.0 }, 0.0..100.0),
+    EGR_ERROR(0x2D, "EGR Error", "%", 1, { b -> (b[0] - 128) * 100.0 / 128.0 }, -100.0..99.2),
+    CATALYST_TEMP_B2S1(0x3D, "Catalyst Temperature (Bank 2)", "°C", 2, { b -> ((b[0] * 256.0) + b[1]) / 10.0 - 40.0 }, -40.0..900.0),
+    CATALYST_TEMP_B1S2(0x3E, "Catalyst Temperature (After Catalyst)", "°C", 2, { b -> ((b[0] * 256.0) + b[1]) / 10.0 - 40.0 }, -40.0..900.0),
+    // SAE fuel type code: 1 petrol, 4 diesel, 5 LPG, 6 CNG, 8 electric, 9 bi-fuel petrol, 17 hybrid petrol…
+    FUEL_TYPE(0x51, "Fuel Type", "", 1, { b -> b[0].toDouble() }, 0.0..23.0),
+    // Only flex-fuel cars have the sensor; on everyone else UNSUPPORTED is normal.
+    ETHANOL_PERCENT(0x52, "Ethanol in Fuel", "%", 1, { b -> b[0] * 100.0 / 255.0 }, 0.0..100.0),
+    FUEL_INJECTION_TIMING(0x5D, "Fuel Injection Timing", "°", 2, { b -> ((b[0] * 256.0) + b[1]) / 128.0 - 210.0 }, -210.0..301.99),
+    // Fuel actually injected — better than working it out from air flow where the car reports it.
+    ENGINE_FUEL_RATE(0x5E, "Engine Fuel Rate", "L/h", 2, { b -> ((b[0] * 256.0) + b[1]) / 20.0 }, 0.0..3276.75),
+    DRIVER_DEMAND_TORQUE_PERCENT(0x61, "Driver's Demand Torque", "%", 1, { b -> (b[0] - 125).toDouble() }, -125.0..130.0),
+    // The next four carry a support byte first; the value is in the bytes after it.
+    COMMANDED_BOOST_PRESSURE(0x70, "Commanded Boost Pressure", "kPa", 3, { b -> ((b[1] * 256.0) + b[2]) / 32.0 }, 0.0..2048.0),
+    DPF_DIFFERENTIAL_PRESSURE(0x7A, "Diesel Particulate Filter Pressure Drop", "kPa", 3, { b -> ((b[1] * 256.0) + b[2]) / 100.0 }, 0.0..655.35),
+    DPF_INLET_TEMP(0x7C, "Diesel Particulate Filter Temperature", "°C", 2, { b -> ((b[0] * 256.0) + b[1]) / 10.0 - 40.0 }, -40.0..1200.0),
+    NOX_SENSOR_PPM(0x83, "NOx Sensor", "ppm", 3, { b -> (b[1] * 256.0) + b[2] }, 0.0..65535.0),
     // Only newer cars report this (roughly 2019+ US / 2021+ EU; in India mostly BS6 Phase 2 and
     // later) — UNSUPPORTED is the normal answer on most used cars, not a fault. 0.1 km per bit.
     ODOMETER(0xA6, "Odometer (ECU)", "km", 4, { b -> ((b[0] * 16777216.0) + (b[1] * 65536.0) + (b[2] * 256.0) + b[3]) / 10.0 }, 0.0..429496729.5);

@@ -4,6 +4,9 @@ import android.content.Context
 import com.enginesense.app.obd.VehicleIdInfo
 import com.enginesense.app.vehicle.DtcReading
 import com.enginesense.app.vehicle.DtcSource
+import com.enginesense.app.vehicle.FreezeFrame
+import com.enginesense.app.vehicle.SelfTest
+import com.enginesense.app.vehicle.SelfTestResult
 import com.enginesense.app.vehicle.IgnitionType
 import com.enginesense.app.vehicle.PidId
 import com.enginesense.app.vehicle.PidReading
@@ -31,7 +34,9 @@ data class PersistedScan(
     val readings: Map<PidId, PidReading>,
     val dtcs: List<DtcReading>,
     val vehicleId: VehicleIdInfo,
-    val readiness: ReadinessStatus?
+    val readiness: ReadinessStatus?,
+    val freezeFrame: FreezeFrame? = null,
+    val selfTests: SelfTestResult? = null
 )
 
 /**
@@ -118,8 +123,15 @@ internal fun scanToMap(scan: PersistedScan): Map<String, Any?> = mapOf(
     "vehicleId" to mapOf(
         "vin" to scan.vehicleId.vin,
         "ecuName" to scan.vehicleId.ecuName,
-        "calibrationId" to scan.vehicleId.calibrationId
+        "calibrationId" to scan.vehicleId.calibrationId,
+        "cvns" to scan.vehicleId.cvns
     ),
+    "freezeFrame" to scan.freezeFrame?.let { f ->
+        mapOf("dtc" to f.dtc, "readings" to f.readings.entries.associate { (pid, v) -> pid.name to v })
+    },
+    "selfTests" to scan.selfTests?.tests?.map { t ->
+        listOf(t.mid, t.tid, t.unitId, t.rawValue, t.rawMin, t.rawMax)
+    },
     "readiness" to scan.readiness?.let { r ->
         mapOf(
             "milOn" to r.milOn,
@@ -152,8 +164,22 @@ internal fun scanFromMap(map: Map<String, Any?>): PersistedScan {
     val vehicleId = VehicleIdInfo(
         vin = vehicleIdMap["vin"] as String?,
         ecuName = vehicleIdMap["ecuName"] as String?,
-        calibrationId = vehicleIdMap["calibrationId"] as String?
+        calibrationId = vehicleIdMap["calibrationId"] as String?,
+        cvns = (vehicleIdMap["cvns"] as? List<*>)?.map { it as String }.orEmpty()
     )
+
+    // Older saves have neither key.
+    @Suppress("UNCHECKED_CAST")
+    val freezeFrame = (map["freezeFrame"] as Map<String, Any?>?)?.let { f ->
+        val readings = (f["readings"] as Map<String, Any?>).mapNotNull { (k, v) ->
+            runCatching { PidId.valueOf(k) }.getOrNull()?.let { pid -> (v as? Number)?.let { pid to it.toDouble() } }
+        }.toMap()
+        FreezeFrame(f["dtc"] as String, readings)
+    }
+    val selfTests = (map["selfTests"] as? List<*>)?.map { row ->
+        val n = (row as List<*>).map { (it as Number).toInt() }
+        SelfTest(n[0], n[1], n[2], n[3], n[4], n[5])
+    }?.let { SelfTestResult(it) }
 
     @Suppress("UNCHECKED_CAST")
     val readiness = (map["readiness"] as Map<String, Any?>?)?.let { r ->
@@ -176,7 +202,9 @@ internal fun scanFromMap(map: Map<String, Any?>): PersistedScan {
         readings = readings,
         dtcs = dtcs,
         vehicleId = vehicleId,
-        readiness = readiness
+        readiness = readiness,
+        freezeFrame = freezeFrame,
+        selfTests = selfTests
     )
 }
 
@@ -190,5 +218,7 @@ fun com.enginesense.app.ScanResult.toPersistedScan(): PersistedScan = PersistedS
     readings = snapshot.readings,
     dtcs = snapshot.dtcs,
     vehicleId = vehicleId,
-    readiness = readiness
+    readiness = readiness,
+    freezeFrame = freezeFrame,
+    selfTests = selfTests
 )

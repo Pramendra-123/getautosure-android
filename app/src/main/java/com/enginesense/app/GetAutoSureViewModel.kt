@@ -103,7 +103,11 @@ data class ScanResult(
     /** Mode 01 PID 01 emissions-readiness monitors — null if the adapter couldn't answer at all. */
     val readiness: ReadinessStatus?,
     /** The same breakdown behind the Fuel & Combustion category score — computed once here so the detail screen and the home ring never disagree. */
-    val fuelCombustionInsight: FuelCombustionInsight
+    val fuelCombustionInsight: FuelCombustionInsight,
+    /** Mode 02: the car's snapshot from when it stored a fault code — null on a healthy car or one that can't answer. */
+    val freezeFrame: com.enginesense.app.vehicle.FreezeFrame? = null,
+    /** Mode 06 self-test results (misfires per cylinder, catalyst, O2 sensors) — null where the car can't answer. */
+    val selfTests: com.enginesense.app.vehicle.SelfTestResult? = null
 )
 
 /** A scan of a car whose VIN isn't in My Garage: ask whether it's the owner's. */
@@ -490,7 +494,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         val persisted = withContext(Dispatchers.IO) { scanHistoryStore.load() }
         if (persisted.isEmpty()) return
         val results = persisted.map { p ->
-            computeScanResult(p.toSnapshot(), p.vehicleId, p.readiness, p.profileLabel, p.isDemo, p.timestampMillis)
+            computeScanResult(p.toSnapshot(), p.vehicleId, p.readiness, p.profileLabel, p.isDemo, p.timestampMillis, p.freezeFrame, p.selfTests)
         }
         _history.update { results + it }
         _latestResult.update { newestScanOf(_garage.value.active?.id) }
@@ -733,8 +737,11 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
 
         val vehicleId = withContext(Dispatchers.IO) { Mode09Reader.read(t) }
         val readiness = withContext(Dispatchers.IO) { ReadinessReader.read(t) }
+        // Extras: a car or adapter that chokes on these must not cost the user the rest of the scan.
+        val freezeFrame = withContext(Dispatchers.IO) { runCatching { com.enginesense.app.vehicle.FreezeFrameReader.read(t) }.getOrNull() }
+        val selfTests = withContext(Dispatchers.IO) { runCatching { com.enginesense.app.vehicle.SelfTests.read(t) }.getOrNull() }
 
-        return computeScanResult(snapshot, vehicleId, readiness, profileLabel, isDemo, timestampMillis)
+        return computeScanResult(snapshot, vehicleId, readiness, profileLabel, isDemo, timestampMillis, freezeFrame, selfTests)
     }
 
     /**
@@ -751,7 +758,9 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         readiness: ReadinessStatus?,
         profileLabel: String,
         isDemo: Boolean,
-        timestampMillis: Long
+        timestampMillis: Long,
+        freezeFrame: com.enginesense.app.vehicle.FreezeFrame? = null,
+        selfTests: com.enginesense.app.vehicle.SelfTestResult? = null
     ): ScanResult {
         val explanations = snapshot.dtcs.associate { dtc ->
             val explained = dtcRepository.explain(dtc.code, snapshot.vehicleBrand)
@@ -763,7 +772,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         val aiContext = AiVehicleContext.from(snapshot, findings, vehicleId, readiness)
         val aiReport = aiReportService.generateReport(aiContext)
 
-        return ScanResult(timestampMillis, profileLabel, isDemo, snapshot, findings, health, aiReport, aiContext, vehicleId, readiness, health.fuelCombustionInsight)
+        return ScanResult(timestampMillis, profileLabel, isDemo, snapshot, findings, health, aiReport, aiContext, vehicleId, readiness, health.fuelCombustionInsight, freezeFrame, selfTests)
     }
 
     /**
