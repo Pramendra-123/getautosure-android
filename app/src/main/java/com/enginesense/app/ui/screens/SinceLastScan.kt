@@ -77,6 +77,7 @@ fun scanFacts(r: ScanResult): ScanFacts {
         kmSinceCleared = s.verifiedValue(PidId.DISTANCE_SINCE_CODES_CLEARED),
         minutesSinceCleared = s.verifiedValue(PidId.TIME_SINCE_CODES_CLEARED),
         readyMonitors = r.readiness?.monitors?.count { it.supported && it.ready },
+        supportedMonitors = r.readiness?.monitors?.count { it.supported },
         odometerKm = s.verifiedValue(PidId.ODOMETER),
         cvns = r.vehicleId.cvns,
         calibrationId = r.vehicleId.calibrationId,
@@ -283,4 +284,40 @@ fun SinceLastScanScreen(viewModel: GetAutoSureViewModel, onAskAi: () -> Unit, on
             HelpButtons(onAskAi = { viewModel.askAiMechanic(aiQuestionFor(c), context); onAskAi() }, onExpert = onExpert)
         }
     }
+}
+
+/**
+ * The owner report's history sections for [result]'s car: changes since the scan before it,
+ * car integrity across every scan, and vital signs over time. Null outside "I own a car" mode —
+ * a dealer's or buyer's scans aren't one car's history.
+ */
+suspend fun reportHistoryFor(context: Context, viewModel: GetAutoSureViewModel, result: ScanResult): com.enginesense.app.owner.ReportHistory? {
+    if (com.enginesense.app.storage.AppModePrefs.get(context) != com.enginesense.app.storage.AppMode.OWN_CAR) return null
+    val garage = viewModel.garage.value
+    val carId = garage.carOfScan(result.timestampMillis)
+    val scans = viewModel.history.value
+        .filter { it.isDemo == result.isDemo && (it.isDemo || garage.carOfScan(it.timestampMillis) == carId) && it.timestampMillis <= result.timestampMillis }
+        .sortedBy { it.timestampMillis }
+    if (scans.isEmpty()) return null
+    val checks = withContext(Dispatchers.IO) {
+        DriveLabStore(context).loadEvents()
+            .filter { it.type == O2Check.EVENT && garage.carAt(it.timeMillis) == carId }
+            .mapNotNull { O2Check.fromEvent(it.timeMillis, it.detail) }
+    }
+    val facts = scans.map(::scanFacts)
+    val changes = if (scans.size >= 2) {
+        val prev = scans[scans.size - 2]
+        ScanChanges.compare(
+            facts[facts.size - 2], facts.last(),
+            checks.lastOrNull { it.timeMillis <= prev.timestampMillis }, checks.lastOrNull { it.timeMillis > prev.timestampMillis }, null
+        )
+    } else null
+    val vitals = scans.map(::vitalScanOf).takeIf { it.size >= 3 }?.let { com.enginesense.app.owner.VitalTrends.trends(it.takeLast(12)) }.orEmpty()
+    return com.enginesense.app.owner.ReportHistory(
+        changes = changes,
+        integrity = com.enginesense.app.owner.CarIntegrity.rows(facts, checks.lastOrNull(), viewModel.vehicleOdometerKm.value),
+        vitals = vitals,
+        scanCount = scans.size,
+        firstScanMillis = scans.first().timestampMillis
+    )
 }

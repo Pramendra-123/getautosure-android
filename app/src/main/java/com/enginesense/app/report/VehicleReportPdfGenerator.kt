@@ -13,6 +13,11 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import com.enginesense.app.ScanResult
 import com.enginesense.app.obd.Severity
+import com.enginesense.app.owner.Level
+import com.enginesense.app.owner.ReportHistory
+import com.enginesense.app.owner.VitalTrend
+import com.enginesense.app.vehicle.SelfTestResult
+import com.enginesense.app.vehicle.describe
 import com.enginesense.app.storage.DealerProfile
 import com.enginesense.app.vehicle.CategoryState
 import com.enginesense.app.vehicle.HealthCategory
@@ -66,10 +71,12 @@ object VehicleReportPdfGenerator {
         result: ScanResult,
         vehicle: VehicleReportInfo,
         dealerProfile: DealerProfile? = null,
-        dealerLogo: Bitmap? = null
+        dealerLogo: Bitmap? = null,
+        /** The car's earlier scans, summarised — null leaves the history sections out (dealer reports). */
+        history: ReportHistory? = null
     ): File {
         val dir = File(context.cacheDir, "reports").apply { mkdirs() }
-        return generateTo(dir, result, vehicle, dealerProfile, dealerLogo, LocalDate.now())
+        return generateTo(dir, result, vehicle, dealerProfile, dealerLogo, LocalDate.now(), history)
     }
 
     /** [generate] into [dir] — also what the sample-report test calls, with a fixed [today]. */
@@ -79,7 +86,8 @@ object VehicleReportPdfGenerator {
         vehicle: VehicleReportInfo,
         dealerProfile: DealerProfile?,
         dealerLogo: Bitmap?,
-        today: LocalDate
+        today: LocalDate,
+        history: ReportHistory? = null
     ): File {
         val doc = PdfDocument()
         val dateFmt = SimpleDateFormat("yyyyMMdd-HHmm", Locale.US)
@@ -87,9 +95,10 @@ object VehicleReportPdfGenerator {
         val scannedOn = SimpleDateFormat("d MMM yyyy, h:mm a", Locale.getDefault()).format(Date(result.timestampMillis))
         val b = ReportBuilder(doc, dealerProfile, dealerLogo)
 
-        drawCoverPage(b, result, vehicle, reportId, scannedOn, dealerProfile, dealerLogo)
+        drawCoverPage(b, result, vehicle, reportId, scannedOn, dealerProfile, dealerLogo, history)
         drawHealthAndFindingsPage(b, result)
         drawPapersSection(b, vehicle, today)
+        history?.let { drawVitalsOverTime(b, it) }
         drawSensorsPage(b, result)
         drawNextStepsPage(b, result)
         b.finish()
@@ -104,7 +113,7 @@ object VehicleReportPdfGenerator {
 
     private fun drawCoverPage(
         b: ReportBuilder, result: ScanResult, vehicle: VehicleReportInfo, reportId: String, scannedOn: String,
-        dealerProfile: DealerProfile?, dealerLogo: Bitmap?
+        dealerProfile: DealerProfile?, dealerLogo: Bitmap?, history: ReportHistory?
     ) {
         b.newPage("Vehicle health report", drawBrandHeader = false)
 
@@ -181,6 +190,11 @@ object VehicleReportPdfGenerator {
         b.canvas.drawText("Monitoring 6 systems · ${result.snapshot.readings.size} sensors read this scan", labelX, b.y + 49f, textPaint(GRAY, 8.5f))
         b.y += boxH + 14f
 
+        history?.let {
+            drawSinceLastScan(b, it)
+            drawIntegrity(b, it)
+        }
+
         b.y += drawBanner(
             b.canvas, b.y,
             "Scope of this scan: covers the Powertrain system (engine, fuel, emissions) via the vehicle's standard " +
@@ -220,7 +234,8 @@ object VehicleReportPdfGenerator {
     // ---------- page 2 ----------
 
     private fun drawHealthAndFindingsPage(b: ReportBuilder, result: ScanResult) {
-        b.newPage("Health & findings")
+        // Carries on after the cover's key readings when there's room, instead of leaving a mostly blank page.
+        if (b.y > CONTENT_BOTTOM - 260f) b.newPage("Health & findings") else b.y += 18f
         b.canvas.drawText("Health breakdown", MARGIN, b.y + 14f, textPaint(INK, 16f, bold = true))
         b.y += 20f
         b.y += drawWrapped(
@@ -295,8 +310,11 @@ object VehicleReportPdfGenerator {
             }
             b.y += 10f
 
+            val frame = result.freezeFrame
             result.findings.forEach { f ->
                 val (sevLabel, sevColor) = severityLabelColor(f.severity)
+                val whenText = frame?.takeIf { ff -> f.relatedDtcCodes.any { it.equals(ff.dtc, ignoreCase = true) } }?.describe()?.ifBlank { null }
+                    ?.let { "When it happened (the car's own snapshot): $it" }
                 b.ensure(70f, "Health & findings")
                 val startY = b.y
                 val cardLeft = MARGIN
@@ -309,15 +327,18 @@ object VehicleReportPdfGenerator {
                 innerY += drawWrapped(b.canvas, textLeft, innerY, CONTENT_RIGHT - textLeft - 10f, f.plainLanguageSummary, textPaint(GRAY, 8.5f))
                 innerY += 6f
                 innerY += drawWrapped(b.canvas, textLeft, innerY, CONTENT_RIGHT - textLeft - 10f, "Recommended action: ${f.recommendedAction}", textPaint(INK, 8.5f, bold = false))
+                whenText?.let { innerY += 6f + measureWrapped(CONTENT_RIGHT - textLeft - 10f, it, textPaint(INK, 8.5f)) }
                 innerY += 10f
                 val cardRect = RectF(cardLeft, startY, CONTENT_RIGHT, innerY)
                 b.canvas.drawRoundRect(cardRect, 6f, 6f, fillPaint(AMBER_BG))
                 b.canvas.drawRoundRect(cardRect, 6f, 6f, strokePaint(AMBER_BORDER, 0.8f))
                 // redraw text on top since fill was drawn after measuring (draw order fix below)
-                redrawFindingCard(b.canvas, cardLeft, textLeft, startY, sevLabel, sevColor, title, f.plainLanguageSummary, f.recommendedAction, CONTENT_RIGHT)
+                redrawFindingCard(b.canvas, cardLeft, textLeft, startY, sevLabel, sevColor, title, f.plainLanguageSummary, f.recommendedAction, CONTENT_RIGHT, whenText)
                 b.y = innerY + 12f
             }
         }
+
+        result.selfTests?.let { drawSelfTests(b, it) }
 
         b.ensure(140f, "Health & findings")
         b.canvas.drawText("SCANNED SYSTEMS", MARGIN, b.y, textPaint(ORANGE, 8.5f, bold = true))
@@ -347,7 +368,7 @@ object VehicleReportPdfGenerator {
 
     private fun redrawFindingCard(
         canvas: Canvas, cardLeft: Float, textLeft: Float, startY: Float,
-        sevLabel: String, sevColor: Int, title: String, summary: String, action: String, right: Float
+        sevLabel: String, sevColor: Int, title: String, summary: String, action: String, right: Float, whenText: String? = null
     ) {
         var innerY = startY + 14f
         canvas.drawText(sevLabel, cardLeft + 10f, innerY, textPaint(sevColor, 9f, bold = true))
@@ -355,7 +376,8 @@ object VehicleReportPdfGenerator {
         innerY += 14f
         innerY += drawWrapped(canvas, textLeft, innerY, right - textLeft - 10f, summary, textPaint(GRAY, 8.5f))
         innerY += 6f
-        drawWrapped(canvas, textLeft, innerY, right - textLeft - 10f, "Recommended action: $action", textPaint(INK, 8.5f))
+        innerY += drawWrapped(canvas, textLeft, innerY, right - textLeft - 10f, "Recommended action: $action", textPaint(INK, 8.5f))
+        whenText?.let { drawWrapped(canvas, textLeft, innerY + 6f, right - textLeft - 10f, it, textPaint(INK, 8.5f)) }
     }
 
     // ---------- readiness & sensors ----------
@@ -459,6 +481,138 @@ object VehicleReportPdfGenerator {
             "Generated by GetAutoSure · getautosure.com",
             textPaint(GRAY, 7.5f)
         )
+    }
+
+    // ---------- history sections ----------
+
+    private fun levelColor(level: Level): Int = when (level) {
+        Level.GOOD -> GOOD
+        Level.WATCH -> WATCH
+        Level.ATTENTION -> ATTENTION
+        Level.UNKNOWN -> GRAY
+    }
+
+    private val SHORT_DAY = java.time.format.DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH)
+    private fun shortDay(millis: Long) = java.time.Instant.ofEpochMilli(millis).atZone(java.time.ZoneId.systemDefault()).toLocalDate().format(SHORT_DAY)
+
+    /** A table row: label, wrapped detail, and a coloured chip on the right. */
+    private fun drawCheckRow(b: ReportBuilder, label: String, detail: String, chip: String?, chipColor: Int, detailColor: Int = INK, pageTitle: String) {
+        val labelW = 190f
+        val detailX = MARGIN + labelW
+        val detailW = CONTENT_RIGHT - detailX - 90f
+        val h = maxOf(20f, measureWrapped(detailW, detail, textPaint(detailColor, 8.5f)) + 8f)
+        b.ensure(h, pageTitle)
+        b.canvas.drawText(ellipsize(label, labelW - 12f, textPaint(INK, 8.5f)), MARGIN + 6f, b.y + 13f, textPaint(INK, 8.5f))
+        drawWrapped(b.canvas, detailX + 6f, b.y + 3f, detailW, detail, textPaint(detailColor, 8.5f))
+        if (chip != null) drawChip(b.canvas, CONTENT_RIGHT, b.y + 3f, chip, chipColor)
+        b.canvas.drawLine(MARGIN, b.y + h - 1f, CONTENT_RIGHT, b.y + h - 1f, strokePaint(BORDER, 0.5f))
+        b.y += h
+    }
+
+    /** Cover: what happened since the car's previous scan. Left out on a first scan. */
+    private fun drawSinceLastScan(b: ReportBuilder, h: ReportHistory) {
+        val c = h.changes ?: return
+        val page = "Vehicle health report"
+        b.ensure(70f, page)
+        b.canvas.drawText("Since your last scan (${shortDay(c.previousMillis)})", MARGIN, b.y + 12f, textPaint(INK, 12f, bold = true))
+        b.y += 18f
+        if (c.changes.isEmpty()) {
+            val same = c.same.filter { !it.startsWith("Battery") }.joinToString(" · ").ifBlank { "No new fault codes" }
+            b.y += drawBanner(b.canvas, b.y, "✓ Nothing changed since ${shortDay(c.previousMillis)}. $same.", tint(GOOD, 22), tint(GOOD, 90), Color.parseColor("#0B5A44"))
+            b.y += 12f
+            return
+        }
+        val km = c.kmSince?.let { " · about %,.0f km since then".format(it) } ?: ""
+        b.canvas.drawText("${c.changes.size} thing${if (c.changes.size == 1) "" else "s"} changed$km", MARGIN, b.y + 10f, textPaint(GRAY, 9f))
+        b.y += 16f
+        c.changes.forEach { ch ->
+            val before = ch.evidence.firstOrNull()?.let { (_, a, z) -> "$a → $z" }
+            drawCheckRow(b, ch.title, listOfNotNull(ch.detail.ifBlank { null }, before).joinToString(" · "), if (ch.level == Level.ATTENTION) "Check" else "Watch", levelColor(ch.level), pageTitle = page)
+        }
+        if (c.same.isNotEmpty()) {
+            b.y += 4f
+            b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, "Same as last time: " + c.same.joinToString(" · ") { it.replaceFirstChar { ch -> ch.lowercase() } }, textPaint(GRAY, 8f))
+        }
+        b.y += 14f
+    }
+
+    /** Cover: the "well-kept car" checks across every scan. */
+    private fun drawIntegrity(b: ReportBuilder, h: ReportHistory) {
+        if (h.integrity.isEmpty()) return
+        val page = "Vehicle health report"
+        b.ensure(90f, page)
+        b.canvas.drawText("Car integrity", MARGIN, b.y + 12f, textPaint(INK, 12f, bold = true))
+        b.y += 17f
+        val span = h.firstScanMillis?.takeIf { h.scanCount > 1 }?.let { " Compared across all ${h.scanCount} scans since ${shortDay(it)}." } ?: ""
+        b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, "Checks that show the car hasn't been tampered with.$span A check shows only if the car reports it.", textPaint(GRAY, 8.5f))
+        b.y += 6f
+        b.y += drawTableHeader(b.canvas, b.y, floatArrayOf(MARGIN, MARGIN + 190f), listOf("Check", "Result"))
+        h.integrity.forEach { row -> drawCheckRow(b, row.check, row.result, row.verdict, levelColor(row.level), pageTitle = page) }
+        b.y += 14f
+    }
+
+    /** Findings page: the car's own self-test results (Mode 06). */
+    private fun drawSelfTests(b: ReportBuilder, t: SelfTestResult) {
+        val page = "Health & findings"
+        b.ensure(80f, page)
+        b.canvas.drawText("Engine self-tests", MARGIN, b.y + 14f, textPaint(INK, 16f, bold = true))
+        b.y += 20f
+        b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, "The car tests itself while it's driven. These are its own results, against its own limits.", textPaint(GRAY, 8.5f))
+        b.y += 8f
+        b.y += drawTableHeader(b.canvas, b.y, floatArrayOf(MARGIN, MARGIN + 190f), listOf("Self-test", "Result"))
+        t.misfires.forEach { m ->
+            val bad = (m.recent ?: 0) > 0 || (m.average ?: 0) > 0
+            val detail = listOfNotNull(m.recent?.let { "$it this drive" }, m.average?.let { "$it average" }).joinToString(" · ").ifBlank { "Counted" }
+            drawCheckRow(b, "Misfires, cylinder ${m.cylinder}", detail, if (bad) "Watch" else "✓ Passed", if (bad) WATCH else GOOD, if (bad) WATCH else INK, page)
+        }
+        t.tests.filter { it.mid !in 0xA1..0xAD }.groupBy { it.monitor }.forEach { (name, tests) ->
+            val passed = tests.all { it.passed }
+            drawCheckRow(b, name, if (passed) "Within the car's limits" else "Outside the car's limit", if (passed) "✓ Passed" else "Failed", if (passed) GOOD else ATTENTION, if (passed) INK else ATTENTION, page)
+        }
+        b.y += 16f
+    }
+
+    /** Before the sensor list: the readings that show wear early, across the last scans. */
+    private fun drawVitalsOverTime(b: ReportBuilder, h: ReportHistory) {
+        val page = "Trends"
+        drawSectionTitle(
+            b, "Vital signs over time",
+            if (h.vitals.isEmpty()) "Trends start after 3 scans. Each scan adds a point; the trend shows wear before a fault code appears."
+            else "The readings that show wear early, across your last ${h.vitals.maxOf { it.points.size }} scans. Green band = normal for a healthy car.",
+            page
+        )
+        if (h.vitals.isEmpty()) { b.y += 10f; return }
+        val colX = floatArrayOf(MARGIN, MARGIN + 130f, MARGIN + 250f)
+        b.ensure(30f + h.vitals.size * 40f, page)
+        b.y += drawTableHeader(b.canvas, b.y, colX, listOf("Vital", "Your scans", "Now"))
+        h.vitals.forEach { t ->
+            val color = levelColor(t.level)
+            val summaryW = CONTENT_RIGHT - colX[2] - 96f
+            val rowH = maxOf(32f, measureWrapped(summaryW, t.summary, textPaint(INK, 8.5f)) + 12f)
+            b.canvas.drawText(t.vital.label, colX[0] + 6f, b.y + rowH / 2 + 3f, textPaint(INK, 8.5f))
+            drawSparkline(b.canvas, RectF(colX[1] + 6f, b.y + rowH / 2 - 12f, colX[2] - 14f, b.y + rowH / 2 + 12f), t, color)
+            drawWrapped(b.canvas, colX[2] + 6f, b.y + 6f, summaryW, t.summary, textPaint(INK, 8.5f))
+            val chip = when (t.level) { Level.ATTENTION -> "Outside normal"; Level.WATCH -> "Drifting"; else -> "✓ Normal" }
+            drawChip(b.canvas, CONTENT_RIGHT, b.y + rowH / 2 - 7f, chip, color)
+            b.canvas.drawLine(MARGIN, b.y + rowH - 1f, CONTENT_RIGHT, b.y + rowH - 1f, strokePaint(BORDER, 0.5f))
+            b.y += rowH
+        }
+        h.vitals.firstOrNull { it.warning != null }?.let {
+            b.y += 6f
+            b.y += drawBanner(b.canvas, b.y, it.warning!!, AMBER_BG, AMBER_BORDER, Color.parseColor("#412402"))
+        }
+        b.y += 16f
+    }
+
+    private fun drawSparkline(canvas: Canvas, box: RectF, t: VitalTrend, color: Int) {
+        val range = t.plotRange
+        fun y(v: Double) = box.bottom - ((v - range.start) / (range.endInclusive - range.start)).toFloat() * box.height()
+        canvas.drawRect(box.left, y(t.vital.normal.endInclusive), box.right, y(t.vital.normal.start), fillPaint(Color.parseColor("#DDF4EA")))
+        val step = box.width() / (t.points.size - 1).coerceAtLeast(1)
+        val path = Path()
+        t.points.forEachIndexed { i, v -> if (i == 0) path.moveTo(box.left, y(v)) else path.lineTo(box.left + i * step, y(v)) }
+        canvas.drawPath(path, strokePaint(color, 1.4f))
+        canvas.drawCircle(box.left + (t.points.size - 1) * step, y(t.points.last()), 2.4f, fillPaint(color))
     }
 
     // ---------- shared drawing helpers ----------

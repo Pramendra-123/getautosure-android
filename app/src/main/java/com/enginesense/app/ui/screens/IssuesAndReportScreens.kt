@@ -360,7 +360,8 @@ fun AiReportScreen(viewModel: GetAutoSureViewModel, onOpenIssue: (String) -> Uni
                 year = vehicleYear, fuelType = vehicleFuelType,
                 odometerKm = vehicleOdometerKm, plate = vehiclePlate, rc = vehicleRc
             ),
-            onView = onViewPdf
+            onView = onViewPdf,
+            history = { r -> reportHistoryFor(context, viewModel, r) }
         )
 
         RawLogSection(viewModel)
@@ -487,7 +488,8 @@ private fun PdfReportActions(
     onReportFileChange: (java.io.File?) -> Unit,
     vehicleInfo: VehicleReportInfo,
     /** Opens the PDF inside the app, not in whichever PDF app the phone happens to have. */
-    onView: (java.io.File) -> Unit
+    onView: (java.io.File) -> Unit,
+    history: suspend (com.enginesense.app.ScanResult) -> com.enginesense.app.owner.ReportHistory? = { null }
 ) {
     var pendingLegacySave by remember { mutableStateOf(false) }
     val legacyPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -510,16 +512,19 @@ private fun PdfReportActions(
         onGeneratingChange(true)
         scope.launch {
             try {
+                val carHistory = history(scanResult)
                 val file = withContext(Dispatchers.IO) {
-                    // Null for every normal user — only set once a dealer has actually saved a
-                    // profile (DealerProfileScreen). VehicleReportPdfGenerator's own doc explains
-                    // why that keeps the free/unbranded path byte-for-byte unchanged.
+                    // Dealer branding only in dealer mode: a dealer profile saved on this phone
+                    // (say while trying the dealer side) must never brand an owner's or buyer's
+                    // own report. VehicleReportPdfGenerator's own doc explains why null keeps
+                    // the free/unbranded path byte-for-byte unchanged.
                     val dealerStore = com.enginesense.app.storage.DealerProfileStore(context)
-                    val dealerProfile = dealerStore.load()
+                    val dealerMode = com.enginesense.app.storage.AppModePrefs.get(context) == com.enginesense.app.storage.AppMode.DEALER
+                    val dealerProfile = if (dealerMode) dealerStore.load() else null
                     val dealerLogo = if (dealerProfile != null && dealerStore.hasLogo()) {
                         android.graphics.BitmapFactory.decodeFile(dealerStore.logoFile.absolutePath)
                     } else null
-                    VehicleReportPdfGenerator.generate(context, scanResult, vehicleInfo, dealerProfile, dealerLogo)
+                    VehicleReportPdfGenerator.generate(context, scanResult, vehicleInfo, dealerProfile, dealerLogo, carHistory)
                 }
                 onReportFileChange(file)
                 onDone(file)

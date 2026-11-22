@@ -38,6 +38,7 @@ data class ScanFacts(
     val kmSinceCleared: Double? = null,
     val minutesSinceCleared: Double? = null,
     val readyMonitors: Int? = null,
+    val supportedMonitors: Int? = null,
     val odometerKm: Double? = null,
     val cvns: List<String> = emptyList(),
     val calibrationId: String? = null,

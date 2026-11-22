@@ -172,7 +172,8 @@ suspend fun shareLatestReport(context: Context, viewModel: GetAutoSureViewModel)
         plate = viewModel.vehiclePlate.value, rc = viewModel.vehicleRc.value
     )
     try {
-        val file = withContext(Dispatchers.IO) { VehicleReportPdfGenerator.generate(context, result, info) }
+        val history = com.enginesense.app.ui.screens.reportHistoryFor(context, viewModel, result)
+        val file = withContext(Dispatchers.IO) { VehicleReportPdfGenerator.generate(context, result, info, history = history) }
         context.startActivity(sharePdfIntent(context, file))
     } catch (e: Exception) {
         Toast.makeText(context, "Couldn't make the report. Try again.", Toast.LENGTH_LONG).show()

@@ -44,3 +44,17 @@ object FreezeFrameReader {
         return value.takeIf { it in pid.plausibleRange }
     }
 }
+
+/** "2,800 rpm · 64 km/h · engine hot 92°C · under load 71% · fuel mix +4% · 23 min after starting" */
+fun FreezeFrame.describe(): String {
+    val r = readings
+    val parts = mutableListOf<String>()
+    r[PidId.RPM]?.let { parts += "%,.0f rpm".format(it) }
+    r[PidId.SPEED_KMH]?.let { parts += if (it < 1) "standing still" else "%.0f km/h".format(it) }
+    r[PidId.COOLANT_TEMP_C]?.let { parts += (if (it >= 80) "engine hot" else if (it < 60) "engine cold" else "engine warming up") + " %.0f°C".format(it) }
+    r[PidId.ENGINE_LOAD]?.let { parts += (if (it >= 60) "under load" else "load") + " %.0f%%".format(it) }
+    val trim = listOfNotNull(r[PidId.SHORT_TERM_FUEL_TRIM_1], r[PidId.LONG_TERM_FUEL_TRIM_1]).takeIf { it.isNotEmpty() }?.sum()
+    trim?.let { parts += "fuel mix %+.0f%%".format(it) }
+    r[PidId.RUN_TIME_SINCE_START]?.let { parts += if (it < 120) "%.0f s after starting".format(it) else "%.0f min after starting".format(it / 60) }
+    return parts.joinToString(" · ")
+}
