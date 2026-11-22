@@ -50,7 +50,6 @@ import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material.icons.filled.Timeline
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -123,14 +122,17 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
-private val CHIPS = listOf("Health", "Service", "Renewals")
+private val CHIPS = listOf("Health", "Fuel", "Service", "Renewals")
+
+/** A chip another screen asked the Garage to open, e.g. "fuel" from Needs your attention → See all. */
+val garageChipRequest = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
 private val DAY = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
 private const val WEEK_MILLIS = 7L * 24 * 60 * 60 * 1000
 
 /**
  * The car owner's home ("Garage"): the car with its switcher and health score, the pulsing Scan
- * button, this week's driving score, then three chips — Health, Service and Renewals — each
- * opening its own list on the same page. AI Mechanic is the floating button; Trips, Reports and
+ * button, this week's driving score, "Needs your attention" and the month's cost line, then four
+ * chips — Health, Fuel, Service and Renewals — each opening its own list on the same page. AI Mechanic is the floating button; Trips, Reports and
  * Profile are the bottom tabs.
  */
 @Composable
@@ -145,6 +147,13 @@ fun GarageScreen(
     val owner by viewModel.ownerData.collectAsState()
     val drives = rememberCarDrives(viewModel)
     var chip by rememberSaveable { mutableStateOf(0) }
+    val chipRequest by garageChipRequest.collectAsState()
+    androidx.compose.runtime.LaunchedEffect(chipRequest) {
+        chipRequest?.let { GARAGE_CHIP_ROUTES[it]?.let { c -> chip = c }; garageChipRequest.value = null }
+    }
+    val attention = rememberAttention(viewModel)
+    val fuel = rememberFuelIntel(viewModel, drives, owner)
+    val open: (String) -> Unit = { route -> GARAGE_CHIP_ROUTES[route]?.let { chip = it } ?: onNavigate(route) }
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
@@ -162,10 +171,13 @@ fun GarageScreen(
             }
         }
         item { DrivingLine(drives, onNavigate) }
+        item { AttentionCard(attention, open, onSeeAll = { onNavigate("attention") }) }
+        item { CostLine(viewModel, owner, onNavigate) }
         item { FilterChipRow(CHIPS, chip) { chip = it } }
         when (chip) {
             0 -> healthItems(viewModel, result, history, drives, onNavigate)
-            1 -> serviceItems(viewModel, owner)
+            1 -> fuelItems(fuel, onNavigate)
+            2 -> serviceItems(viewModel, owner)
             else -> renewalItems(viewModel, owner)
         }
     }
@@ -311,38 +323,24 @@ private fun LazyListScope.healthItems(
         val volts = result?.snapshot?.verifiedValue(PidId.CONTROL_MODULE_VOLTAGE)
         val bf = drives?.battery
         val battery = OwnerInsights.batteryHealth(volts, bf?.restingVolts, bf?.crankingDips?.minOrNull(), bf?.chargingVolts)
-        val puc = OwnerInsights.pucVerdict(result?.readiness, result?.snapshot?.dtcs?.size ?: 0)
         val codes = result?.snapshot?.dtcs?.size
         val milOn = result?.readiness?.milOn
-        val forecast = history.takeIf { it.size >= 3 }?.let { com.enginesense.app.vehicle.IssueForecastAnalyzer.analyze(it.map { r -> r.snapshot }) }
+        val readiness = result?.readiness
         ListGroup {
             ListRow(Icons.Filled.BatteryChargingFull, "Battery", battery.headline + (battery.lines.firstOrNull()?.let { " · " + it.substringBefore(". ") } ?: ""), levelColor(battery.level), onClick = { onNavigate("battery") })
             ListDivider()
-            ListRow(Icons.Filled.Eco, "Will you pass PUC?", puc.headline, levelColor(puc.level), onClick = { onNavigate("pucCheck") })
-            ListDivider()
             ListRow(
-                Icons.Filled.Warning, "Fault codes and warning lights",
+                Icons.Filled.Warning, "Fault codes and warning light",
                 if (codes == null) "Scan to check" else "${if (codes == 0) "No codes" else "$codes code${if (codes == 1) "" else "s"}"} · engine light ${if (milOn == true) "ON" else "off"}",
                 if (codes == null) GetAutoSureColors.TextSecondary else if (codes > 0 || milOn == true) GetAutoSureColors.Attention else GetAutoSureColors.Good,
                 onClick = { onNavigate(if (codes != null && codes > 0) "issues" else "milStatus") }
             )
             ListDivider()
-            ListRow(Icons.Filled.Timeline, "Live graphs", "RPM, speed, temperature and voltage, live", onClick = { onNavigate("connect") })
-            ListDivider()
             ListRow(
-                Icons.Filled.TrendingUp, "Issue forecast",
-                when {
-                    forecast == null -> "Needs 3 scans to spot a trend"
-                    forecast.isEmpty() -> "No worrying trends"
-                    else -> forecast.first().message.substringBefore(" over your").substringBefore(" (")
-                },
-                if (forecast.isNullOrEmpty()) GetAutoSureColors.TextSecondary else GetAutoSureColors.Watch,
-                onClick = { onNavigate("issueForecast") }
+                Icons.Filled.ShowChart, "Emissions readiness",
+                readiness?.let { r -> r.monitors.filter { it.supported }.let { m -> "${m.count { it.ready }} of ${m.size} self-tests ready" } } ?: "Scan to check",
+                onClick = { onNavigate("emissionsTrend") }
             )
-            ListDivider()
-            ListRow(Icons.Filled.ShowChart, "Emissions trend", "Readiness over your scans", onClick = { onNavigate("emissionsTrend") })
-            ListDivider()
-            ListRow(Icons.Filled.MenuBook, "Warning light guide", "What each dashboard light means", onClick = { onNavigate("warningLightGuide") })
         }
     }
     item { SectionTitle("More") }
@@ -350,13 +348,15 @@ private fun LazyListScope.healthItems(
         ListGroup {
             ListRow(Icons.Filled.Assessment, "Full report", "View, save and share the PDF", onClick = { onNavigate("aiReport") })
             ListDivider()
+            ListRow(Icons.Filled.Timeline, "Live data", "RPM, speed, temperature and voltage, live", onClick = { onNavigate("connect") })
+            ListDivider()
             ListRow(Icons.Filled.Handyman, "Repair guidance", "Understand a repair and its cost", onClick = { onNavigate("understandRepair") })
             ListDivider()
             ListRow(Icons.Filled.SupportAgent, "Talk to a real expert", "15-minute video call", onClick = { onNavigate("expertList") })
             ListDivider()
             ListRow(Icons.Filled.FactCheck, "Check a used car", "Before you buy one", onClick = { onNavigate("prePurchaseCheck") })
             ListDivider()
-            ListRow(Icons.Filled.MenuBook, "Guides and tools", "Maintenance tips and checklists", onClick = { onNavigate("guidesAndTools") })
+            ListRow(Icons.Filled.MenuBook, "Guides and tools", "Warning light guide, tips and checklists", onClick = { onNavigate("guidesAndTools") })
         }
     }
 }

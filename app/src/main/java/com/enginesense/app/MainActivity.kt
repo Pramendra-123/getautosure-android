@@ -508,6 +508,11 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                 AiMechanicScreen(viewModel, advancedMode = true, onNavigate = { route -> navController.navigate(route) })
             }
             composable("issueForecast") { IssueForecastScreen(viewModel) }
+            composable("attention") {
+                AttentionScreen(viewModel, onOpen = { route ->
+                    if (route in GARAGE_CHIP_ROUTES) { garageChipRequest.value = route; navController.popBackStack() } else navController.navigate(route)
+                })
+            }
             composable("emissionsTrend") { EmissionsTrendScreen(viewModel) }
             composable("detailedDiagnosis") { DetailedDiagnosisScreen(viewModel) }
             composable("prePurchaseCheck") {

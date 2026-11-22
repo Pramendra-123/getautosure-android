@@ -25,24 +25,27 @@ data class DriveSample(
     val adapterVolts: Double?,
     val fuelLevelPercent: Double?,
     val distanceSinceClearedKm: Double?,
-    val odometerKm: Double?
+    val odometerKm: Double?,
+    /** Short-term + long-term fuel trim, bank 1 — read with the slow set, so null on most samples. */
+    val fuelTrimPercent: Double? = null
 ) {
     val engineOn: Boolean get() = (rpm ?: 0.0) > 0.0
 
     fun toCsv(): String = listOf(
         timeMillis, rpm, speedKmh, airGramsPerSec, throttlePercent, engineLoadPercent, coolantC,
-        moduleVolts, adapterVolts, fuelLevelPercent, distanceSinceClearedKm, odometerKm
+        moduleVolts, adapterVolts, fuelLevelPercent, distanceSinceClearedKm, odometerKm, fuelTrimPercent
     ).joinToString(",") { v -> when (v) { null -> ""; is Double -> "%.3f".format(java.util.Locale.US, v); else -> v.toString() } }
 
     companion object {
-        const val CSV_HEADER = "time_ms,rpm,speed_kmh,air_gps,throttle_pct,load_pct,coolant_c,module_v,adapter_v,fuel_level_pct,dist_since_cleared_km,odometer_km"
+        const val CSV_HEADER = "time_ms,rpm,speed_kmh,air_gps,throttle_pct,load_pct,coolant_c,module_v,adapter_v,fuel_level_pct,dist_since_cleared_km,odometer_km,fuel_trim_pct"
 
         fun fromCsv(line: String): DriveSample? {
             val f = line.split(",")
             if (f.size < 12) return null
             fun d(i: Int) = f[i].takeIf { it.isNotBlank() }?.toDoubleOrNull()
             val t = f[0].toLongOrNull() ?: return null
-            return DriveSample(t, d(1), d(2), d(3), d(4), d(5), d(6), d(7), d(8), d(9), d(10), d(11))
+            // Rows written before fuel trim was recorded have 12 columns.
+            return DriveSample(t, d(1), d(2), d(3), d(4), d(5), d(6), d(7), d(8), d(9), d(10), d(11), if (f.size > 12) d(12) else null)
         }
     }
 }

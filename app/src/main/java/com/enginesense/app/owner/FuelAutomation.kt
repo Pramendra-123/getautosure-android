@@ -30,7 +30,14 @@ object FuelAutomation {
     private const val READINGS_PER_SIDE = 10
 
     /** Fuel-gauge jumps between one drive's end and the next drive's start. Needs the dongle left plugged in. */
-    fun detectFills(samples: List<DriveSample>): List<DetectedFill> {
+    fun detectFills(samples: List<DriveSample>): List<DetectedFill> =
+        gaugeAcrossStops(samples).filter { it.addedPercent >= MIN_JUMP_PERCENT }
+
+    /**
+     * The fuel gauge at the end of each drive and the start of the next, as a [DetectedFill]
+     * whatever the direction: a rise is a fill-up, a fall means fuel went while parked.
+     */
+    fun gaugeAcrossStops(samples: List<DriveSample>): List<DetectedFill> {
         val runs = mutableListOf<MutableList<DriveSample>>()
         samples.sortedBy { it.timeMillis }
             .filter { it.engineOn && it.fuelLevelPercent != null }
@@ -38,10 +45,10 @@ object FuelAutomation {
                 val last = runs.lastOrNull()?.lastOrNull()
                 if (last == null || s.timeMillis - last.timeMillis > DriveAnalyzer.TRIP_GAP_MS) runs += mutableListOf(s) else runs.last() += s
             }
-        return runs.zipWithNext().mapNotNull { (before, after) ->
+        return runs.zipWithNext().map { (before, after) ->
             val from = median(before.takeLast(READINGS_PER_SIDE).map { it.fuelLevelPercent!! })
             val to = median(after.take(READINGS_PER_SIDE).map { it.fuelLevelPercent!! })
-            if (to - from >= MIN_JUMP_PERCENT) DetectedFill(after.first().timeMillis, from, to) else null
+            DetectedFill(after.first().timeMillis, from, to)
         }
     }
 

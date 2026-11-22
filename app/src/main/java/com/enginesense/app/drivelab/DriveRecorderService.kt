@@ -219,7 +219,7 @@ class DriveRecorderService : Service() {
                 val slowNow = now - lastSlowAt >= SLOW_EVERY_MS
                 if (slowNow) {
                     lastSlowAt = now
-                    listOf(PidId.COOLANT_TEMP_C, PidId.CONTROL_MODULE_VOLTAGE, PidId.FUEL_LEVEL, PidId.INTAKE_AIR_TEMP_C)
+                    listOf(PidId.COOLANT_TEMP_C, PidId.CONTROL_MODULE_VOLTAGE, PidId.FUEL_LEVEL, PidId.INTAKE_AIR_TEMP_C, PidId.SHORT_TERM_FUEL_TRIM_1, PidId.LONG_TERM_FUEL_TRIM_1)
                         .forEach { slow[it] = reader.read(it) }
                     adapterV = readAdapterVolts(t)
                 }
@@ -243,7 +243,8 @@ class DriveRecorderService : Service() {
                     adapterVolts = adapterV,
                     fuelLevelPercent = if (slowNow) slow[PidId.FUEL_LEVEL].verified() else null,
                     distanceSinceClearedKm = distCleared,
-                    odometerKm = odometer
+                    odometerKm = odometer,
+                    fuelTrimPercent = if (slowNow) fuelTrim(slow) else null
                 )
                 record(sample, DriveRecorderStatus.Phase.DRIVING)
                 delay(DRIVING_PAUSE_MS)
@@ -320,6 +321,13 @@ class DriveRecorderService : Service() {
         }
         store.saveSupport(rows)
         store.appendEvent(DriveEvent(System.currentTimeMillis(), "pids_checked", "${rows.count { "VERIFIED" in it }} answered"))
+    }
+
+    /** Short + long-term trim when the car reports either; most diesels report neither. */
+    private fun fuelTrim(slow: Map<PidId, PidReading>): Double? {
+        val st = slow[PidId.SHORT_TERM_FUEL_TRIM_1].verified()
+        val lt = slow[PidId.LONG_TERM_FUEL_TRIM_1].verified()
+        return if (st == null && lt == null) null else (st ?: 0.0) + (lt ?: 0.0)
     }
 
     /** RPM straight from "010C": null when the ECU doesn't answer (asleep), 0.0 with the ignition on but engine stopped. */

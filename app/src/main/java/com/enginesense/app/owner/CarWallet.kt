@@ -64,7 +64,7 @@ data class WalletSummary(
 object CarWallet {
 
     /** Real-world mileage is usually below the company figure. */
-    private const val REAL_WORLD_SHARE = 0.85
+    const val REAL_WORLD_SHARE = 0.85
     /** Below this many days of payments a group isn't annualised (one fill-up isn't a year of fuel). */
     private const val MIN_SPAN_DAYS = 28L
     private const val GST = 1.18
