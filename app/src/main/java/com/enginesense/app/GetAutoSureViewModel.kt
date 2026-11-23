@@ -82,6 +82,15 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import com.enginesense.app.owner.OwnerCarData
+import com.enginesense.app.owner.ExpenseCategory
+import com.enginesense.app.owner.ExpenseEntry
+import com.enginesense.app.owner.FixedRepair
+import com.enginesense.app.owner.ServiceEntry
+import com.enginesense.app.owner.EntrySource
+import com.enginesense.app.owner.PaymentAiSort
+import com.enginesense.app.owner.PaymentAlertListener
+import com.enginesense.app.owner.PendingPayment
+import com.enginesense.app.owner.RemotePaymentSorter
 import com.enginesense.app.storage.GarageCar
 import com.enginesense.app.storage.GarageState
 import com.enginesense.app.storage.GarageStore
@@ -607,6 +616,119 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
+    private val paymentSorter = RemotePaymentSorter()
+
+    /** Wallet switch: AI sorts payment alerts the rules can't. Off by default; turning it off drops the queue. */
+    fun setAiSorting(on: Boolean) {
+        updateOwnerData { it.copy(aiSortingOn = on, pendingPayments = if (on) it.pendingPayments else emptyList()) }
+    }
+
+    /**
+     * Sorts the picked car's queued payment alerts — called when the Wallet opens, where a signed-in
+     * context is at hand. Clear car payments are added (tagged AI) and clear non-car ones dropped;
+     * both teach the merchant. Unsure ones wait for the owner. Failures leave the queue for next time.
+     */
+    fun sortPendingPayments(uiContext: Context) {
+        val queue = _ownerData.value.pendingPayments.filter { it.suggestion == null }.take(RemotePaymentSorter.BATCH)
+        if (queue.isEmpty() || !_ownerData.value.aiSortingOn) return
+        viewModelScope.launch {
+            val sorted = try {
+                paymentSorter.sort(queue, tokenCache.get(uiContext))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                return@launch
+            }
+            val byId = sorted.associateBy { it.id }
+            updateOwnerData { d ->
+                var data = d
+                val keep = mutableListOf<PendingPayment>()
+                d.pendingPayments.forEach { p ->
+                    val s = byId[p.id]
+                    when {
+                        s == null -> keep += p
+                        s.confidence == "high" && s.category == PaymentAiSort.NOT_CAR ->
+                            data = data.copy(merchantCategories = data.merchantCategories + (PaymentAiSort.merchantKey(p.merchant) to PaymentAiSort.NOT_CAR))
+                        s.confidence == "high" -> {
+                            data = PaymentAlertListener.addSorted(data, s.category, System.currentTimeMillis() + keep.size, p.date, p.amountInr, p.merchant, EntrySource.AI)
+                            data = data.copy(merchantCategories = data.merchantCategories + (PaymentAiSort.merchantKey(p.merchant) to s.category))
+                        }
+                        s.category == PaymentAiSort.NOT_CAR -> Unit // a guess that it isn't for the car: not worth asking about
+                        else -> keep += p.copy(suggestion = s.category, confidence = s.confidence)
+                    }
+                }
+                data.copy(pendingPayments = keep)
+            }
+        }
+    }
+
+    /** The owner's answer to "Was this for your car?": [category] to add it, null for "not for my car". Either way the merchant is remembered. */
+    fun answerPendingPayment(id: String, category: String?) {
+        updateOwnerData { d ->
+            val p = d.pendingPayments.firstOrNull { it.id == id } ?: return@updateOwnerData d
+            val key = PaymentAiSort.merchantKey(p.merchant)
+            val rest = d.copy(pendingPayments = d.pendingPayments - p)
+            if (category == null) {
+                rest.copy(merchantCategories = rest.merchantCategories + (key to PaymentAiSort.NOT_CAR))
+            } else {
+                PaymentAlertListener.addSorted(rest, category, System.currentTimeMillis(), p.date, p.amountInr, p.merchant, EntrySource.ALERT)
+                    .let { it.copy(merchantCategories = it.merchantCategories + (key to category)) }
+            }
+        }
+    }
+
+    /**
+     * "Mark as fixed" on a repair: what was paid goes into the Wallet as a Repair and into the
+     * service log, and the fault is remembered so the next scan can confirm it's really gone.
+     */
+    fun markRepairFixed(code: String, title: String, paidInr: Int?) {
+        val today = java.time.LocalDate.now().toString()
+        val now = System.currentTimeMillis()
+        val afterScan = _latestResult.value?.timestampMillis ?: now
+        updateOwnerData { d ->
+            d.copy(
+                expenses = if (paidInr != null && paidInr > 0) d.expenses + ExpenseEntry(now, today, ExpenseCategory.REPAIR, paidInr, "$title ($code)") else d.expenses,
+                services = d.services + ServiceEntry(now, today, _vehicleOdometerKm.value, "Repair: $title ($code)", paidInr),
+                fixedRepairs = d.fixedRepairs.filter { it.code != code || it.verified } + FixedRepair(code, title, today, paidInr, afterScan)
+            )
+        }
+    }
+
+    /** What the scan after a "Mark as fixed" showed: the fault gone (fixed) or back. Shown once, then cleared. */
+    data class FixConfirmation(val repair: FixedRepair, val fixed: Boolean, val carTitle: String, val testsDone: Int?, val testsTotal: Int?)
+
+    private val _fixConfirmation = MutableStateFlow<FixConfirmation?>(null)
+    val fixConfirmation: StateFlow<FixConfirmation?> = _fixConfirmation.asStateFlow()
+
+    fun dismissFixConfirmation() { _fixConfirmation.value = null }
+
+    /** After an own-car scan: any repair marked before it is confirmed (its code is gone) or flagged (it's back). */
+    private fun checkFixedRepairs(result: ScanResult) {
+        val carId = _garage.value.carOfScan(result.timestampMillis) ?: return
+        val car = _garage.value.cars.firstOrNull { it.id == carId } ?: return
+        if (result.isDemo) return
+        viewModelScope.launch {
+            val data = withContext(Dispatchers.IO) { ownerDataStore.load(carId) }
+            val pending = data.fixedRepairs.filter { !it.verified && it.afterScanMillis < result.timestampMillis }
+            if (pending.isEmpty()) return@launch
+            val present = result.snapshot.dtcs.map { it.code.uppercase() }.toSet() + result.findings.flatMap { it.relatedDtcCodes }.map { it.uppercase() }
+            val first = pending.first()
+            val fixed = first.code.uppercase() !in present
+            // A fix stays pending until a scan shows the code gone; a fault that came back is dropped so it can be marked again.
+            val updated = data.copy(fixedRepairs = data.fixedRepairs.mapNotNull { r ->
+                when {
+                    r !in pending -> r
+                    r.code.uppercase() in present -> null
+                    else -> r.copy(verified = true)
+                }
+            })
+            withContext(Dispatchers.IO) { ownerDataStore.save(carId, updated) }
+            if (_garage.value.active?.id == carId) _ownerData.value = updated
+            val monitors = result.readiness?.monitors?.filter { it.supported }
+            _fixConfirmation.value = FixConfirmation(first, fixed, car.title, monitors?.count { it.ready }, monitors?.size)
+        }
+    }
+
     /**
      * Ties a new own-car scan to a car in My Garage by its VIN: the car with that VIN, else the one
      * car without a VIN whose RTO chassis number confirms it (it learns the VIN), switching to it
@@ -728,6 +850,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
                     _latestResult.update { result }
                     _history.update { listOf(result) + it }
                     assignScanToCar(result)
+                    checkFixedRepairs(result)
                     persistHistory()
                     noteNewScanInChat()
                 }
@@ -851,6 +974,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
                 _latestResult.update { result }
                 _history.update { listOf(result) + it }
                 assignScanToCar(result)
+                checkFixedRepairs(result)
                 persistHistory()
                 noteNewScanInChat()
                 _lastRawLog.update { t.commandLog() }

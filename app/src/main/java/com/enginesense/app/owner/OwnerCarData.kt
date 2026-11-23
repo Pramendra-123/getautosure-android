@@ -19,7 +19,7 @@ data class ServiceEntry(
 )
 
 /** Where a fill-up or expense came from — shown under it in the wallet. */
-enum class EntrySource(val label: String) { MANUAL("Added by you"), SHARE("From a shared message"), ALERT("From a payment alert"), FILL_UP("Spotted by the scanner") }
+enum class EntrySource(val label: String) { MANUAL("Added by you"), SHARE("From a shared message"), ALERT("From a payment alert"), FILL_UP("Spotted by the scanner"), AI("Sorted by AI from a payment alert") }
 
 data class FuelEntry(
     val id: Long,
@@ -33,7 +33,7 @@ data class FuelEntry(
 )
 
 enum class ExpenseCategory(val label: String) {
-    SERVICE("Service"), PARTS("Parts"), INSURANCE("Insurance"), TOLL("Toll"), PARKING("Parking"), WASH("Wash"), PUC("PUC"), OTHER("Other")
+    SERVICE("Service"), REPAIR("Repair"), PARTS("Parts"), INSURANCE("Insurance"), TOLL("Toll"), PARKING("Parking"), WASH("Wash"), PUC("PUC"), OTHER("Other")
 }
 
 data class ExpenseEntry(
@@ -67,5 +67,26 @@ data class OwnerCarData(
     /** The owner's answer to "How much do you drive a month?" — wins over every estimate. */
     val monthlyKm: Int? = null,
     /** Payment alerts already added, so the same alert posted twice is added once. Newest last, capped. */
-    val capturedKeys: List<String> = emptyList()
+    val capturedKeys: List<String> = emptyList(),
+    /** Repairs the owner marked as done, so the next scan can confirm the fault is really gone. */
+    val fixedRepairs: List<FixedRepair> = emptyList(),
+    /** Merchants already sorted (by the owner or AI): merchant key → category name, or "NOT_CAR". Sorted on the phone next time. */
+    val merchantCategories: Map<String, String> = emptyMap(),
+    /** The owner turned on AI sorting of payment alerts the rules can't sort. Off by default. */
+    val aiSortingOn: Boolean = false,
+    /** Alerts waiting for AI or for the owner's answer — masked text only. */
+    val pendingPayments: List<PendingPayment> = emptyList()
+)
+
+/**
+ * A fault the owner says was repaired. [afterScanMillis] is the scan it was marked after; a later
+ * scan without [code] confirms the fix ([verified]). [paidInr] also went into the Wallet as a Repair.
+ */
+data class FixedRepair(
+    val code: String,
+    val title: String,
+    val date: String,
+    val paidInr: Int?,
+    val afterScanMillis: Long,
+    val verified: Boolean = false
 )

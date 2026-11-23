@@ -77,7 +77,7 @@ class PaymentAlertListener : NotificationListenerService() {
         /** Adds the payment in [text] to the picked car if it's a car payment we haven't added yet. Returns true when added. */
         @Synchronized
         fun capture(context: Context, text: String, today: LocalDate = LocalDate.now()): Boolean {
-            val payment = PaymentSmsParser.parseAlert(text, today) ?: return false
+            val payment = PaymentSmsParser.parseAlert(text, today) ?: return captureUnsorted(context, text, today)
             val garage = GarageStore(context).load()
             val car = garage.active ?: return false
             val store = OwnerDataStore(context)
@@ -97,6 +97,49 @@ class PaymentAlertListener : NotificationListenerService() {
             tell(context, "${OwnerInsights.inr(payment.amountInr)}${payment.merchant?.let { " at $it" } ?: ""} · ${payment.kind.label}", "Added to ${car.title}. Tap to change.")
             return true
         }
+
+        /**
+         * A debit the rules can't sort (a workshop, parts shop, insurer…). A merchant already sorted
+         * by the owner or AI is handled on the phone; otherwise, if AI sorting is on, the alert is
+         * queued — masked — for the app to sort when it's next open (the sign-in AI needs isn't
+         * available to a background listener).
+         */
+        private fun captureUnsorted(context: Context, text: String, today: LocalDate): Boolean {
+            val payment = PaymentSmsParser.parseDebitAlert(text, today) ?: return false
+            val merchant = payment.merchant ?: return false
+            val car = GarageStore(context).load().active ?: return false
+            val store = OwnerDataStore(context)
+            val data = store.load(car.id)
+            val key = keyOf(text)
+            if (key in data.capturedKeys) return false
+            val seen = data.copy(capturedKeys = (data.capturedKeys + key).takeLast(MAX_KEYS))
+            val date = (payment.date ?: today).toString()
+            when (val known = PaymentAiSort.known(data, merchant)) {
+                PaymentAiSort.NOT_CAR -> { store.save(car.id, seen); return false }
+                null -> {
+                    if (!data.aiSortingOn) return false
+                    val pending = PendingPayment(key, date, payment.amountInr, merchant, PaymentAiSort.mask(text))
+                    store.save(car.id, seen.copy(pendingPayments = (data.pendingPayments + pending).takeLast(PaymentAiSort.MAX_PENDING)))
+                    return false
+                }
+                else -> {
+                    val id = System.currentTimeMillis()
+                    store.save(car.id, addSorted(seen, known, id, date, payment.amountInr, merchant, EntrySource.ALERT))
+                    _captures.value = id
+                    tell(context, "${OwnerInsights.inr(payment.amountInr)} at $merchant", "Added to ${car.title}. Tap to change.")
+                    return true
+                }
+            }
+        }
+
+        /** Adds a sorted payment: fuel as a fill-up, anything else as an expense in [category]. */
+        fun addSorted(data: OwnerCarData, category: String, id: Long, date: String, amountInr: Int, merchant: String, source: EntrySource): OwnerCarData =
+            if (category == "FUEL") {
+                data.copy(fuel = data.fuel + FuelEntry(id, date, null, amountInr, null, fullTank = false, source = source))
+            } else {
+                val c = runCatching { ExpenseCategory.valueOf(category) }.getOrDefault(ExpenseCategory.OTHER)
+                data.copy(expenses = data.expenses + ExpenseEntry(id, date, c, amountInr, merchant, source))
+            }
 
         private fun tell(context: Context, title: String, text: String) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

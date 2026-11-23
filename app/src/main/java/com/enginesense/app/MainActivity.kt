@@ -138,6 +138,7 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
     CompositionLocalProvider(LocalMechanicAvailable provides mechanicAvailable) {
     CarQuestionDialog(viewModel, onAddDetails = { navController.navigate("enterRegistration") }, onUsedCarCheck = { navController.navigate("prePurchaseResult") })
     SharedPaymentDialog(viewModel)
+    FixConfirmationDialog(viewModel, onExpert = { navController.navigate("expertList") })
     val openRoute by viewModel.openRoute.collectAsState()
     LaunchedEffect(openRoute) {
         openRoute?.let { route -> viewModel.routeOpened(); navController.navigate(route) { popUpTo("home") } }
@@ -496,7 +497,8 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                     findingId = decodeRouteArg(entry.arguments?.getString("findingId")),
                     onAsk = { navController.navigate("aiMechanic") },
                     onSeeAllCosts = { navController.navigate("repairCostReference") },
-                    onRunScan = { navController.navigate("connect") }
+                    onRunScan = { navController.navigate("connect") },
+                    onExpert = { navController.navigate("expertList") }
                 )
             }
             composable("repairCostReference") {

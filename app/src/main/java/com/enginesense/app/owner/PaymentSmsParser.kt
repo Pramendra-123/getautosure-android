@@ -41,10 +41,14 @@ object PaymentSmsParser {
      * say money left the account, and only [AUTO_KINDS] count — a "service" or "parts" alert could
      * be for anything, so those still need the owner to share them.
      */
-    fun parseAlert(text: String, today: LocalDate = LocalDate.now()): ParsedPayment? {
+    fun parseAlert(text: String, today: LocalDate = LocalDate.now()): ParsedPayment? =
+        parseDebitAlert(text, today)?.takeIf { it.kind in AUTO_KINDS }
+
+    /** Any alert that says money left the account, whatever it was for — what AI sorting starts from. */
+    fun parseDebitAlert(text: String, today: LocalDate = LocalDate.now()): ParsedPayment? {
         val lower = text.lowercase(Locale.ROOT)
         if (listOf("debited", "spent", "paid", "deducted", "debit", "purchase", "txn of", "charged").none { it in lower }) return null
-        return parse(text, today)?.takeIf { it.kind in AUTO_KINDS }
+        return parse(text, today)
     }
 
     fun parse(text: String, today: LocalDate = LocalDate.now()): ParsedPayment? {

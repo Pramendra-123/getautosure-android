@@ -4,6 +4,8 @@ import android.content.Context
 import com.enginesense.app.owner.EntrySource
 import com.enginesense.app.owner.ExpenseCategory
 import com.enginesense.app.owner.ExpenseEntry
+import com.enginesense.app.owner.FixedRepair
+import com.enginesense.app.owner.PendingPayment
 import com.enginesense.app.owner.FuelEntry
 import com.enginesense.app.owner.OwnerCarData
 import com.enginesense.app.owner.RenewalKind
@@ -69,6 +71,20 @@ class OwnerDataStore(context: Context) {
         put("handledFills", JSONArray().apply { d.handledFills.forEach { put(it) } })
         put("monthlyKm", d.monthlyKm ?: JSONObject.NULL)
         put("capturedKeys", JSONArray().apply { d.capturedKeys.forEach { put(it) } })
+        put("fixedRepairs", JSONArray().apply {
+            d.fixedRepairs.forEach { r ->
+                put(JSONObject().put("code", r.code).put("title", r.title).put("date", r.date).put("paidInr", r.paidInr ?: JSONObject.NULL)
+                    .put("afterScanMillis", r.afterScanMillis).put("verified", r.verified))
+            }
+        })
+        put("merchantCategories", JSONObject().apply { d.merchantCategories.forEach { (k, v) -> put(k, v) } })
+        put("aiSortingOn", d.aiSortingOn)
+        put("pendingPayments", JSONArray().apply {
+            d.pendingPayments.forEach { p ->
+                put(JSONObject().put("id", p.id).put("date", p.date).put("amountInr", p.amountInr).put("merchant", p.merchant).put("text", p.text)
+                    .put("suggestion", p.suggestion ?: JSONObject.NULL).put("confidence", p.confidence ?: JSONObject.NULL))
+            }
+        })
     }
 
     private fun fromJson(j: JSONObject): OwnerCarData {
@@ -97,7 +113,20 @@ class OwnerDataStore(context: Context) {
             tankLitres = j.intOrNull("tankLitres"),
             handledFills = j.optJSONArray("handledFills")?.let { a -> (0 until a.length()).mapNotNull { i -> a.optLong(i).takeIf { it > 0 } } } ?: emptyList(),
             monthlyKm = j.intOrNull("monthlyKm"),
-            capturedKeys = j.optJSONArray("capturedKeys")?.let { a -> (0 until a.length()).mapNotNull { i -> a.optString(i).takeIf { it.isNotEmpty() } } } ?: emptyList()
+            capturedKeys = j.optJSONArray("capturedKeys")?.let { a -> (0 until a.length()).mapNotNull { i -> a.optString(i).takeIf { it.isNotEmpty() } } } ?: emptyList(),
+            fixedRepairs = j.optJSONArray("fixedRepairs").objects().mapNotNull { o ->
+                runCatching {
+                    FixedRepair(o.getString("code"), o.optString("title"), o.getString("date"), o.intOrNull("paidInr"), o.getLong("afterScanMillis"), o.optBoolean("verified", false))
+                }.getOrNull()
+            },
+            merchantCategories = j.optJSONObject("merchantCategories")?.let { o -> o.keys().asSequence().associateWith { o.getString(it) } } ?: emptyMap(),
+            aiSortingOn = j.optBoolean("aiSortingOn", false),
+            pendingPayments = j.optJSONArray("pendingPayments").objects().mapNotNull { o ->
+                runCatching {
+                    PendingPayment(o.getString("id"), o.getString("date"), o.getInt("amountInr"), o.getString("merchant"), o.optString("text"),
+                        if (o.isNull("suggestion")) null else o.getString("suggestion"), if (o.isNull("confidence")) null else o.getString("confidence"))
+                }.getOrNull()
+            }
         )
     }
 

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wallet AI Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#F5F4F2; --surface:#fff; --ink:#111; --muted:#5B6675; --border:#E3E8EE; --accent:#C2410C; --bright:#FF8A1F; --soft:#FFF1E6; --good:#0B7A63; --purple:#6D4AD9; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#EDE7DD; color:var(--ink); font-family:Inter, system-ui, sans-serif; }
+  header { max-width:1150px; margin:0 auto; padding:28px 16px 4px; }
+  h1 { margin:0 0 6px; font-size:26px; } h1 span { color:var(--bright); }
+  .sub { color:var(--muted); margin:0; font-size:14px; max-width:820px; }
+  .row { max-width:1150px; margin:0 auto; padding:20px 16px 30px; display:flex; flex-wrap:wrap; gap:26px; justify-content:center; }
+  .shot { width:300px; }
+  .label { font-weight:700; font-size:14px; margin:0 0 4px; } .label b { color:var(--bright); }
+  .why { font-size:12.5px; color:var(--muted); margin:0 0 10px; min-height:66px; }
+  .phone { width:300px; height:620px; background:var(--bg); border:10px solid #111; border-radius:38px; overflow:hidden; position:relative; display:flex; flex-direction:column; }
+  .status { height:26px; display:flex; justify-content:space-between; align-items:center; padding:0 18px; font-size:11px; font-weight:600; flex:none; }
+  .scr { flex:1; padding:4px 13px 12px; display:flex; flex-direction:column; gap:9px; overflow:hidden; }
+  .title { font-size:24px; font-weight:800; }
+  .strip { background:var(--soft); border-radius:14px; padding:11px 12px; font-size:12px; }
+  .strip .h { font-weight:700; font-size:14px; }
+  .toggle { display:flex; align-items:center; gap:8px; margin-top:8px; padding-top:8px; border-top:1px solid #F7D3B8; }
+  .sw { width:34px; height:20px; border-radius:20px; background:var(--good); position:relative; flex:none; }
+  .sw::after { content:""; position:absolute; right:2px; top:2px; width:16px; height:16px; border-radius:50%; background:#fff; }
+  .sw.off { background:#CFC7BB; } .sw.off::after { right:auto; left:2px; }
+  .new { box-shadow:0 0 0 2px var(--bright); }
+  .q { background:var(--surface); border:1.5px solid var(--border); border-radius:14px; padding:11px; font-size:12.5px; display:flex; flex-direction:column; gap:7px; }
+  .q .ai { font-size:11px; color:var(--purple); font-weight:700; }
+  .q .h { font-weight:800; font-size:14px; }
+  .chips { display:flex; flex-wrap:wrap; gap:5px; }
+  .chip { border:1.5px solid var(--border); border-radius:999px; padding:4px 10px; font-size:12px; font-weight:600; }
+  .chip.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .btns { display:flex; gap:6px; }
+  .btn { flex:1; text-align:center; font-weight:700; border-radius:10px; padding:8px; font-size:12.5px; }
+  .primary { background:var(--ink); color:#fff; } .ghost { border:1.5px solid var(--ink); }
+  .list { background:var(--surface); border-radius:14px; padding:4px 12px; }
+  .entry { display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--border); font-size:12.5px; }
+  .entry:last-child { border-bottom:none; }
+  .entry small { display:block; color:var(--muted); font-size:11px; }
+  .aitag { color:var(--purple); font-weight:700; }
+  .undo { color:var(--accent); font-weight:700; font-size:11px; }
+  .sheet { position:absolute; left:0; right:0; bottom:0; background:var(--surface); border-radius:22px 22px 0 0; padding:12px 14px 16px; box-shadow:0 -10px 30px rgba(0,0,0,.25); display:flex; flex-direction:column; gap:8px; font-size:12.5px; }
+  .dim { position:absolute; inset:26px 0 0 0; background:rgba(0,0,0,.35); }
+  .grab { width:40px; height:4px; border-radius:4px; background:#CFC7BB; margin:0 auto; }
+  .ok { color:var(--good); font-weight:700; } .no { color:#B42318; font-weight:700; }
+  footer { max-width:1150px; margin:0 auto; padding:0 16px 40px; font-size:12.5px; color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Wallet: AI sorts the payments <span>rules can't</span></h1>
+  <p class="sub">Fuel, toll and parking work as today, on the phone. A new switch lets AI sort the rest: workshops, parts, insurance, wash. Orange outline marks what's new. The logic is built and off; these screen parts wait for approval.</p>
+</header>
+<div class="row">
+
+  <div class="shot">
+    <p class="label"><b>1</b> · Turning it on</p>
+    <p class="why">A second switch inside the auto-capture strip. Turning it on first shows exactly what's sent and what never is, in plain words.</p>
+    <div class="phone"><div class="status"><span>9:41</span><span>●●● 100%</span></div>
+      <div class="scr">
+        <div class="title">Car wallet</div>
+        <div class="strip"><div class="h">Auto-capture on</div>3 payments added this month
+          <div class="toggle new"><div style="flex:1"><b>Sort other car payments with AI</b><br>Workshops, parts, insurance, wash</div><div class="sw off"></div></div>
+        </div>
+      </div>
+      <div class="dim"></div>
+      <div class="sheet new">
+        <div class="grab"></div>
+        <div style="font-weight:800;font-size:16px">Let AI sort other car payments?</div>
+        <div>When a payment alert isn't fuel, toll or parking, AI works out if it was for your car.</div>
+        <div><span class="ok">Sent:</span> shop name, amount, and the alert with numbers removed.</div>
+        <div><span class="no">Never sent:</span> account or card numbers, balance, UPI ids, other messages.</div>
+        <div>Nothing is stored on our server. Shops you've sorted once are sorted on your phone after that.</div>
+        <div class="btn primary">Turn on</div>
+        <div style="text-align:center;font-weight:600;color:var(--muted)">Not now</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="shot">
+    <p class="label"><b>2</b> · When AI isn't sure</p>
+    <p class="why">A card at the top of the Wallet. AI's guess is picked; one tap confirms, or pick another kind, or "Not for my car". The shop is remembered either way.</p>
+    <div class="phone"><div class="status"><span>9:41</span><span>●●● 100%</span></div>
+      <div class="scr">
+        <div class="title">Car wallet</div>
+        <div class="q new">
+          <div class="ai">✦ AI thinks this was a Repair</div>
+          <div class="h">Was ₹4,200 to SRI SAI MOTORS for your Slavia?</div>
+          <div style="color:var(--muted);font-size:11.5px">23 Nov · from a payment alert</div>
+          <div class="chips"><span class="chip on">Repair</span><span class="chip">Service</span><span class="chip">Parts</span><span class="chip">Other</span></div>
+          <div class="btns"><div class="btn primary">Yes, add it</div><div class="btn ghost">Not for my car</div></div>
+        </div>
+        <div class="strip"><div class="h">Auto-capture on</div>Fuel, toll and parking, plus AI sorting
+          <div class="toggle"><div style="flex:1"><b>Sort other car payments with AI</b></div><div class="sw"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="shot">
+    <p class="label"><b>3</b> · When AI is sure</p>
+    <p class="why">Added straight away, labelled "Sorted by AI", with Undo next to it. Payments it's sure weren't for the car (groceries, rent) are simply skipped.</p>
+    <div class="phone"><div class="status"><span>9:41</span><span>●●● 100%</span></div>
+      <div class="scr">
+        <div class="title">Car wallet</div>
+        <div style="font-weight:700;font-size:13px">Recent</div>
+        <div class="list">
+          <div class="entry new"><div>Wash · Shine Car Spa<small>Today · <span class="aitag">Sorted by AI</span></small></div><div style="text-align:right"><b>₹600</b><br><span class="undo">Undo</span></div></div>
+          <div class="entry new"><div>Insurance · ICICI Lombard<small>21 Nov · <span class="aitag">Sorted by AI</span></small></div><div style="text-align:right"><b>₹14,820</b><br><span class="undo">Undo</span></div></div>
+          <div class="entry"><div>Fuel · HPCL<small>20 Nov · From a payment alert</small></div><b>₹2,000</b></div>
+          <div class="entry"><div>Toll · FASTag<small>19 Nov · From a payment alert</small></div><b>₹165</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<footer>Already built and tested (off until these screens exist): the queue, masking of private numbers, merchant memory, and the payment-sort server function.</footer>
+</body>
+</html>
