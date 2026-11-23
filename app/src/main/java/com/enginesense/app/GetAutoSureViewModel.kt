@@ -199,7 +199,12 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
                             throw RemoteAiNotAuthenticatedException(e)
                         }
                     },
-                    knowledgeRetriever = LocalAutomotiveKnowledgeRetriever()
+                    knowledgeRetriever = LocalAutomotiveKnowledgeRetriever(),
+                    // Read per request, so a change in Profile → Language applies to the next answer.
+                    replyLanguageProvider = {
+                        com.enginesense.app.storage.LanguagePrefs.get(getApplication())
+                            .takeIf { it != com.enginesense.app.storage.AppLanguage.ENGLISH }?.englishName
+                    }
                 ),
                 local = local
             )

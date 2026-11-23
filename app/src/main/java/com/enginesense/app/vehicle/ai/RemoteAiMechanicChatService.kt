@@ -47,7 +47,9 @@ class RemoteAiMechanicChatService(
     // Declared after timeoutMillis so its default can reference it — a caller who supplies a
     // custom timeout but no custom client still gets a client actually built with that timeout.
     private val httpClient: OkHttpClient = defaultHttpClient(timeoutMillis),
-    private val knowledgeRetriever: AutomotiveKnowledgeRetriever? = null
+    private val knowledgeRetriever: AutomotiveKnowledgeRetriever? = null,
+    /** The language the user chose ("Tamil"…), or null for English; asked fresh on every call. */
+    private val replyLanguageProvider: () -> String? = { null }
 ) : AiMechanicChatService {
 
     init {
@@ -63,7 +65,7 @@ class RemoteAiMechanicChatService(
         val idToken = idTokenProvider()
 
         val knowledgeHints = knowledgeRetriever?.relevantEntries(question) ?: emptyList()
-        val requestBody = RemoteAiProtocol.buildRequestBody(context, history, question, knowledgeHints)
+        val requestBody = RemoteAiProtocol.buildRequestBody(context, history, question, knowledgeHints, replyLanguageProvider())
 
         val request = Request.Builder()
             .url(endpointUrl)

@@ -26,7 +26,12 @@ import com.enginesense.app.GetAutoSureViewModel
 import com.enginesense.app.obd.Severity
 import com.enginesense.app.report.VehicleReportInfo
 import com.enginesense.app.report.VehicleReportPdfGenerator
+import androidx.compose.runtime.produceState
+import com.enginesense.app.storage.LanguagePrefs
 import com.enginesense.app.ui.components.DemoDataBanner
+import com.enginesense.app.ui.components.FaultCardView
+import com.enginesense.app.vehicle.cards.FaultCard
+import com.enginesense.app.vehicle.cards.FaultCardRepository
 import com.enginesense.app.ui.components.SeverityBadge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -182,8 +187,17 @@ fun IssueDetailScreen(viewModel: GetAutoSureViewModel, issueId: String, onOpenAi
     val result by viewModel.latestResult.collectAsState()
     val context = LocalContext.current
     val finding = result?.findings?.firstOrNull { it.id == issueId }
+    val vehicleBrand by viewModel.vehicleBrand.collectAsState()
+    val language = remember { LanguagePrefs.get(context) }
+    // The owner-friendly card for the code, in the user's language; the finding's own text when there's none.
+    val card by produceState<FaultCard?>(null, finding, vehicleBrand) {
+        val code = finding?.relatedDtcCodes?.firstOrNull() ?: return@produceState
+        value = withContext(Dispatchers.IO) {
+            runCatching { FaultCardRepository.find(FaultCardRepository.load(context), code, vehicleBrand) }.getOrNull()
+        }
+    }
 
-    Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
         if (finding == null) {
             Text("This issue is no longer available — try running a new scan.", style = GetAutoSureType.Body)
             return@Column
@@ -194,9 +208,15 @@ fun IssueDetailScreen(viewModel: GetAutoSureViewModel, issueId: String, onOpenAi
         SeverityBadge(finding.severity.name, severityColor(finding.severity))
         Spacer(Modifier.height(20.dp))
 
-        DetailSection("What it means", finding.plainLanguageSummary)
-        DetailSection("Recommended action", finding.recommendedAction)
-        DetailSection("Urgency", urgencyText(finding.severity))
+        val c = card
+        if (c != null) {
+            FaultCardView(c, language)
+            Spacer(Modifier.height(16.dp))
+        } else {
+            DetailSection("What it means", finding.plainLanguageSummary)
+            DetailSection("Recommended action", finding.recommendedAction)
+            DetailSection("Urgency", urgencyText(finding.severity))
+        }
         OutlinedButton(onClick = { viewModel.askAiMechanicAbout(finding, context); onOpenAiMechanic() }, modifier = Modifier.fillMaxWidth()) {
             Text("Ask AI Mechanic about this")
         }

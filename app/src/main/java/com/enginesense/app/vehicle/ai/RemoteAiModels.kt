@@ -14,7 +14,8 @@ import org.json.JSONObject
  *   "question": "string, capped at MAX_QUESTION_LENGTH",
  *   "history": [{"fromUser": true, "text": "..."}, ...],   // capped at MAX_HISTORY_TURNS, chronological
  *   "context": { ...AiVehicleContext.toJson()... } | null, // null when hasScan = false
- *   "knowledgeHints": ["...", ...]                          // optional, from AutomotiveKnowledgeRetriever
+ *   "knowledgeHints": ["...", ...],                         // optional, from AutomotiveKnowledgeRetriever
+ *   "replyLanguage": "Tamil"                                // optional; absent means English
  * }
  * ```
  * Response shape (success): `{"reply": "string"}`
@@ -28,7 +29,8 @@ object RemoteAiProtocol {
         context: AiVehicleContext,
         history: List<ChatMessage>,
         question: String,
-        knowledgeHints: List<String>
+        knowledgeHints: List<String>,
+        replyLanguage: String? = null
     ): JSONObject {
         val cappedQuestion = question.take(MAX_QUESTION_LENGTH)
         // takeLast preserves chronological order — it drops the oldest entries, not the newest.
@@ -44,6 +46,7 @@ object RemoteAiProtocol {
             }))
             put("context", if (context.hasScan) context.toJson() else JSONObject.NULL)
             put("knowledgeHints", JSONArray(knowledgeHints))
+            if (!replyLanguage.isNullOrBlank()) put("replyLanguage", replyLanguage)
         }
     }
 

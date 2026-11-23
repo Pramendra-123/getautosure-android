@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.enginesense.app.GetAutoSureViewModel
 import com.enginesense.app.storage.AppMode
+import com.enginesense.app.storage.LanguagePrefs
 import com.enginesense.app.ui.components.StepProgressIndicator
 import com.enginesense.app.ui.theme.GetAutoSureColors
 import com.enginesense.app.ui.theme.GetAutoSureType
@@ -256,6 +257,15 @@ private data class ProfileLink(val label: String, val route: String?, val url: S
 @Composable
 fun ProfileScreen(mode: AppMode, onSwitchMode: (AppMode) -> Unit, onNavigate: (String) -> Unit) {
     val context = LocalContext.current
+    var language by remember { mutableStateOf(LanguagePrefs.get(context)) }
+    var choosingLanguage by remember { mutableStateOf(false) }
+    if (choosingLanguage) {
+        LanguageSheet(language, onDismiss = { choosingLanguage = false }) { picked ->
+            LanguagePrefs.set(context, picked)
+            language = picked
+            choosingLanguage = false
+        }
+    }
     val links = buildList {
         if (mode == AppMode.OWN_CAR) add(ProfileLink("My car", "vehicleDetails"))
         if (mode == AppMode.DEALER) {
@@ -293,6 +303,15 @@ fun ProfileScreen(mode: AppMode, onSwitchMode: (AppMode) -> Unit, onNavigate: (S
                 }
             }
             Text("Switching keeps all your cars, reports and bookings.", style = GetAutoSureType.Caption)
+        }
+        Row(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(GetAutoSureColors.Surface)
+                .clickable { choosingLanguage = true }.padding(horizontal = 16.dp, vertical = 15.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Language", style = GetAutoSureType.Body, modifier = Modifier.weight(1f))
+            Text(language.nativeName, color = GetAutoSureColors.Accent, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = GetAutoSureColors.TextSecondary)
         }
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(GetAutoSureColors.Surface).padding(horizontal = 16.dp)) {
             links.forEachIndexed { i, link ->

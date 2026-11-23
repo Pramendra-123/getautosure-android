@@ -115,4 +115,12 @@ class RemoteAiProtocolTest {
             assertEquals("Too many requests", e.upstreamMessage)
         }
     }
+
+    @Test
+    fun `the chosen reply language is sent, and English sends nothing`() {
+        val tamil = RemoteAiProtocol.buildRequestBody(scanContext, emptyList(), "q", emptyList(), replyLanguage = "Tamil")
+        assertEquals("Tamil", tamil.getString("replyLanguage"))
+        val english = RemoteAiProtocol.buildRequestBody(scanContext, emptyList(), "q", emptyList())
+        assertFalse(english.has("replyLanguage"))
+    }
 }

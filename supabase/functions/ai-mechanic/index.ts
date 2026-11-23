@@ -81,7 +81,12 @@ export interface RemoteAskRequest {
   history: Array<{ fromUser: boolean; text: string }>;
   context: Record<string, unknown> | null;
   knowledgeHints: string[];
+  /** The user's chosen language ("Tamil"…); undefined means English. Only names in SUPPORTED_REPLY_LANGUAGES pass. */
+  replyLanguage?: string;
 }
+
+/** Languages the app lets users pick. A fixed list, so the field can't carry arbitrary prompt text. */
+export const SUPPORTED_REPLY_LANGUAGES = ["Hindi", "Tamil", "Telugu", "Kannada", "Malayalam", "Marathi"];
 
 export function jsonError(status: number, code: string, message: string): Response {
   return new Response(JSON.stringify({ error: { code, message } }), {
@@ -120,7 +125,9 @@ export function parseAndValidateRequest(
     ? body.knowledgeHints.filter((h): h is string => typeof h === "string").slice(0, MAX_KNOWLEDGE_HINTS)
     : [];
 
-  return { ok: true, request: { question, history, context, knowledgeHints } };
+  const replyLanguage = SUPPORTED_REPLY_LANGUAGES.find((l) => l === body.replyLanguage);
+
+  return { ok: true, request: { question, history, context, knowledgeHints, ...(replyLanguage ? { replyLanguage } : {}) } };
 }
 
 export async function verifyGoogleIdToken(authHeader: string | null): Promise<string> {
@@ -185,6 +192,9 @@ function buildGeminiBody(req: RemoteAskRequest) {
     hintsText ? `Reference hints (optional background, not a limit on your knowledge):\n${hintsText}` : "",
     historyText ? `Conversation so far:\n${historyText}` : "",
     `Current question: ${req.question}`,
+    req.replyLanguage
+      ? `Reply language: the user chose ${req.replyLanguage}. Answer in everyday spoken ${req.replyLanguage} in its own script, keeping car words people say in English (battery, sensor, engine) as they say them and fault codes, numbers and ₹ amounts unchanged. If the user writes in another language or mixes in English, reply the way they wrote.`
+      : "",
   ].filter(Boolean).join("\n\n");
 
   return {

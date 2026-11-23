@@ -2,3 +2,6 @@ node_modules/
 out/batch-state.json
 out/failed.json
 out/retry-ids.json
+out/translate-state.json
+out/translate-failed.json
+out/translate-retry-ids.json

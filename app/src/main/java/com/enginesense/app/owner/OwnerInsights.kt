@@ -232,7 +232,7 @@ object OwnerInsights {
         val newPrice = ExShowroomPrices.lookup(make, model)?.priceFor(Variant.MID) ?: return null
         val y = year ?: return null
         val age = (today.year - y).toDouble() + (today.monthValue - 6) / 12.0
-        return FairPriceEstimator.estimate(newPrice, age.coerceAtLeast(0.0), odometerKm)
+        return FairPriceEstimator.estimate(newPrice, age.coerceAtLeast(0.0), odometerKm, make, fuelType)
     }
 
     fun inr(amount: Int): String = "₹" + NumberFormat.getIntegerInstance(Locale("en", "IN")).format(amount)

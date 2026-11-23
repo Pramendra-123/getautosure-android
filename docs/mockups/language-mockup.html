@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Language Options Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+Tamil:wght@400;600;700&family=Noto+Sans+Telugu:wght@400;600&family=Noto+Sans+Kannada:wght@400;600&family=Noto+Sans+Malayalam:wght@400;600&family=Noto+Sans+Devanagari:wght@400;600&family=Noto+Sans+Bengali:wght@400;600&family=Noto+Sans+Gujarati:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#FAF7F2; --ink:#1A1A1A; --muted:#6B6B6B; --card:#141414; --card2:#232323; --text:#F5F5F5; --tmuted:#A8A8A8; --orange:#F26B1D; --line:#E6E0D6; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#EDE7DD; color:var(--ink); font-family: Inter, "Noto Sans Tamil", "Noto Sans Devanagari", system-ui, sans-serif; }
+  header { max-width:1200px; margin:0 auto; padding:28px 16px 6px; }
+  h1 { margin:0 0 6px; font-size:26px; } h1 span { color:var(--orange); }
+  .sub { color:var(--muted); margin:0; font-size:14px; max-width:760px; }
+  .row { max-width:1200px; margin:0 auto; padding:20px 16px 40px; display:flex; flex-wrap:wrap; gap:28px; justify-content:center; }
+  .shot { width:300px; }
+  .label { font-weight:700; font-size:14px; margin:0 0 4px; } .label b { color:var(--orange); }
+  .why { font-size:12.5px; color:var(--muted); margin:0 0 10px; min-height:52px; }
+  .phone { width:300px; height:620px; background:var(--bg); border:10px solid #111; border-radius:38px; overflow:hidden; position:relative; display:flex; flex-direction:column; }
+  .status { height:26px; display:flex; justify-content:space-between; align-items:center; padding:0 18px; font-size:11px; font-weight:600; }
+  .scr { flex:1; overflow:hidden; padding:6px 14px 14px; display:flex; flex-direction:column; gap:8px; }
+  .appbar { display:flex; align-items:center; gap:8px; font-weight:700; font-size:16px; padding:4px 0; }
+  .back { font-size:18px; }
+  .big { font-size:21px; font-weight:800; margin:6px 0 0; line-height:1.25; }
+  .small { font-size:12px; color:var(--muted); }
+  .lang { display:flex; align-items:center; justify-content:space-between; background:#fff; border:1.5px solid var(--line); border-radius:14px; padding:6px 12px; }
+  .lang .n { font-size:15px; font-weight:600; } .lang .e { font-size:11.5px; color:var(--muted); }
+  .lang.on { border-color:var(--orange); background:#FFF3EA; }
+  .tick { width:20px; height:20px; border-radius:50%; border:2px solid #CFC7BB; }
+  .on .tick { border:6px solid var(--orange); }
+  .btn { background:var(--ink); color:#fff; text-align:center; font-weight:700; border-radius:14px; padding:12px; font-size:14px; }
+  .btn.orange { background:var(--orange); }
+  .btn.ghost { background:transparent; color:var(--ink); border:1.5px solid var(--ink); }
+  .list { background:#fff; border-radius:16px; border:1.5px solid var(--line); }
+  .item { display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid var(--line); font-size:14px; }
+  .item:last-child { border-bottom:none; }
+  .item .v { color:var(--orange); font-weight:600; font-size:13px; }
+  .sheet { position:absolute; left:0; right:0; bottom:0; background:var(--bg); border-radius:24px 24px 0 0; box-shadow:0 -10px 30px rgba(0,0,0,.25); padding:10px 14px 16px; display:flex; flex-direction:column; gap:9px; }
+  .grab { width:40px; height:4px; border-radius:4px; background:#CFC7BB; margin:0 auto 4px; }
+  .dim { position:absolute; inset:26px 0 0 0; background:rgba(0,0,0,.35); }
+  .note { background:#FFF3EA; border-radius:12px; padding:9px 11px; font-size:11.5px; color:#7A3B10; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .chip { border:1.5px solid var(--ink); border-radius:999px; padding:6px 11px; font-size:12.5px; font-weight:600; }
+  .chip.on { background:var(--ink); color:#fff; }
+  .rec { font-size:10px; background:var(--orange); color:#fff; border-radius:6px; padding:0 5px; margin-left:4px; vertical-align:middle; }
+  .pdf { background:#fff; border-radius:12px; border:1.5px solid var(--line); padding:10px; font-size:11px; display:flex; flex-direction:column; gap:6px; }
+  .pdf .h { font-weight:800; font-size:12.5px; } .pdf .ta { color:#555; font-size:11px; }
+  .pdf .ok { display:flex; gap:6px; } .pdf .ok i { color:#2E9E6A; font-style:normal; font-weight:700; }
+  .card { background:var(--card); color:var(--text); border-radius:16px; padding:13px; display:flex; flex-direction:column; gap:8px; }
+  .card .top { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .code { background:var(--orange); color:#fff; font-weight:700; border-radius:7px; padding:1px 8px; font-size:12.5px; }
+  .pill { background:var(--orange); color:#111; border-radius:999px; padding:1px 8px; font-size:11px; font-weight:700; }
+  .seg { margin-left:auto; display:flex; border:1px solid #444; border-radius:999px; overflow:hidden; font-size:11px; }
+  .seg span { padding:2px 8px; color:var(--tmuted); } .seg span.on { background:var(--orange); color:#fff; }
+  .card .t { font-size:16px; font-weight:700; } .card p { margin:0; font-size:13px; }
+  .card h4 { margin:0 0 2px; font-size:11px; color:var(--orange); }
+  .box { background:var(--card2); border-radius:10px; padding:8px 10px; font-size:12.5px; border-left:3px solid var(--orange); }
+  .chat { display:flex; flex-direction:column; gap:8px; }
+  .me { align-self:flex-end; background:var(--ink); color:#fff; border-radius:14px 14px 4px 14px; padding:8px 11px; font-size:13px; max-width:85%; }
+  .ai { align-self:flex-start; background:#fff; border:1.5px solid var(--line); border-radius:14px 14px 14px 4px; padding:8px 11px; font-size:13px; max-width:90%; }
+  footer { max-width:1200px; margin:0 auto; padding:0 16px 40px; font-size:12.5px; color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Language options: <span>mockup</span></h1>
+  <p class="sub">Where a user picks or changes the language. App buttons and menus stay in English for now; the parts people need to understand (fault cards, AI Mechanic, reports) follow the chosen language. Tamil is shown as the example. All Tamil text here is a placeholder for a native speaker to review.</p>
+</header>
+
+<div class="row">
+
+  <!-- 1. First launch -->
+  <div class="shot">
+    <p class="label"><b>1</b> · First launch</p>
+    <p class="why">Asked once, before the mode question. Each language shows in its own script so people find it at a glance.</p>
+    <div class="phone"><div class="status"><span>9:41</span><span>●●● 100%</span></div>
+      <div class="scr">
+        <p class="big">Choose your language<br><span style="font-size:13px;font-weight:600;color:var(--muted)">உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்</span></p>
+        <div class="lang"><div><div class="n">English</div></div><div class="tick"></div></div>
+        <div class="lang on"><div><div class="n">தமிழ்</div><div class="e">Tamil</div></div><div class="tick"></div></div>
+        <div class="lang"><div><div class="n">తెలుగు</div><div class="e">Telugu</div></div><div class="tick"></div></div>
+        <div class="lang"><div><div class="n">ಕನ್ನಡ</div><div class="e">Kannada</div></div><div class="tick"></div></div>
+        <div class="lang"><div><div class="n">മലയാളം</div><div class="e">Malayalam</div></div><div class="tick"></div></div>
+        <div class="lang"><div><div class="n">हिंदी</div><div class="e">Hindi</div></div><div class="tick"></div></div>
+        <div class="small" style="text-align:center">+ मराठी · বাংলা · ગુજરાતી<br>You can change this anytime in Profile.</div>
+        <div class="btn orange" style="margin-top:auto">Continue</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Profile > Language -->
+  <div class="shot">
+    <p class="label"><b>2</b> · Change it later: Profile → Language</p>
+    <p class="why">Always one tap away. The sheet says plainly what changes, so nobody expects the whole app to switch.</p>
+    <div class="phone"><div class="status"><span>9:41</span><span>●●● 100%</span></div>
+      <div class="scr">
+        <div class="appbar">Profile</div>
+        <div class="list">
+          <div class="item">My car <span class="v">Swift VXi</span></div>
+          <div class="item">Language <span class="v">தமிழ் ›</span></div>
+          <div class="item">Notifications <span class="v">On</span></div>
+          <div class="item">Help &amp; support <span class="v">›</span></div>
+        </div>
+      </div>
+      <div class="dim"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div style="font-weight:800;font-size:16px">Language</div>
+        <div class="lang"><div class="n">English</div><div class="tick"></div></div>
+        <div class="lang on"><div><div class="n">தமிழ்</div><div class="e">Tamil</div></div><div class="tick"></div></div>
+        <div class="lang"><div><div class="n">తెలుగు</div><div class="e">Telugu</div></div><div class="tick"></div></div>
+        <div class="small" style="text-align:center">More languages ›</div>
+        <div class="note">In Tamil: fault explanations, AI Mechanic replies and your reports.<br>Menus and buttons stay in English for now.</div>
+        <div class="btn">Save</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Fault card -->
+  <div class="shot">
+    <p class="label"><b>3</b> · On a fault card</p>
+    <p class="why">A small switch on the card itself, so a family member can flip to English (or back) without changing the whole setting.</p>
+    <div class="phone"><div class="status"><span>9:41</span><span>●●● 100%</span></div>
+      <div class="scr">
+        <div class="appbar"><span class="back">←</span> Fault details</div>
+        <div class="card">
+          <div class="top"><span class="code">P0300</span><span class="pill">உடனே சரிசெய்யவும்</span>
+            <div class="seg"><span>EN</span><span class="on">தமிழ்</span></div></div>
+          <div class="t">இன்ஜின் மிஸ்ஃபயர் ஆகிறது</div>
+          <p>ஒன்றுக்கு மேற்பட்ட சிலிண்டர்களில் எரிபொருள் சரியாக எரியவில்லை. வண்டி அதிரும், சக்தி குறையும்.</p>
+          <div class="box"><h4>வண்டியை ஓட்டலாமா?</h4>செக்-இன்ஜின் விளக்கு மின்னினால் ஓட்ட வேண்டாம். நிலையாக இருந்தால் மெதுவாக வொர்க்ஷாப்புக்கு ஓட்டிச் செல்லுங்கள்.</div>
+          <div><h4>மதிப்பிட்ட செலவு</h4><p>ஸ்பார்க் பிளக் (செட்) · ₹1,000–4,000</p></div>
+        </div>
+        <div class="btn orange">AI Mechanic-இடம் கேளுங்கள்</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. AI Mechanic -->
+  <div class="shot">
+    <p class="label"><b>4</b> · AI Mechanic</p>
+    <p class="why">Replies in the chosen language by default, and in whatever language the user types: Tamil, English or a mix.</p>
+    <div class="phone"><div class="status"><span>9:41</span><span>●●● 100%</span></div>
+      <div class="scr">
+        <div class="appbar"><span class="back">←</span> AI Mechanic <span class="small" style="margin-left:auto">தமிழ்</span></div>
+        <div class="chat">
+          <div class="me">என் வண்டி ஸ்டார்ட் ஆக நேரம் ஆகிறது, ஏன்?</div>
+          <div class="ai">உங்கள் ஸ்கேனில் பேட்டரி வோல்டேஜ் 12.1 V. இது சற்று குறைவு. பேட்டரி டெர்மினல்களை சுத்தம் செய்து, பேட்டரி கடையில் இலவச சோதனை செய்யுங்கள்.<br><br><b>மதிப்பிட்ட செலவு:</b> புதிய பேட்டரி ₹4,000–9,000</div>
+          <div class="me">ok, battery change pannanuma?</div>
+          <div class="ai">இப்போதைக்கு தேவையில்லை. முதலில் சோதனை செய்யுங்கள்…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Dealer Sathi share -->
+  <div class="shot">
+    <p class="label"><b>5</b> · Dealer Sathi: share in the buyer's language</p>
+    <p class="why">Chosen each time the dealer shares, not fixed in settings: one buyer wants Tamil, the next English. Bilingual is the default.</p>
+    <div class="phone"><div class="status"><span>9:41</span><span>●●● 100%</span></div>
+      <div class="scr">
+        <div class="appbar"><span class="back">←</span> Share report</div>
+        <div style="font-weight:700;font-size:14px">Report language</div>
+        <div class="chips">
+          <span class="chip">English</span><span class="chip">தமிழ்</span>
+          <span class="chip on">English + தமிழ்<span class="rec">Best</span></span>
+        </div>
+        <div class="small">Other language ›</div>
+        <div class="pdf">
+          <div class="h">2019 Maruti Swift VXi · TN 09 AB 1234</div>
+          <div class="ta">வாகன ஆரோக்கிய அறிக்கை</div>
+          <div class="ok"><i>✓</i><div>No fault codes found<div class="ta">பிழைக் குறியீடுகள் எதுவும் இல்லை</div></div></div>
+          <div class="ok"><i>✓</i><div>Dashboard km matches the computer<div class="ta">டாஷ்போர்டு கி.மீ. கணினியுடன் பொருந்துகிறது</div></div></div>
+          <div class="ok"><i>✓</i><div>Battery charging 14.2 V<div class="ta">பேட்டரி சார்ஜிங் 14.2 V</div></div></div>
+        </div>
+        <div class="small">English for the bank and RTO agent, Tamil for the buyer's family. One PDF.</div>
+        <div class="btn orange" style="margin-top:auto">Share PDF on WhatsApp</div>
+        <div class="btn ghost">Post as WhatsApp Status</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>Not built yet: this is a mockup for approval. Real screens keep the app's current layout; only the language parts shown here are new.</footer>
+</body>
+</html>

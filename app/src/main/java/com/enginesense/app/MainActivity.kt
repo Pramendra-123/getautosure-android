@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.ui.platform.LocalContext
 import com.enginesense.app.storage.AppMode
 import com.enginesense.app.storage.AppModePrefs
+import com.enginesense.app.storage.LanguagePrefs
 import com.enginesense.app.storage.OnboardingPrefs
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -171,7 +172,13 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
             modifier = Modifier.padding(padding)
         ) {
             composable("splash") {
-                SplashScreen(onGetStarted = { navController.navigate("chooseMode") })
+                SplashScreen(onGetStarted = { navController.navigate("chooseLanguage") })
+            }
+            composable("chooseLanguage") {
+                ChooseLanguageScreen(initial = LanguagePrefs.suggested(context)) { language ->
+                    LanguagePrefs.set(context, language)
+                    navController.navigate("chooseMode")
+                }
             }
             composable("chooseMode") {
                 ChooseModeScreen(initial = null) { mode ->
