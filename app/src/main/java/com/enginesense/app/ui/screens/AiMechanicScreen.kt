@@ -43,8 +43,28 @@ fun AiMechanicScreen(viewModel: GetAutoSureViewModel, advancedMode: Boolean = fa
     var question by remember { mutableStateOf("") }
     val context = LocalContext.current
 
+    val garage by viewModel.garage.collectAsState()
+    val car = garage.active?.profile
+
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("AI Mechanic", style = GetAutoSureType.ScreenTitle)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("AI Mechanic", style = GetAutoSureType.ScreenTitle, modifier = Modifier.weight(1f))
+            if (messages.isNotEmpty()) {
+                OutlinedButton(onClick = { viewModel.clearChat() }, shape = RoundedCornerShape(999.dp)) {
+                    Text("New chat", color = GetAutoSureColors.Accent, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                }
+            }
+        }
+        // Which car the answers are about — each car keeps its own chat.
+        val carLine = car?.let { p -> listOfNotNull(p.brand, p.model.ifBlank { null }, p.year?.toString()).joinToString(" ") + (p.fuelType?.let { " · $it" } ?: "") }
+        if (!carLine.isNullOrBlank()) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "About your $carLine",
+                style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.TextPrimary),
+                modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(GetAutoSureColors.AccentSoft).padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+        }
         Spacer(Modifier.height(4.dp))
         Text(
             if (AiBackendConfig.isConfigured) {
