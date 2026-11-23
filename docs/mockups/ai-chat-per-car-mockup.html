@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chat Per Car Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#F5F4F2; --surface:#fff; --ink:#111; --muted:#5B6675; --border:#E3E8EE; --accent:#C2410C; --bright:#FF8A1F; --soft:#FFF1E6; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#EDE7DD; color:var(--ink); font-family:Inter, system-ui, sans-serif; }
+  header { max-width:1100px; margin:0 auto; padding:28px 16px 4px; }
+  h1 { margin:0 0 6px; font-size:26px; } h1 span { color:var(--bright); }
+  .sub { color:var(--muted); margin:0; font-size:14px; max-width:780px; }
+  .row { max-width:1100px; margin:0 auto; padding:20px 16px 40px; display:flex; flex-wrap:wrap; gap:28px; justify-content:center; }
+  .shot { width:300px; }
+  .label { font-weight:700; font-size:14px; margin:0 0 4px; } .label b { color:var(--bright); }
+  .why { font-size:12.5px; color:var(--muted); margin:0 0 10px; min-height:52px; }
+  .phone { width:300px; height:600px; background:var(--bg); border:10px solid #111; border-radius:38px; overflow:hidden; position:relative; display:flex; flex-direction:column; }
+  .status { height:26px; display:flex; justify-content:space-between; align-items:center; padding:0 18px; font-size:11px; font-weight:600; }
+  .scr { flex:1; padding:6px 14px 12px; display:flex; flex-direction:column; gap:8px; overflow:hidden; }
+  .top { display:flex; align-items:center; }
+  .title { font-size:24px; font-weight:700; flex:1; }
+  .new { font-size:13px; font-weight:700; color:var(--accent); border:1.5px solid var(--accent); border-radius:999px; padding:4px 11px; }
+  .new.hl { box-shadow:0 0 0 3px rgba(255,138,31,.35); }
+  .car { font-size:12.5px; color:var(--muted); }
+  .car b { color:var(--ink); }
+  .car.hl { background:var(--soft); border-radius:8px; padding:4px 7px; }
+  .expert { background:var(--ink); color:#fff; border-radius:14px; padding:10px 12px; font-size:12px; }
+  .expert b { display:block; font-size:13px; }
+  .chat { display:flex; flex-direction:column; gap:7px; flex:1; }
+  .me { align-self:flex-end; background:var(--ink); color:#fff; border-radius:14px 14px 4px 14px; padding:7px 10px; font-size:12.5px; max-width:85%; }
+  .ai { align-self:flex-start; background:var(--surface); border:1.5px solid var(--border); border-radius:14px 14px 14px 4px; padding:7px 10px; font-size:12.5px; max-width:90%; }
+  .divider { align-self:center; font-size:11px; color:var(--muted); background:#E9E6E1; border-radius:999px; padding:2px 10px; }
+  .divider.hl { background:var(--soft); color:var(--accent); font-weight:600; }
+  .input { display:flex; gap:6px; }
+  .input div:first-child { flex:1; background:var(--surface); border:1.5px solid var(--border); border-radius:12px; padding:9px; font-size:12px; color:#999; }
+  .send { background:var(--ink); color:#fff; border-radius:12px; padding:9px 12px; font-size:12px; font-weight:700; }
+  .toast { position:absolute; left:14px; right:14px; bottom:70px; background:#323232; color:#fff; border-radius:10px; padding:10px 12px; font-size:12.5px; box-shadow:0 6px 18px rgba(0,0,0,.3); }
+  .home { background:var(--surface); border-radius:16px; padding:12px; font-size:13px; }
+  .home .t { font-weight:800; font-size:16px; }
+  .chip { display:inline-block; border:1.5px solid var(--border); border-radius:999px; padding:3px 10px; font-size:12px; margin:4px 4px 0 0; }
+  .chip.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  footer { max-width:1100px; margin:0 auto; padding:0 16px 40px; font-size:12.5px; color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>AI Mechanic, one chat per car: <span>mockup</span></h1>
+  <p class="sub">Highlighted parts are new. Everything else is the screen as it is today. The chat is saved on the phone per car and comes back when you open AI Mechanic again.</p>
+</header>
+<div class="row">
+
+  <div class="shot">
+    <p class="label"><b>1</b> · Your Slavia's chat, saved</p>
+    <p class="why">The header names the car the answers are about. "New chat" starts over for this car only. Earlier messages stay until then.</p>
+    <div class="phone"><div class="status"><span>9:41</span><span>●●● 100%</span></div>
+      <div class="scr">
+        <div class="top"><div class="title">AI Mechanic</div><div class="new hl">New chat</div></div>
+        <div class="car hl">About your <b>Skoda Slavia 2024 · Petrol</b></div>
+        <div class="expert"><b>Talk to a real expert</b>15-minute video call on your scan</div>
+        <div class="chat">
+          <div class="me">Is my car okay after today's scan?</div>
+          <div class="ai">Your Slavia's scan shows no fault codes, and the battery is charging at 14.2 V…</div>
+          <div class="divider hl">— New scan taken. Answers from here use it. —</div>
+          <div class="me">What about the engine temperature now?</div>
+          <div class="ai">In the new scan the coolant is at 91 °C, which is normal…</div>
+        </div>
+        <div class="input"><div>Ask about your car…</div><div class="send">Send</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="shot">
+    <p class="label"><b>2</b> · Switch to the Seltos</p>
+    <p class="why">Each car has its own conversation. Picking the Seltos shows the Seltos chat, never the Slavia's.</p>
+    <div class="phone"><div class="status"><span>9:41</span><span>●●● 100%</span></div>
+      <div class="scr">
+        <div class="top"><div class="title">AI Mechanic</div><div class="new">New chat</div></div>
+        <div class="car hl">About your <b>Kia Seltos 2020 · Petrol</b></div>
+        <div class="expert"><b>Talk to a real expert</b>15-minute video call on your scan</div>
+        <div class="chat">
+          <div class="me">What's the resale price of my car?</div>
+          <div class="ai">A 2020 Kia Seltos petrol with about 60,000 km typically sells for ₹9–11 lakh in Bengaluru (tentative)…</div>
+        </div>
+        <div class="input"><div>Ask about your car…</div><div class="send">Send</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="shot">
+    <p class="label"><b>3</b> · A scan of the other car</p>
+    <p class="why">If you scan the Slavia while the Seltos is picked, the scan goes to the Slavia and a short message says so. A car of a different make never takes another car's VIN.</p>
+    <div class="phone"><div class="status"><span>9:41</span><span>●●● 100%</span></div>
+      <div class="scr">
+        <div class="title">My Garage</div>
+        <div><span class="chip">Kia Seltos</span><span class="chip on">Skoda Slavia</span></div>
+        <div class="home"><div class="t">Skoda Slavia</div>Health 92 · Scanned just now<br>No fault codes · Battery 14.2 V</div>
+      </div>
+      <div class="toast">This scan is from your Skoda Slavia. Switched to it.</div>
+    </div>
+  </div>
+
+</div>
+<footer>Already built: saving each car's chat, the stricter car matching and the "Switched to it" message. Waiting for approval: the "New chat" button and the "About your…" line.</footer>
+</body>
+</html>

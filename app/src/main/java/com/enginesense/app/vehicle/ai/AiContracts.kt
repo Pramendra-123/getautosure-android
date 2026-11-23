@@ -14,6 +14,23 @@ import org.json.JSONObject
  * in this contract, the AI must say so rather than guess, because [DiagnosticRulesEngine]
  * already ran and this *is* its output, not a preprocessing step the AI can second-guess.
  */
+/** Make, model, year, fuel and km of the owner's picked car; never the number plate. */
+data class AiCarDetails(
+    val make: String?,
+    val model: String?,
+    val year: Int?,
+    val fuelType: String?,
+    val odometerKm: Int?
+) {
+    fun toJson(): JSONObject = JSONObject().apply {
+        put("make", make ?: JSONObject.NULL)
+        put("model", model ?: JSONObject.NULL)
+        put("year", year ?: JSONObject.NULL)
+        put("fuelType", fuelType ?: JSONObject.NULL)
+        put("odometerKm", odometerKm ?: JSONObject.NULL)
+    }
+}
+
 data class AiVehicleContext(
     val generatedAtMillis: Long,
     val vehicleBrand: String?,
@@ -32,9 +49,12 @@ data class AiVehicleContext(
     val ecuName: String? = null,
     /** Mode 01 PID 01 readiness — both null together if no readiness data was read this scan. */
     val milOn: Boolean? = null,
-    val readyForEmissionsTest: Boolean? = null
+    val readyForEmissionsTest: Boolean? = null,
+    /** The car picked in My Garage, as the owner entered it — so answers are about this car even with no scan. */
+    val car: AiCarDetails? = null
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
+        car?.let { put("car", it.toJson()) }
         put("generatedAtMillis", generatedAtMillis)
         put("vehicleBrand", vehicleBrand ?: JSONObject.NULL)
         put("signals", JSONArray(signals.map { it.toJson() }))

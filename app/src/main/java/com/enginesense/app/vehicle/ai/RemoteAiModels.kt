@@ -44,7 +44,8 @@ object RemoteAiProtocol {
                     put("text", msg.text)
                 }
             }))
-            put("context", if (context.hasScan) context.toJson() else JSONObject.NULL)
+            // With no scan the context still carries which car this is, when the owner picked one.
+            put("context", if (context.hasScan || context.car != null) context.toJson() else JSONObject.NULL)
             put("knowledgeHints", JSONArray(knowledgeHints))
             if (!replyLanguage.isNullOrBlank()) put("replyLanguage", replyLanguage)
         }

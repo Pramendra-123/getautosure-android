@@ -2,6 +2,7 @@ package com.enginesense.app
 
 import android.app.Application
 import android.content.Context
+import android.widget.Toast
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import androidx.lifecycle.AndroidViewModel
@@ -58,6 +59,7 @@ import com.enginesense.app.vehicle.ai.AiBackendConfig
 import com.enginesense.app.vehicle.ai.AiCarHealthReport
 import com.enginesense.app.vehicle.ai.AiCarHealthReportService
 import com.enginesense.app.vehicle.ai.AiMechanicChatService
+import com.enginesense.app.vehicle.ai.AiCarDetails
 import com.enginesense.app.vehicle.ai.AiVehicleContext
 import com.enginesense.app.vehicle.ai.ChatMessage
 import com.enginesense.app.vehicle.ai.FallbackAiMechanicChatService
@@ -82,6 +84,8 @@ import com.enginesense.app.owner.OwnerCarData
 import com.enginesense.app.storage.GarageCar
 import com.enginesense.app.storage.GarageState
 import com.enginesense.app.storage.GarageStore
+import com.enginesense.app.storage.VinMatch
+import com.enginesense.app.storage.ChatStore
 import com.enginesense.app.storage.ActiveSince
 import com.enginesense.app.storage.OwnerDataStore
 import kotlinx.coroutines.isActive
@@ -453,6 +457,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
 
     private val garageStore = GarageStore(application)
     private val ownerDataStore = OwnerDataStore(application)
+    private val chatStore = ChatStore(application)
 
     private suspend fun loadVehicle() {
         val g = withContext(Dispatchers.IO) { garageStore.load() }
@@ -460,6 +465,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         val p = g.active?.profile ?: return
         showProfile(p)
         _ownerData.value = withContext(Dispatchers.IO) { ownerDataStore.load(g.active!!.id) }
+        _chatMessages.value = withContext(Dispatchers.IO) { chatStore.load(g.active!!.id) }
     }
 
     /** Puts a car's details into the flows every screen reads. */
@@ -528,8 +534,38 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         showProfile(car.profile)
         vehicleProfileStore.let { store -> viewModelScope.launch(Dispatchers.IO) { store.save(car.profile) } }
         _latestResult.value = newestScanOf(car.id)
-        _chatMessages.update { emptyList() }
-        viewModelScope.launch { _ownerData.value = withContext(Dispatchers.IO) { ownerDataStore.load(car.id) } }
+        // Each car keeps its own conversation.
+        _chatMessages.value = emptyList()
+        viewModelScope.launch {
+            _ownerData.value = withContext(Dispatchers.IO) { ownerDataStore.load(car.id) }
+            _chatMessages.value = withContext(Dispatchers.IO) { chatStore.load(car.id) }
+        }
+    }
+
+    /** Saves the picked car's conversation; a used-car check's chat isn't the owner's, so it isn't kept. */
+    private fun saveChat() {
+        val carId = _garage.value.active?.id ?: return
+        val messages = _chatMessages.value
+        viewModelScope.launch(Dispatchers.IO) { chatStore.save(carId, messages) }
+    }
+
+    /** "New chat": clears the picked car's conversation. */
+    fun clearChat() {
+        _chatMessages.value = emptyList()
+        saveChat()
+    }
+
+    /** After a new scan the conversation goes on, with a line saying later answers use the new scan. */
+    private fun noteNewScanInChat() {
+        // From the saved file, not the screen's list: the scan may have just switched cars, whose chat is still loading.
+        val carId = _garage.value.active?.id ?: return
+        viewModelScope.launch {
+            val saved = withContext(Dispatchers.IO) { chatStore.load(carId) }
+            if (saved.isEmpty()) return@launch
+            val updated = (saved + ChatMessage(fromUser = false, text = "— New scan taken. Answers from here use it. —")).takeLast(MAX_CHAT_MESSAGES)
+            withContext(Dispatchers.IO) { chatStore.save(carId, updated) }
+            if (_garage.value.active?.id == carId) _chatMessages.value = updated
+        }
     }
 
     /** Adds an empty car and picks it; the add-car screens then fill in its details. */
@@ -553,7 +589,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
             switchCar(remaining.first().id)
         }
         saveGarage()
-        viewModelScope.launch(Dispatchers.IO) { ownerDataStore.delete(carId) }
+        viewModelScope.launch(Dispatchers.IO) { ownerDataStore.delete(carId); chatStore.delete(carId) }
     }
 
     /** Changes the picked car's owner records (renewal dates, services, fill-ups, spending) and saves them. */
@@ -571,29 +607,41 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     /**
-     * Ties a new own-car scan to a car in My Garage by its VIN: the car with that VIN (switching to
-     * it), else the picked car if it has no VIN yet (it learns this one). A VIN that belongs to no
-     * car and differs from the picked car's asks "Is this your car?".
+     * Ties a new own-car scan to a car in My Garage by its VIN: the car with that VIN, else the one
+     * car without a VIN whose RTO chassis number confirms it (it learns the VIN), switching to it
+     * either way. The picked car learns a VIN only if its chassis number and maker don't rule it out
+     * — a scan taken in another car once made a Kia "learn" a Skoda's VIN. Anything else asks
+     * "Is this your car?".
      */
     private fun assignScanToCar(result: ScanResult) {
         val g = _garage.value
         val vin = result.vehicleId.vin?.trim()?.takeIf { it.length >= 11 && !result.isDemo }
-        val match = vin?.let { v -> g.cars.firstOrNull { it.vin == v } }
         val active = g.active
+        val match = vin?.let { v ->
+            g.cars.firstOrNull { it.vin == v }
+                ?: g.cars.filter { it.vin == null && VinMatch.fits(it, v) == true }.singleOrNull()
+        }
+        val activeCanLearn = vin != null && active != null && active.vin == null && VinMatch.fits(active, vin) != false
         val carId = when {
             match != null -> match.id
-            vin != null && active != null && active.vin == null -> {
-                _garage.update { s -> s.copy(cars = s.cars.map { if (it.id == active.id) it.copy(vin = vin) else it }) }
-                active.id
-            }
+            activeCanLearn -> active!!.id
             else -> active?.id
         }
+        val learner = when {
+            match != null && match.vin == null -> match.id
+            match == null && activeCanLearn -> active!!.id
+            else -> null
+        }
+        if (learner != null) _garage.update { s -> s.copy(cars = s.cars.map { if (it.id == learner) it.copy(vin = vin) else it }) }
         if (carId != null) _garage.update { it.copy(scanCars = it.scanCars + (result.timestampMillis to carId)) }
         saveGarage()
-        if (vin != null && match == null && active?.vin != null && active.vin != vin) {
+        if (vin != null && match == null && !activeCanLearn && active?.vin != vin) {
             _carQuestion.value = CarQuestion(result.timestampMillis, vin)
         }
-        if (match != null && match.id != active?.id) switchCar(match.id)
+        if (match != null && match.id != active?.id) {
+            switchCar(match.id)
+            Toast.makeText(getApplication(), "This scan is from your ${match.title}. Switched to it.", Toast.LENGTH_LONG).show()
+        }
     }
 
     /** "Yes, add to My Garage": the scan moves to a new car, which is picked so its details can be added. */
@@ -680,7 +728,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
                     _history.update { listOf(result) + it }
                     assignScanToCar(result)
                     persistHistory()
-                    _chatMessages.update { emptyList() }
+                    noteNewScanInChat()
                 }
                 _lastRawLog.update { transport?.commandLog() ?: emptyList() }
                 _connectionState.update { ConnectionFlowState.Idle }
@@ -803,7 +851,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
                 _history.update { listOf(result) + it }
                 assignScanToCar(result)
                 persistHistory()
-                _chatMessages.update { emptyList() }
+                noteNewScanInChat()
                 _lastRawLog.update { t.commandLog() }
                 _connectionState.update { ConnectionFlowState.Idle }
             } catch (e: Exception) {
@@ -1081,7 +1129,12 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
     /** [aboutUsedCar]: answer from the seller's car being checked (the Used Car Check), not the user's own. */
     fun askAiMechanic(question: String, uiContext: Context, aboutUsedCar: Boolean = false) {
         val scan = if (aboutUsedCar) _prePurchaseResult.value else _latestResult.value
-        val context = scan?.aiContext ?: AiVehicleContext.NO_SCAN
+        val ownCar = if (aboutUsedCar) null else _garage.value.active?.profile
+        val context = (scan?.aiContext ?: AiVehicleContext.NO_SCAN).let { c ->
+            ownCar?.let { p ->
+                c.copy(car = AiCarDetails(p.brand, p.model.ifBlank { null }, p.year, p.fuelType, p.odometerKm), vehicleBrand = p.brand ?: c.vehicleBrand)
+            } ?: c
+        }
         // History must be the conversation BEFORE this question, not including it — passing
         // the just-asked question as its own "history" confused the follow-up/clarification
         // resolution logic, which walks history looking for what was already discussed.
@@ -1090,6 +1143,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         // interface always receives a chronologically-ordered list, never the current question
         // appended to it twice.
         val priorHistory = _chatMessages.value
+        val askedForCar = _garage.value.active?.id
         viewModelScope.launch {
             _chatMessages.update { (it + ChatMessage(fromUser = true, text = question)).takeLast(MAX_CHAT_MESSAGES) }
             _aiMechanicLoading.value = true
@@ -1116,6 +1170,8 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
             } finally {
                 authUiContext = null
                 _aiMechanicLoading.value = false
+                // Kept for the car it was asked about — not if the owner switched cars while waiting.
+                if (!aboutUsedCar && _garage.value.active?.id == askedForCar) saveChat()
             }
         }
     }
