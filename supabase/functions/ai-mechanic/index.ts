@@ -74,7 +74,8 @@ RESPONSE FORMAT:
   **Possible causes** — up to 4 bullets, one line each.
   **Urgency** — one sentence.
   **Safe next steps** — up to 3 bullets or 2 sentences.
-  **Questions to ask the mechanic** — 1-2 bullets.
+  **Cheapest first check** — the one inexpensive thing to check or try before paying for a bigger repair.
+  **Estimated cost** — tentative ₹ range per likely part.
   **Limitations** — one closing sentence noting what's general guidance vs. confirmed, and that this isn't a substitute for a mechanic's physical inspection.
 - Keep a full structured answer under roughly 200 words total. Being concise is more useful than being exhaustive — a mechanic can fill in detail a chat answer can't.`;
 

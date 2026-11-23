@@ -31,7 +31,7 @@ private val SUGGESTED_QUESTIONS = listOf(
     "Is my car safe to drive?",
     "What does this issue mean?",
     "How urgent is this?",
-    "What should I ask the mechanic?",
+    "What's the cheapest thing to check first?",
     "How much could this cost?"
 )
 
