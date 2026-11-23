@@ -308,11 +308,23 @@ fun CostLine(viewModel: GetAutoSureViewModel, owner: OwnerCarData, onNavigate: (
     val wallet = rememberWallet(viewModel)
     val month = OwnerInsights.monthSpend(owner, YearMonth.now()).total
     val perKm = wallet.summary.costPerKm?.let { " · ₹%.1f per km".format(it) } ?: ""
+    // Same days of last month, so the 5th isn't set against a whole month.
+    val lastMonth = YearMonth.now().minusMonths(1)
+    val lastSoFar = OwnerInsights.monthSpend(owner, lastMonth, upToDay = LocalDate.now().dayOfMonth).total
+    val name = lastMonth.month.getDisplayName(java.time.format.TextStyle.SHORT, Locale.getDefault())
+    val vsLast = if (month > 0 && lastSoFar > 0 && month != lastSoFar) {
+        " · ${OwnerInsights.inr(kotlin.math.abs(month - lastSoFar))} ${if (month < lastSoFar) "less" else "more"} than $name by this date"
+    } else ""
     ListGroup {
         ListRow(
             Icons.Filled.AccountBalanceWallet,
             if (month > 0) "This month ${OwnerInsights.inr(month)}" else "About ${CarWallet.short(wallet.summary.yearlyTotal)} a year",
-            "Your car costs$perKm",
+            "Your car costs$perKm$vsLast",
+            subtitleColor = when {
+                vsLast.isEmpty() -> GetAutoSureColors.TextSecondary
+                month < lastSoFar -> GetAutoSureColors.Good
+                else -> GetAutoSureColors.Watch
+            },
             onClick = { onNavigate("wallet") }
         )
     }
@@ -378,7 +390,7 @@ fun LazyListScope.fuelItems(fuel: FuelIntelState, onNavigate: (String) -> Unit) 
             }
         }
     }
-    item { ListGroup { ListRow(Icons.Filled.LocalGasStation, "Fuel on each trip", "Litres, km/l and ₹ per drive", onClick = { onNavigate("trips") }) } }
+    item { AutoRecordRow(onNavigate) }
 }
 
 @Composable

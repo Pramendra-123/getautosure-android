@@ -23,7 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.enginesense.app.GetAutoSureViewModel
+import com.enginesense.app.ScanResult
+import com.enginesense.app.drivelab.DriveLabSummary
 import com.enginesense.app.drivelab.DriveRecorderService
+import com.enginesense.app.drivelab.DriveTrip
+import com.enginesense.app.owner.BatteryHealth
 import com.enginesense.app.owner.OwnerInsights
 import com.enginesense.app.owner.RenewalKind
 import com.enginesense.app.ui.components.GroupNote
@@ -51,9 +55,8 @@ fun BatteryScreen(viewModel: GetAutoSureViewModel, onNavigate: (String) -> Unit)
     val drives = rememberCarDrives(viewModel)
     val recorder by DriveRecorderService.status.collectAsState()
     val volts = result?.snapshot?.verifiedValue(PidId.CONTROL_MODULE_VOLTAGE)
-    val bf = drives?.battery
-    val lastStart = drives?.trips?.filter { it.crankingMinVolts != null }?.maxByOrNull { it.startMillis }
-    val health = OwnerInsights.batteryHealth(volts, bf?.restingVolts, lastStart?.crankingMinVolts ?: bf?.crankingDips?.minOrNull(), bf?.chargingVolts)
+    val lastStart = lastStartTest(drives)
+    val health = carBatteryHealth(result, drives)
     val trend = history.sortedBy { it.timestampMillis }.mapNotNull { it.snapshot.verifiedValue(PidId.CONTROL_MODULE_VOLTAGE)?.toFloat() }
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp, 16.dp, 16.dp, 96.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -88,13 +91,26 @@ fun BatteryScreen(viewModel: GetAutoSureViewModel, onNavigate: (String) -> Unit)
                     Icons.Filled.PlayCircle,
                     if (lastStart != null) "Last start: lowest %.1f V".format(lastStart.crankingMinVolts) else "No start test yet",
                     if (recorder.running) "Auto-record is on. The next time you start the car, we measure how far the voltage drops."
-                    else "Turn on auto-record in Trips, then start the car. A healthy battery stays above 10 V while starting.",
-                    onClick = if (recorder.running) null else ({ onNavigate("trips") })
+                    else "Turn on auto-record below, then start the car. A healthy battery stays above 10 V while starting."
                 )
             }
         }
+        item { AutoRecordRow(onNavigate) }
         item { GroupNote("Parked voltage and the start test need the scanner left plugged in with auto-record on.") }
     }
+}
+
+/** The newest trip that caught the engine starting, for the start test. */
+private fun lastStartTest(drives: DriveLabSummary?): DriveTrip? =
+    drives?.trips?.filter { it.crankingMinVolts != null }?.maxByOrNull { it.startMillis }
+
+/** One battery verdict for Garage and the Battery screen: last scan, parked voltage, last start test, charging. */
+fun carBatteryHealth(result: ScanResult?, drives: DriveLabSummary?): BatteryHealth {
+    val bf = drives?.battery
+    return OwnerInsights.batteryHealth(
+        result?.snapshot?.verifiedValue(PidId.CONTROL_MODULE_VOLTAGE), bf?.restingVolts,
+        lastStartTest(drives)?.crankingMinVolts ?: bf?.crankingDips?.minOrNull(), bf?.chargingVolts
+    )
 }
 
 /** "Will you pass PUC?" from the scan's readiness self-tests and the check-engine light, with the PUC expiry date. */

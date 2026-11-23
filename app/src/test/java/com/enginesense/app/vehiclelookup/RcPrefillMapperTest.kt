@@ -87,6 +87,18 @@ class RcPrefillMapperTest {
     }
 
     @Test
+    fun `engine size is read from the variant name when the RTO left it blank`() {
+        assertEquals(1353, RcPrefillMapper.inferEngineCc("Kia", "SELTOS G1.4 7DCT GTX PLUS"))
+        assertEquals(1462, RcPrefillMapper.inferEngineCc("Maruti Suzuki", "BREZZA 1.5 ZXI"))
+        assertEquals(1800, RcPrefillMapper.inferEngineCc(null, "SOMECAR 1.8L"))
+        assertNull(RcPrefillMapper.inferEngineCc("Hyundai", "GRAND I10 NIOS SPORTZ"))
+        assertNull(RcPrefillMapper.inferEngineCc("Hyundai", "VERNA 12.04"))
+        assertNull(RcPrefillMapper.inferEngineCc("Kia", null))
+        val seltos = result(make = "KIA INDIA PRIVATE LIMITED", model = "SELTOS G1.4 7DCT GTX PLUS").copy(cubicCapacity = null)
+        assertEquals(1353, RcPrefill.from(seltos)!!.engineCc)
+    }
+
+    @Test
     fun `two- and three-wheelers are flagged, cars are not`() {
         assertTrue(RcPrefillMapper.isLikelyNotACar("M-Cycle/Scooter"))
         assertTrue(RcPrefillMapper.isLikelyNotACar("e-Rickshaw(P)"))

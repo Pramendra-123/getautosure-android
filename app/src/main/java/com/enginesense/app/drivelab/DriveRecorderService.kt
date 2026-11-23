@@ -64,15 +64,17 @@ data class DriveRecorderStatus(
 }
 
 /**
- * Phase-2 test: stays connected to the scanner all day and logs everything it can, so a 1–2 day
- * trial in a real car shows what driving behaviour, fuel, battery and sleep data we actually get.
+ * Stays connected to the scanner in the background and logs drives, for the Fuel chip, fill-up
+ * detection, the odometer and Battery. Kept light on the phone: the CPU is only held awake while
+ * the engine runs, about one reading a second while driving, and a check every minute or so when
+ * parked (Android may stretch that while the phone sleeps).
  *
  * - Engine running: fast PIDs (rpm, speed, air flow, throttle, load) every cycle, slow ones
  *   (coolant, voltages, fuel level) every [SLOW_EVERY_MS], odometer-type counters every
  *   [VERY_SLOW_EVERY_MS].
  * - Ignition on, engine stopped (rpm 0): ATRV as fast as the adapter answers, to catch the
  *   voltage dip while cranking.
- * - Engine off: ATRV every few seconds, then every minute — this is what tells us whether the
+ * - Engine off: ATRV every 15 seconds, then every minute — this is what tells us whether the
  *   dongle stays awake (and drains the car battery) or goes to sleep.
  * - Connection lost: retries forever with a backoff until stopped.
  *
@@ -106,7 +108,6 @@ class DriveRecorderService : Service() {
         }
         saveAddress(this, address)
         startInForeground("Starting…")
-        acquireWakeLock()
         if (loopJob?.isActive != true) loopJob = scope.launch { recordLoop(address) }
         // Restarted by Android after being killed: pick up the saved scanner and carry on.
         return START_STICKY
@@ -146,8 +147,10 @@ class DriveRecorderService : Service() {
             while (isActive) {
                 delay(WATCHDOG_EVERY_MS)
                 val t = transport ?: continue
-                if (System.currentTimeMillis() - lastIoAt > WATCHDOG_SILENCE_MS) {
-                    store.appendEvent(DriveEvent(System.currentTimeMillis(), "watchdog", "no reply for ${WATCHDOG_SILENCE_MS / 1000}s"))
+                // Parked, the phone may sleep through several polls without the link being stuck.
+                val limit = if (_status.value.phase == DriveRecorderStatus.Phase.DRIVING) WATCHDOG_SILENCE_MS else PARKED_WATCHDOG_SILENCE_MS
+                if (System.currentTimeMillis() - lastIoAt > limit) {
+                    store.appendEvent(DriveEvent(System.currentTimeMillis(), "watchdog", "no reply for ${limit / 1000}s"))
                     t.close()
                 }
             }
@@ -171,6 +174,7 @@ class DriveRecorderService : Service() {
                 store.appendEvent(DriveEvent(System.currentTimeMillis(), if (lost) "disconnected" else "connect_failed", e.message ?: e.javaClass.simpleName))
                 setPhase(DriveRecorderStatus.Phase.WAITING, error = e.message)
             }
+            releaseWakeLock() // a link lost mid-drive mustn't keep the phone awake while it retries
             client.close()
             transport = null
             delay(backoffMs)
@@ -199,6 +203,7 @@ class DriveRecorderService : Service() {
                 if (!engineOn) {
                     engineOn = true
                     reader = PidReader(t) // fresh support cache now the ECU is awake
+                    acquireWakeLock()
                     store.appendEvent(DriveEvent(now, "engine_on"))
                 }
                 lastEngineOnAt = now
@@ -233,7 +238,7 @@ class DriveRecorderService : Service() {
                     odometer = reader.read(PidId.ODOMETER).verified()
                 }
                 r.putAll(slow)
-                val air = LiveDerivedCalculator.airFlow(r, profile?.engineCc)
+                val air = LiveDerivedCalculator.airFlow(r, profile?.knownEngineCc)
                 val sample = DriveSample(
                     timeMillis = now, rpm = rpm,
                     speedKmh = r[PidId.SPEED_KMH].verified(),
@@ -259,6 +264,7 @@ class DriveRecorderService : Service() {
                     engineOn = false
                     engineOffAt = now
                     store.appendEvent(DriveEvent(now, "engine_off"))
+                    releaseWakeLock()
                 }
                 if (engineOn) {
                     // A dropped reply mid-drive, not the engine stopping — try again straight away.
@@ -404,7 +410,7 @@ class DriveRecorderService : Service() {
         )
         .build()
 
-    @SuppressLint("WakelockTimeout") // a deliberate all-day test; released on Stop
+    @SuppressLint("WakelockTimeout") // held only while the engine runs; released on engine off, a lost link or Stop
     private fun acquireWakeLock() {
         if (wakeLock?.isHeld == true) return
         wakeLock = getSystemService(PowerManager::class.java)
@@ -425,7 +431,7 @@ class DriveRecorderService : Service() {
         private const val PREFS = "drive_lab"
         private const val KEY_ADDRESS = "scanner_address"
 
-        private const val DRIVING_PAUSE_MS = 150L
+        private const val DRIVING_PAUSE_MS = 1_000L
         private const val SLOW_EVERY_MS = 10_000L
         /** The converter check runs every few minutes of warm driving: a few seconds each. */
         private const val O2_EVERY_MS = 5 * 60_000L
@@ -435,7 +441,7 @@ class DriveRecorderService : Service() {
         private const val ENGINE_OFF_AFTER_MS = 20_000L
         private const val CRANK_WATCH_PAUSE_MS = 50L
         private const val RECENT_OFF_WINDOW_MS = 15 * 60_000L
-        private const val RECENT_OFF_PAUSE_MS = 3_000L
+        private const val RECENT_OFF_PAUSE_MS = 15_000L
         private const val PARKED_PAUSE_MS = 60_000L
         private const val RETRY_MIN_MS = 15_000L
         private const val RETRY_MAX_MS = 120_000L
@@ -443,6 +449,7 @@ class DriveRecorderService : Service() {
         private const val WATCHDOG_EVERY_MS = 15_000L
         /** Longer than [PARKED_PAUSE_MS] plus a slow "SEARCHING…" reply, so a parked car never trips it. */
         private const val WATCHDOG_SILENCE_MS = 150_000L
+        private const val PARKED_WATCHDOG_SILENCE_MS = 15 * 60_000L
 
         private val _status = MutableStateFlow(DriveRecorderStatus())
         val status: StateFlow<DriveRecorderStatus> = _status.asStateFlow()

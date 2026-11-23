@@ -542,7 +542,6 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
             composable("milStatus") { MilStatusScreen(viewModel) }
             composable("battery") { BatteryScreen(viewModel, onNavigate = { route -> navController.navigate(route) }) }
             composable("pucCheck") { PucCheckScreen(viewModel) }
-            composable("trips") { TripsScreen(viewModel, onNavigate = { route -> navController.navigate(route) }) }
             composable("wallet") { WalletScreen(viewModel, onNavigate = { route -> navController.navigate(route) }) }
             composable("autoCapture") { AutoCaptureScreen(onDone = { navController.popBackStack() }) }
             composable("warranty") { WarrantyScreen() }

@@ -2,6 +2,7 @@ package com.enginesense.app.storage
 
 import android.content.Context
 import com.enginesense.app.vehiclelookup.RcLookupResult
+import com.enginesense.app.vehiclelookup.RcPrefillMapper
 import com.enginesense.app.vehiclelookup.VehicleLookupRepository
 import org.json.JSONObject
 import java.io.File
@@ -18,7 +19,10 @@ data class VehicleProfile(
     val engineCc: Int?,
     val claimedMileageKmPerLitre: Double?,
     val rc: RcLookupResult?
-)
+) {
+    /** What the owner entered, else what the saved RC record says or implies — cars added before the variant-name fallback still get one. */
+    val knownEngineCc: Int? get() = engineCc ?: rc?.let(RcPrefillMapper::engineCcFor)
+}
 
 fun vehicleProfileToJson(profile: VehicleProfile): JSONObject = JSONObject().apply {
     put("brand", profile.brand ?: JSONObject.NULL)

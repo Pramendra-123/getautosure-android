@@ -94,7 +94,7 @@ data class RcPrefill(
                 fuelType = RcPrefillMapper.matchFuel(result.fuelType),
                 registrationNumber = result.registrationNumber,
                 looksLikeNonCar = RcPrefillMapper.isLikelyNotACar(result.category),
-                engineCc = RcPrefillMapper.matchEngineCc(result.cubicCapacity),
+                engineCc = RcPrefillMapper.engineCcFor(result),
             )
         }
     }

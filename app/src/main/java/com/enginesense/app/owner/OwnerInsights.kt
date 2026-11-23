@@ -121,8 +121,12 @@ object OwnerInsights {
         return km / litres
     }
 
-    fun monthSpend(data: OwnerCarData, month: YearMonth): MonthSpend {
-        fun inMonth(date: String) = runCatching { YearMonth.from(LocalDate.parse(date)) == month }.getOrDefault(false)
+    /** [upToDay] counts only the first days of the month, to compare a month so far with the same stretch of another. */
+    fun monthSpend(data: OwnerCarData, month: YearMonth, upToDay: Int? = null): MonthSpend {
+        fun inMonth(date: String) = runCatching {
+            val d = LocalDate.parse(date)
+            YearMonth.from(d) == month && (upToDay == null || d.dayOfMonth <= upToDay)
+        }.getOrDefault(false)
         val fuel = data.fuel.filter { inMonth(it.date) }.sumOf { it.amountInr }
         val serviceLog = data.services.filter { inMonth(it.date) }.sumOf { it.costInr ?: 0 }
         val expenses = data.expenses.filter { inMonth(it.date) }
@@ -181,7 +185,7 @@ object OwnerInsights {
                 else -> Level.GOOD to "Charging: %.1f V. Normal.".format(v)
             }
         }
-        if (findings.isEmpty()) return BatteryHealth(Level.UNKNOWN, "Scan to check", listOf("Scan your car, or turn on trip recording to run the start test."))
+        if (findings.isEmpty()) return BatteryHealth(Level.UNKNOWN, "Scan to check", listOf("Scan your car, or turn on auto-record to run the start test."))
         val worst = findings.maxOf { it.first.ordinal }.let { Level.entries[it] }
         val headline = when (worst) {
             Level.GOOD -> "Good"

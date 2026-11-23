@@ -466,7 +466,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         _vehicleFuelType.value = p.fuelType
         _vehicleOdometerKm.value = p.odometerKm
         _vehiclePlate.value = p.plate
-        _vehicleEngineCc.value = p.engineCc
+        _vehicleEngineCc.value = p.knownEngineCc
         _vehicleClaimedMileageKmPerLitre.value = p.claimedMileageKmPerLitre
         _vehicleRc.value = p.rc
     }

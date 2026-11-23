@@ -108,6 +108,38 @@ object RcPrefillMapper {
     fun matchEngineCc(rtoCubicCapacity: String?): Int? =
         rtoCubicCapacity?.trim()?.toDoubleOrNull()?.let { Math.round(it).toInt() }?.takeIf { it in ENGINE_CC_RANGE }
 
+    // "G1.4", "D1.5", "1.2L", "1.5 TSI": a litre figure in the variant name. Not preceded by a digit
+    // or dot, so "2.0" inside "12.04" or a date isn't read as an engine.
+    private val LITRES_IN_VARIANT = Regex("(?<![\\d.])(?:[A-Z]{0,2})(\\d\\.\\d)(?!\\d)")
+
+    // The litre badge is rounded; where one engine family dominates for a make, use its real cc.
+    private val CC_BY_MAKE_AND_LITRES: Map<Pair<String, String>, Int> = mapOf(
+        ("Kia" to "1.0") to 998, ("Kia" to "1.2") to 1197, ("Kia" to "1.4") to 1353, ("Kia" to "1.5") to 1497,
+        ("Hyundai" to "1.0") to 998, ("Hyundai" to "1.2") to 1197, ("Hyundai" to "1.4") to 1353, ("Hyundai" to "1.5") to 1497, ("Hyundai" to "1.6") to 1591,
+        ("Maruti Suzuki" to "1.0") to 998, ("Maruti Suzuki" to "1.2") to 1197, ("Maruti Suzuki" to "1.3") to 1248, ("Maruti Suzuki" to "1.5") to 1462,
+        ("Tata" to "1.2") to 1199, ("Tata" to "1.5") to 1497, ("Tata" to "2.0") to 1956,
+        ("Honda" to "1.2") to 1199, ("Honda" to "1.5") to 1498,
+        ("Volkswagen" to "1.0") to 999, ("Volkswagen" to "1.5") to 1498,
+        ("Skoda" to "1.0") to 999, ("Skoda" to "1.5") to 1498,
+        ("Toyota" to "1.5") to 1462, ("Toyota" to "2.4") to 2393, ("Toyota" to "2.8") to 2755,
+        ("Mahindra" to "2.0") to 1997, ("Mahindra" to "2.2") to 2184,
+    )
+
+    /**
+     * Engine size from the variant name when the RTO left cubic capacity blank, e.g. "SELTOS G1.4
+     * 7DCT GTX PLUS" -> 1353. Without it a car with no air-flow sensor gets no fuel estimate at all.
+     * Null when the name carries no litre figure.
+     */
+    fun inferEngineCc(make: String?, rtoModel: String?): Int? {
+        val litres = rtoModel?.uppercase()?.let { LITRES_IN_VARIANT.find(it)?.groupValues?.get(1) } ?: return null
+        val cc = make?.let { CC_BY_MAKE_AND_LITRES[it to litres] } ?: Math.round(litres.toDouble() * 1000).toInt()
+        return cc.takeIf { it in ENGINE_CC_RANGE }
+    }
+
+    /** RTO cubic capacity first, then the variant name. */
+    fun engineCcFor(rc: RcLookupResult): Int? =
+        matchEngineCc(rc.cubicCapacity) ?: inferEngineCc(matchMake(rc.make, rc.model), rc.model)
+
     /** Smallest to largest engines plausibly seen on an Indian car — also bounds what the details screen accepts. */
     val ENGINE_CC_RANGE = 600..7000
 

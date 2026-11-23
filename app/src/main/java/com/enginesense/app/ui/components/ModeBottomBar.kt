@@ -16,7 +16,6 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Route
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -46,7 +45,7 @@ data class ModeTabs(val tabs: List<ModeTab>) {
 
         fun forMode(mode: AppMode): ModeTabs = when (mode) {
             AppMode.OWN_CAR -> ModeTabs(listOf(
-                ModeTab("home", "Garage", Icons.Filled.Home), ModeTab("trips", "Trips", Icons.Filled.Route),
+                ModeTab("home", "Garage", Icons.Filled.Home),
                 ModeTab("wallet", "Wallet", Icons.Filled.AccountBalanceWallet), ModeTab("reports", "Reports", Icons.Filled.Description), PROFILE
             ))
             AppMode.BUYING -> ModeTabs(listOf(ModeTab("home", "Home", Icons.Filled.Home), ModeTab("reports", "Reports", Icons.Filled.Description), PROFILE))

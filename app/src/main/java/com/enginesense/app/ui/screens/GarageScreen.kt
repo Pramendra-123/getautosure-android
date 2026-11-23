@@ -127,12 +127,11 @@ private val CHIPS = listOf("Health", "Fuel", "Service", "Renewals")
 /** A chip another screen asked the Garage to open, e.g. "fuel" from Needs your attention → See all. */
 val garageChipRequest = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
 private val DAY = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
-private const val WEEK_MILLIS = 7L * 24 * 60 * 60 * 1000
 
 /**
  * The car owner's home ("Garage"): the car with its switcher and health score, the pulsing Scan
- * button, this week's driving score, "Needs your attention" and the month's cost line, then four
- * chips — Health, Fuel, Service and Renewals — each opening its own list on the same page. AI Mechanic is the floating button; Trips, Reports and
+ * button, "Needs your attention" and the month's cost line, then four
+ * chips — Health, Fuel, Service and Renewals — each opening its own list on the same page. AI Mechanic is the floating button; Wallet, Reports and
  * Profile are the bottom tabs.
  */
 @Composable
@@ -170,7 +169,6 @@ fun GarageScreen(
                 )
             }
         }
-        item { DrivingLine(drives, onNavigate) }
         item { AttentionCard(attention, open, onSeeAll = { onNavigate("attention") }) }
         item { CostLine(viewModel, owner, onNavigate) }
         item { FilterChipRow(CHIPS, chip) { chip = it } }
@@ -291,24 +289,6 @@ private fun stateWord(s: CategoryState) = when (s) {
     CategoryState.UNAVAILABLE -> "No data"
 }
 
-@Composable
-private fun DrivingLine(drives: DriveLabSummary?, onNavigate: (String) -> Unit) {
-    val week = drives?.trips.orEmpty().filter { it.startMillis >= System.currentTimeMillis() - WEEK_MILLIS }
-    val score = averageScore(week)
-    ListGroup {
-        if (score != null) {
-            ListRow(
-                Icons.Filled.Speed, "Driving score $score",
-                "This week · ${week.size} trip${if (week.size == 1) "" else "s"} · %.0f km".format(week.sumOf { it.distanceKm }),
-                onClick = { onNavigate("trips") },
-                trailing = { Text("›", style = OwnerText.Section.copy(color = tripScoreColor(score))) }
-            )
-        } else {
-            ListRow(Icons.Filled.Route, "Driving score", "Leave the scanner plugged in to record your drives", onClick = { onNavigate("trips") })
-        }
-    }
-}
-
 // ---------- Health ----------
 
 private fun LazyListScope.healthItems(
@@ -320,9 +300,7 @@ private fun LazyListScope.healthItems(
 ) {
     item { HealthOverTime(history.filter { !it.isDemo || history.all { h -> h.isDemo } }, drives) }
     item {
-        val volts = result?.snapshot?.verifiedValue(PidId.CONTROL_MODULE_VOLTAGE)
-        val bf = drives?.battery
-        val battery = OwnerInsights.batteryHealth(volts, bf?.restingVolts, bf?.crankingDips?.minOrNull(), bf?.chargingVolts)
+        val battery = carBatteryHealth(result, drives)
         val codes = result?.snapshot?.dtcs?.size
         val milOn = result?.readiness?.milOn
         val readiness = result?.readiness
