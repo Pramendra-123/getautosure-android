@@ -19,6 +19,37 @@ data class RepairCostEntry(
     val keywords: List<String>
 )
 
+/** Rough size class, which moves parts and labour prices more than anything else the app knows. */
+enum class CarSize {
+    SMALL, MID, LARGE;
+
+    companion object {
+        /** From the new-car price: under ₹8 lakh is a small car, up to ₹15 lakh mid-size, above that large. */
+        fun fromExShowroom(priceInr: Double?): CarSize? = when {
+            priceInr == null || priceInr <= 0 -> null
+            priceInr < 800_000 -> SMALL
+            priceInr <= 1_500_000 -> MID
+            else -> LARGE
+        }
+    }
+}
+
+/**
+ * Narrows a range to the car's size: each range runs from a hatchback's price at the low end
+ * to an SUV's at the high end, so a known size picks the matching part of it. Still tentative.
+ */
+fun RepairCostEntry.forSize(size: CarSize?): RepairCostEntry {
+    if (size == null) return this
+    val span = maxInr - minInr
+    fun round(v: Double) = ((v / 100).toInt() * 100).coerceAtLeast(100)
+    val (lo, hi) = when (size) {
+        CarSize.SMALL -> 0.0 to 0.5
+        CarSize.MID -> 0.25 to 0.75
+        CarSize.LARGE -> 0.5 to 1.0
+    }
+    return copy(minInr = round(minInr + span * lo), maxInr = round(minInr + span * hi))
+}
+
 object RepairCostReference {
 
     val entries = listOf(
@@ -49,7 +80,53 @@ object RepairCostReference {
         RepairCostEntry("EGR valve", 3_000, 12_000, "Cleaning vs. replacement; mostly diesels", listOf("egr")),
         RepairCostEntry("EVAP purge valve / fuel cap", 300, 4_000, "A loose or worn fuel cap is the cheap fix", listOf("evap", "purge", "fuel cap", "gas cap", "vapor")),
         RepairCostEntry("Coolant temperature sensor", 800, 3_000, "Small part, quick job", listOf("coolant temp", "temperature sensor")),
-        RepairCostEntry("Vacuum leak repair", 500, 4_000, "Usually a cracked hose or gasket", listOf("vacuum leak", "intake leak"))
+        RepairCostEntry("Vacuum leak repair", 500, 4_000, "Usually a cracked hose or gasket", listOf("vacuum leak", "intake leak")),
+        // Added with the fault-code cards: parts their causes name that the table above didn't cover.
+        // Same footing — tentative, labour included, hatchback at the low end and SUV at the high end.
+        RepairCostEntry("Diesel fuel filter", 800, 3_000, "Draining water from it is part of the job", listOf("diesel filter", "diesel fuel filter")),
+        RepairCostEntry("Fuel filter", 500, 2_500, "Petrol cars; often skipped at service", listOf("fuel filter")),
+        RepairCostEntry("Air filter", 300, 1_500, "Clogs fast on dusty roads", listOf("air filter")),
+        RepairCostEntry("Fuel pump", 4_000, 12_000, "In-tank pump, petrol and diesel", listOf("fuel pump")),
+        RepairCostEntry("Diesel high-pressure pump", 15_000, 80_000, "Repair/recondition vs. a new pump", listOf("high-pressure pump", "high pressure pump", "hp pump")),
+        RepairCostEntry("Fuel rail pressure sensor", 3_000, 10_000, "Diesel and direct-injection petrol", listOf("rail pressure")),
+        RepairCostEntry("Diesel injector", 4_000, 15_000, "Per injector; testing and cleaning first is cheaper", listOf("diesel injector", "common rail injector")),
+        RepairCostEntry("Glow plugs (set)", 2_000, 8_000, "Diesel cold starting", listOf("glow plug")),
+        RepairCostEntry("Turbocharger", 15_000, 70_000, "Repair vs. replacement; hoses and actuator cost less", listOf("turbo")),
+        RepairCostEntry("DPF cleaning / replacement", 4_000, 60_000, "Cleaning vs. a new filter", listOf("dpf", "particulate filter")),
+        RepairCostEntry("AdBlue / SCR system", 3_000, 40_000, "Refill and sensor vs. pump or catalyst", listOf("adblue", "scr")),
+        RepairCostEntry("EGR cooler", 6_000, 20_000, "Diesel; often found when the EGR valve is cleaned", listOf("egr cooler")),
+        RepairCostEntry("Crankshaft position sensor", 1_500, 5_000, "Small part; the car may not start without it", listOf("crankshaft position", "crankshaft sensor", "crank sensor")),
+        RepairCostEntry("Camshaft position sensor", 1_500, 5_000, "Small part, quick job", listOf("camshaft position", "camshaft sensor", "cam sensor")),
+        RepairCostEntry("VVT oil control valve", 2_000, 6_000, "Check the engine oil level first", listOf("oil control valve", "vvt", "variable valve")),
+        RepairCostEntry("Knock sensor", 1_500, 5_000, "Small part; fuel quality can trigger it too", listOf("knock sensor")),
+        RepairCostEntry("MAP / boost pressure sensor", 1_500, 5_000, "Cleaning sometimes fixes it", listOf("map sensor", "manifold absolute", "manifold pressure", "boost pressure sensor")),
+        RepairCostEntry("Intake air temperature sensor", 800, 3_000, "Small part, quick job", listOf("intake air temp")),
+        RepairCostEntry("Accelerator pedal sensor", 2_000, 8_000, "Usually sold with the pedal", listOf("pedal position", "accelerator pedal")),
+        RepairCostEntry("Idle air control valve", 1_500, 5_000, "Cleaning vs. replacement", listOf("idle air control", "idle control valve")),
+        RepairCostEntry("Engine wiring / connector repair", 500, 5_000, "Rat-bitten or corroded wires are common", listOf("wiring", "harness", "connector")),
+        RepairCostEntry("Engine computer (ECU)", 15_000, 60_000, "Rarely the real fault — rule out wiring first", listOf("engine computer", "ecu replacement", "control module replacement")),
+        RepairCostEntry("Wheel speed (ABS) sensor", 1_500, 5_000, "Per wheel; often just needs cleaning", listOf("wheel speed sensor", "abs sensor", "wheel sensor")),
+        RepairCostEntry("Vehicle speed sensor", 1_000, 4_000, "Gearbox-mounted on older cars", listOf("vehicle speed sensor", "speed sensor")),
+        RepairCostEntry("ABS module", 15_000, 60_000, "Repair vs. a new unit", listOf("abs module", "abs pump")),
+        RepairCostEntry("Radiator fan / fan relay", 1_500, 8_000, "Relay or fuse vs. the fan motor", listOf("radiator fan", "cooling fan", "fan relay")),
+        RepairCostEntry("Engine oil leak / gasket", 1_500, 8_000, "Valve-cover gasket vs. a crankshaft seal", listOf("oil leak", "valve cover gasket", "oil seal")),
+        RepairCostEntry("Oil pressure switch / sensor", 800, 3_000, "Check the oil level before replacing it", listOf("oil pressure")),
+        RepairCostEntry("Engine mount", 2_000, 7_000, "Per mount", listOf("engine mount")),
+        RepairCostEntry("Clutch master / slave cylinder", 2_500, 8_000, "Hydraulic clutch leak or soft pedal", listOf("clutch master", "slave cylinder", "clutch cylinder")),
+        RepairCostEntry("AMT gear actuator", 15_000, 45_000, "Repair kit vs. a new actuator", listOf("amt actuator", "gear actuator", "amt")),
+        RepairCostEntry("Automatic / CVT gearbox repair", 30_000, 150_000, "Fluid and solenoids vs. a gearbox overhaul", listOf("cvt", "torque converter", "automatic transmission repair")),
+        RepairCostEntry("Gear position / range sensor", 2_000, 8_000, "Automatic and AMT cars", listOf("range sensor", "gear position sensor")),
+        RepairCostEntry("Gearbox shift solenoid", 3_000, 12_000, "Automatic cars; with a fluid change", listOf("shift solenoid")),
+        RepairCostEntry("Wheel bearing", 2_000, 6_000, "Per wheel", listOf("wheel bearing")),
+        RepairCostEntry("CV joint / drive shaft", 3_000, 12_000, "A torn boot alone is cheaper", listOf("cv joint", "drive shaft", "driveshaft", "axle boot")),
+        RepairCostEntry("Power steering repair", 4_000, 30_000, "Sensor or wiring vs. the steering motor or rack", listOf("power steering", "eps")),
+        RepairCostEntry("AC condenser", 4_000, 12_000, "Includes a gas refill", listOf("condenser")),
+        RepairCostEntry("AC blower motor", 2_500, 7_000, "Resistor is the cheaper fix", listOf("blower")),
+        RepairCostEntry("Airbag sensor / clock spring", 3_000, 12_000, "Safety system — don't leave the light on", listOf("airbag", "clock spring", "srs")),
+        RepairCostEntry("Exhaust leak / silencer repair", 1_000, 6_000, "Welding vs. a new section", listOf("exhaust leak", "silencer", "muffler")),
+        RepairCostEntry("CNG kit service / tuning", 1_000, 4_000, "At an authorised kit fitter", listOf("cng kit", "lpg kit", "cng tuning")),
+        RepairCostEntry("Power window motor", 2_000, 6_000, "Per door", listOf("power window", "window motor")),
+        RepairCostEntry("Wiper motor", 1_500, 5_000, "Front wiper", listOf("wiper"))
     )
 
     /**

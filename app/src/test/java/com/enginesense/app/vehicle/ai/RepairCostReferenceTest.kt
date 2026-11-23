@@ -66,4 +66,40 @@ class RepairCostReferenceTest {
         assertNotNull(match)
         assertEquals("Clutch replacement", match!!.category)
     }
+
+    @Test
+    fun `category names are unique`() {
+        val names = RepairCostReference.entries.map { it.category }
+        assertEquals(names.size, names.toSet().size)
+    }
+
+    @Test
+    fun `parts named by the fault cards are priced`() {
+        assertEquals("Diesel high-pressure pump", RepairCostReference.findByQuestion("cost of a high-pressure pump")?.category)
+        assertEquals("Wheel speed (ABS) sensor", RepairCostReference.findByQuestion("abs wheel speed sensor price")?.category)
+        assertEquals("DPF cleaning / replacement", RepairCostReference.findByQuestion("DPF clogged")?.category)
+    }
+
+    @Test
+    fun `a lost-communication fault is not priced as a new engine computer`() {
+        assertNull(RepairCostReference.findByTitle("Lost Communication With ECM/PCM A"))
+    }
+
+    @Test
+    fun `car size picks the matching part of the range and stays inside it`() {
+        val clutch = RepairCostReference.entries.first { it.category == "Clutch replacement" }
+        val small = clutch.forSize(CarSize.SMALL)
+        val large = clutch.forSize(CarSize.LARGE)
+        assertTrue(small.minInr >= clutch.minInr && large.maxInr <= clutch.maxInr)
+        assertTrue(small.maxInr <= large.minInr)
+        assertEquals(clutch, clutch.forSize(null))
+    }
+
+    @Test
+    fun `car size comes from the new-car price`() {
+        assertEquals(CarSize.SMALL, CarSize.fromExShowroom(650_000.0))
+        assertEquals(CarSize.MID, CarSize.fromExShowroom(1_200_000.0))
+        assertEquals(CarSize.LARGE, CarSize.fromExShowroom(2_000_000.0))
+        assertNull(CarSize.fromExShowroom(null))
+    }
 }

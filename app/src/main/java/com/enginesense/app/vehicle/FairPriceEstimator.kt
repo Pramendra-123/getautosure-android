@@ -31,7 +31,36 @@ object FairPriceEstimator {
     /** ~15,000 km/year is the commonly cited average for India — not a fitted statistic. */
     private const val EXPECTED_KM_PER_YEAR = 15000
 
-    fun estimate(exShowroomPrice: Double, ageYears: Double, odometerKm: Int?): FairPriceEstimate {
+    /**
+     * Points added to (or taken off) the age curve by brand, from how the used market treats it:
+     * Maruti and Toyota hold value best; brands that left India or have thin service networks
+     * lose more. Brand names as in [com.enginesense.app.vehicle.pricing.ExShowroomPrices].
+     * Rough market reputation, not fitted data — tune it against the dealer prices being collected.
+     */
+    private val BRAND_POINTS = mapOf(
+        "Maruti Suzuki" to -4, "Toyota" to -5, "Honda" to -2, "Hyundai" to -1, "Mahindra" to -1, "Kia" to 0,
+        "Tata" to 1, "MG Motor" to 3, "Citroen" to 4, "Skoda" to 4, "Volkswagen" to 4, "Jeep" to 3, "Renault" to 5,
+        "Nissan" to 6, "Ford" to 5, "Isuzu" to 3, "Mitsubishi" to 5, "Chevrolet" to 8, "Fiat" to 8, "Datsun" to 8,
+        "Mercedes-Benz" to 5, "BMW" to 6, "Audi" to 6, "Volvo" to 5, "Land Rover" to 7, "Jaguar" to 8, "Lexus" to 2,
+        "BYD" to 5, "Tesla" to 3, "VinFast" to 6
+    )
+
+    /**
+     * Brand points take full effect from year three (a nearly new car sells close to new whatever
+     * the badge). Older diesels lose a point a year past five, up to five: buyers price in the 10-year
+     * diesel limit in Delhi NCR and pricier repairs. Electric cars lose more while battery life worries buyers.
+     */
+    private fun adjustmentPoints(ageYears: Double, make: String?, fuelType: String?): Int {
+        val brand = (BRAND_POINTS[make] ?: 0) * (ageYears / 3.0).coerceIn(0.0, 1.0)
+        val fuel = when (fuelType?.lowercase()?.trim()) {
+            "diesel" -> (ageYears - 5.0).coerceIn(0.0, 5.0)
+            "electric", "ev" -> (ageYears * 1.5).coerceAtMost(6.0)
+            else -> 0.0
+        }
+        return (brand + fuel).toInt()
+    }
+
+    fun estimate(exShowroomPrice: Double, ageYears: Double, odometerKm: Int?, make: String? = null, fuelType: String? = null): FairPriceEstimate {
         val beyondCurve = ageYears > 10.0
         val basePct = if (beyondCurve) {
             (58 + (ageYears - 10.0) * PCT_PER_YEAR_BEYOND_10).toInt()
@@ -51,7 +80,7 @@ object FairPriceEstimator {
             (diffRatio * 5).toInt().coerceIn(-5, 5)
         } ?: 0
 
-        val totalPct = (basePct + kmAdjustment).coerceIn(5, MAX_DEPRECIATION_PCT)
+        val totalPct = (basePct + kmAdjustment + adjustmentPoints(ageYears, make, fuelType)).coerceIn(5, MAX_DEPRECIATION_PCT)
         val midValue = exShowroomPrice * (1 - totalPct / 100.0)
         val low = midValue * 0.92
         val high = midValue * 1.08

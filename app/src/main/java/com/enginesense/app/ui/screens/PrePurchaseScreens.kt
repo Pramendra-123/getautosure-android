@@ -283,7 +283,8 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: (
             vin = r.vehicleId.vin, dashboardKm = dashboardInput.toDoubleOrNull(), rc = rc, registration = rc?.registrationNumber,
             exShowroomPriceInr = newPrice, buyerEnteredYear = yearInput.toIntOrNull() ?: autoYear,
             currentYear = currentYear,
-            exteriorCounts = exteriorCounts.toMap()
+            exteriorCounts = exteriorCounts.toMap(),
+            make = make, fuelType = rc?.fuelType
         )
 
         StepHeader(step, BUYER_STEP_TITLES)

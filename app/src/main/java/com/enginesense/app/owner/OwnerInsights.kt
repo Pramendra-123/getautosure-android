@@ -224,7 +224,7 @@ object OwnerInsights {
     val MILEAGE_TIPS = listOf("Check tyre pressure every two weeks.", "AC on full can cost 10–15% mileage in city driving.")
 
     /** Tentative value from the ex-showroom table (mid variant), age and km — null when the model isn't in the table. */
-    fun carValue(make: String?, model: String?, year: Int?, odometerKm: Int?, today: LocalDate): FairPriceEstimate? {
+    fun carValue(make: String?, model: String?, year: Int?, odometerKm: Int?, today: LocalDate, fuelType: String? = null): FairPriceEstimate? {
         val newPrice = ExShowroomPrices.lookup(make, model)?.priceFor(Variant.MID) ?: return null
         val y = year ?: return null
         val age = (today.year - y).toDouble() + (today.monthValue - 6) / 12.0

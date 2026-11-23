@@ -92,8 +92,8 @@ object CarWallet {
     fun ageYears(registered: LocalDate?, today: LocalDate): Double? =
         registered?.let { ChronoUnit.DAYS.between(it, today).coerceAtLeast(0) / 365.25 }
 
-    private fun midValue(newPrice: Double, ageYears: Double, odometerKm: Int?): Double =
-        FairPriceEstimator.estimate(newPrice, ageYears, odometerKm).let { (it.lowEstimate + it.highEstimate) / 2 }
+    private fun midValue(newPrice: Double, ageYears: Double, odometerKm: Int?, fuelType: String? = null): Double =
+        FairPriceEstimator.estimate(newPrice, ageYears, odometerKm, fuelType = fuelType).let { (it.lowEstimate + it.highEstimate) / 2 }
 
     private fun parse(date: String): LocalDate? = runCatching { LocalDate.parse(date) }.getOrNull()
 
@@ -178,7 +178,7 @@ object CarWallet {
             data.services.filter { thisYear(it.date) }.sumOf { it.costInr ?: 0 }
 
         val valueLost = if (car.newPrice != null && age != null) {
-            (midValue(car.newPrice, age, car.odometerKm) - midValue(car.newPrice, age + 1, car.odometerKm?.plus(km.km * 12))).roundToInt().coerceAtLeast(0)
+            (midValue(car.newPrice, age, car.odometerKm, car.fuelType) - midValue(car.newPrice, age + 1, car.odometerKm?.plus(km.km * 12), car.fuelType)).roundToInt().coerceAtLeast(0)
         } else null
 
         return WalletSummary(listOf(fuel, insurance, service, other), km, kmpl, price, spent, valueLost, age)

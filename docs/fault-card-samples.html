@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fault Card Samples</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAF7F2; --card: #141414; --card2: #1F1F1F; --text: #F5F5F5; --muted: #A8A8A8;
+    --ink: #1A1A1A; --ink-muted: #6B6B6B; --orange: #F26B1D; --line: #2C2C2C;
+    --stop: #E5484D; --now: #F26B1D; --soon: #E6B422; --wait: #3FB27F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, "Noto Sans Devanagari", system-ui, sans-serif; line-height: 1.5; }
+  body.hi { font-family: "Noto Sans Devanagari", Inter, system-ui, sans-serif; }
+  header { max-width: 1100px; margin: 0 auto; padding: 28px 16px 8px; }
+  h1 { margin: 0 0 4px; font-size: 26px; }
+  h1 span { color: var(--orange); }
+  .sub { color: var(--ink-muted); margin: 0 0 16px; font-size: 14px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .toggle button { border: 1.5px solid var(--ink); background: transparent; color: var(--ink); padding: 6px 16px; font: inherit; font-weight: 600; cursor: pointer; }
+  .toggle button:first-child { border-radius: 999px 0 0 999px; }
+  .toggle button:last-child { border-radius: 0 999px 999px 0; border-left: none; }
+  .toggle button.on { background: var(--ink); color: #fff; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; margin-left: auto; }
+  .grid { max-width: 1100px; margin: 0 auto; padding: 12px 16px 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 480px), 1fr)); gap: 16px; }
+  .card { background: var(--card); color: var(--text); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .code { background: var(--orange); color: #fff; font-weight: 700; border-radius: 8px; padding: 2px 10px; font-size: 14px; letter-spacing: .5px; }
+  .pill { border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 700; color: #111; }
+  .fuel { border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 1px 8px; font-size: 11px; }
+  .title { font-size: 19px; font-weight: 700; margin: 0; }
+  .tech { color: var(--muted); font-size: 12px; margin-top: -8px; }
+  .meaning { margin: 0; font-size: 14.5px; }
+  h3 { margin: 0 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--orange); }
+  body.hi h3 { text-transform: none; letter-spacing: 0; font-size: 13px; }
+  ul, ol { margin: 0; padding-left: 20px; font-size: 14px; }
+  li { margin: 2px 0; }
+  .tag { background: var(--orange); color: #fff; border-radius: 6px; font-size: 10.5px; font-weight: 700; padding: 0 6px; margin-left: 4px; white-space: nowrap; }
+  .box { background: var(--card2); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+  .box.drive { border-left: 3px solid var(--orange); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  td { padding: 5px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td.r { text-align: right; white-space: nowrap; font-weight: 600; padding-left: 12px; }
+  tr:last-child td { border-bottom: none; }
+  .india { font-size: 13.5px; color: #FFD9C2; }
+  .india b { color: var(--orange); }
+  footer { max-width: 1100px; margin: 0 auto; padding: 0 16px 40px; color: var(--ink-muted); font-size: 12.5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Fault-code cards: <span>10 samples</span></h1>
+  <p class="sub" id="sub"></p>
+  <div class="bar">
+    <div class="toggle"><button id="b-en" class="on">English</button><button id="b-hi">हिंदी</button></div>
+    <div class="legend" id="legend"></div>
+  </div>
+</header>
+<main class="grid" id="grid"></main>
+<footer id="foot"></footer>
+
+<script>
+const T = (en, hi) => ({ en, hi });
+
+const URGENCY = {
+  STOP: { c: "var(--stop)", l: T("Stop driving", "गाड़ी रोकें") },
+  NOW:  { c: "var(--now)",  l: T("Fix right away", "तुरंत ठीक कराएं") },
+  SOON: { c: "var(--soon)", l: T("Fix within 2 weeks", "2 हफ़्ते में ठीक कराएं") },
+  WAIT: { c: "var(--wait)", l: T("Can wait", "रुक सकते हैं") },
+};
+
+const UI = {
+  sub: T("Each card turns a one-line technical code into something a car owner understands. Plan: ~1,200 cards (500 common generic codes + 731 Indian-brand codes), stored in the app so they work offline.",
+         "हर कार्ड एक तकनीकी कोड को ऐसी भाषा में बदलता है जो गाड़ी मालिक समझ सके। योजना: ~1,200 कार्ड (500 आम कोड + भारतीय ब्रांड के 731 कोड), ऐप के अंदर — बिना इंटरनेट भी चलेंगे।"),
+  notice: T("You may notice", "आपको ये दिख सकता है"),
+  causes: T("Likely causes", "संभावित कारण"),
+  most: T("Most common", "सबसे आम"),
+  drive: T("Can I keep driving?", "क्या गाड़ी चला सकते हैं?"),
+  first: T("Cheapest first check", "सबसे सस्ती पहली जांच"),
+  cost: T("Tentative cost", "अनुमानित ख़र्च"),
+  india: T("India note", "भारत के लिए ख़ास"),
+  foot: T("Costs are tentative ballpark ranges for an Indian workshop, not quotes. They vary by city, car size and genuine vs local parts. Content drafted by Claude; to be spot-checked by a mechanic before release.",
+          "ख़र्च केवल अनुमान हैं, कोटेशन नहीं — शहर, गाड़ी के साइज़ और असली/लोकल पार्ट के हिसाब से बदलते हैं। सामग्री Claude ने तैयार की है; रिलीज़ से पहले मैकेनिक से जांच करवाई जाएगी।"),
+};
+
+const CARDS = [
+{
+  code: "P0300", fuel: ["Petrol", "CNG"], urgency: "NOW",
+  tech: "Random/Multiple Cylinder Misfire Detected",
+  title: T("Engine is misfiring (several cylinders)", "इंजन मिसफ़ायर कर रहा है (कई सिलेंडर)"),
+  meaning: T("Fuel isn't burning properly in more than one cylinder, so the car shakes and loses power.",
+             "एक से ज़्यादा सिलेंडर में फ़्यूल ठीक से नहीं जल रहा, इसलिए गाड़ी झटके देती है और पावर कम हो जाती है।"),
+  notice: [T("Shaking at idle or while accelerating", "खड़ी गाड़ी में या एक्सीलरेट करते समय झटके"),
+           T("Check-engine light on, or flashing", "चेक-इंजन लाइट जलना या टिमटिमाना"),
+           T("Lower mileage", "माइलेज कम होना")],
+  causes: [T("Worn spark plugs", "घिसे हुए स्पार्क प्लग"),
+           T("Weak ignition coil", "कमज़ोर इग्निशन कॉइल"),
+           T("Poor-quality or adulterated fuel", "ख़राब या मिलावटी फ़्यूल"),
+           T("Badly tuned CNG/LPG kit", "ठीक से ट्यून न की गई CNG/LPG किट"),
+           T("Clogged injector or an air leak", "बंद इंजेक्टर या हवा का लीक")],
+  drive: T("If the check-engine light is flashing, stop driving: unburnt fuel can ruin the catalytic converter (₹8,000–35,000). If it's steady, drive gently to a workshop.",
+           "अगर चेक-इंजन लाइट टिमटिमा रही है तो गाड़ी चलाना बंद करें — बिना जला फ़्यूल कैटेलिटिक कन्वर्टर ख़राब कर सकता है (₹8,000–35,000)। लाइट स्थिर है तो धीरे-धीरे वर्कशॉप तक ले जाएं।"),
+  first: T("Start with the spark plugs, especially if they haven't been changed in 30,000 km.",
+           "शुरुआत स्पार्क प्लग से करें, ख़ासकर अगर 30,000 km से नहीं बदले गए।"),
+  costs: [[T("Spark plugs (set)", "स्पार्क प्लग (सेट)"), "₹1,000–4,000"],
+          [T("Ignition coil (each)", "इग्निशन कॉइल (एक)"), "₹1,500–5,000"],
+          [T("Injector cleaning / replacement", "इंजेक्टर सफ़ाई / बदलना"), "₹1,500–9,000"]],
+  india: T("On CNG, spark plugs wear out about twice as fast. Check them every 15,000–20,000 km.",
+           "CNG पर स्पार्क प्लग लगभग दोगुनी तेज़ी से घिसते हैं — हर 15,000–20,000 km पर जांच कराएं।"),
+},
+{
+  code: "P0171", fuel: ["Petrol", "CNG"], urgency: "SOON",
+  tech: "System Too Lean (Bank 1)",
+  title: T("Engine getting too much air, too little fuel", "इंजन को हवा ज़्यादा, फ़्यूल कम मिल रहा है"),
+  meaning: T("The engine computer keeps adding extra fuel to make up for leaking air or a weak fuel supply, and has reached its limit.",
+             "हवा के लीक या कम फ़्यूल सप्लाई की भरपाई के लिए इंजन का कंप्यूटर ज़्यादा फ़्यूल डाल रहा है, और अब अपनी सीमा तक पहुंच गया है।"),
+  notice: [T("Rough or uneven idle", "खड़ी गाड़ी में इंजन असमान चलना"),
+           T("Jerks or hesitation while picking up speed", "स्पीड पकड़ते समय झटके या रुकावट"),
+           T("Sometimes misfire codes appear too", "कभी-कभी मिसफ़ायर कोड भी आते हैं")],
+  causes: [T("Cracked vacuum or air-intake hose", "फटी हुई वैक्यूम या एयर-इनटेक पाइप"),
+           T("Dusty air-flow (MAF) sensor", "धूल से गंदा एयर-फ़्लो (MAF) सेंसर"),
+           T("Clogged fuel filter or weak fuel pump", "बंद फ़्यूल फ़िल्टर या कमज़ोर फ़्यूल पंप"),
+           T("Leaking intake gasket", "लीक करती इनटेक गैसकेट")],
+  drive: T("Safe to drive for now, but get it checked within two weeks. Running lean for long can overheat the engine.",
+           "अभी चला सकते हैं, पर 2 हफ़्ते में जांच कराएं। लंबे समय तक ऐसे चलाने से इंजन ज़्यादा गरम हो सकता है।"),
+  first: T("Check the air filter and get the MAF sensor cleaned (₹500–1,000).",
+           "एयर फ़िल्टर देखें और MAF सेंसर साफ़ कराएं (₹500–1,000)।"),
+  costs: [[T("Vacuum hose / leak repair", "वैक्यूम पाइप / लीक रिपेयर"), "₹500–4,000"],
+          [T("MAF sensor clean / replace", "MAF सेंसर सफ़ाई / बदलना"), "₹500–10,000"],
+          [T("Fuel filter", "फ़्यूल फ़िल्टर"), "₹500–2,500"],
+          [T("Fuel pump", "फ़्यूल पंप"), "₹4,000–12,000"]],
+  india: T("Dusty roads clog air filters and MAF sensors fast. A cheap cleaning often clears this code.",
+           "धूल भरी सड़कों पर एयर फ़िल्टर और MAF सेंसर जल्दी गंदे होते हैं — अक्सर सस्ती सफ़ाई से ही कोड हट जाता है।"),
+},
+{
+  code: "P0420", fuel: ["Petrol", "CNG"], urgency: "WAIT",
+  tech: "Catalyst System Efficiency Below Threshold (Bank 1)",
+  title: T("Catalytic converter not cleaning exhaust well", "कैटेलिटिक कन्वर्टर धुआं ठीक से साफ़ नहीं कर रहा"),
+  meaning: T("The part in the exhaust that cleans harmful gases is working below the required level.",
+             "साइलेंसर में लगा वह पार्ट जो हानिकारक गैसें साफ़ करता है, ज़रूरत से कम काम कर रहा है।"),
+  notice: [T("Often nothing at all", "अक्सर कुछ भी महसूस नहीं होता"),
+           T("May fail the PUC test", "PUC टेस्ट में फ़ेल हो सकती है"),
+           T("Sometimes a rotten-egg smell", "कभी-कभी सड़े अंडे जैसी गंध")],
+  causes: [T("Ageing converter on a high-km car", "ज़्यादा चली गाड़ी में पुराना कन्वर्टर"),
+           T("Faulty rear oxygen sensor giving a wrong reading", "पीछे का ऑक्सीजन सेंसर ग़लत रीडिंग दे रहा"),
+           T("Damage from earlier misfires or oil burning", "पहले के मिसफ़ायर या ऑयल जलने से नुक़सान"),
+           T("Exhaust leak near the sensor", "सेंसर के पास साइलेंसर में लीक")],
+  drive: T("Safe to drive. Don't rush to replace the converter; diagnose first, because it's expensive.",
+           "गाड़ी चला सकते हैं। कन्वर्टर बदलवाने की जल्दी न करें — महंगा है, पहले सही जांच कराएं।"),
+  first: T("Test the rear oxygen sensor first, and fix any misfire codes before this one.",
+           "पहले पीछे का ऑक्सीजन सेंसर जांचें, और अगर मिसफ़ायर कोड हैं तो पहले उन्हें ठीक कराएं।"),
+  costs: [[T("Oxygen (O2) sensor", "ऑक्सीजन (O2) सेंसर"), "₹3,000–9,000"],
+          [T("Catalytic converter", "कैटेलिटिक कन्वर्टर"), "₹8,000–35,000"]],
+  india: T("Some workshops offer to 'remove' the converter. That's illegal and the car will fail PUC.",
+           "कुछ वर्कशॉप कन्वर्टर 'निकालने' की सलाह देते हैं — यह ग़ैरक़ानूनी है और गाड़ी PUC में फ़ेल होगी।"),
+},
+{
+  code: "P0562", fuel: ["Petrol", "Diesel", "CNG"], urgency: "NOW",
+  tech: "System Voltage Low",
+  title: T("Battery or charging voltage too low", "बैटरी या चार्जिंग वोल्टेज कम है"),
+  meaning: T("The car's electrical system is getting less voltage than it needs.",
+             "गाड़ी के इलेक्ट्रिकल सिस्टम को ज़रूरत से कम वोल्टेज मिल रहा है।"),
+  notice: [T("Slow or difficult starting", "स्टार्ट होने में देर या दिक़्क़त"),
+           T("Dim headlights, flickering dashboard", "हेडलाइट धीमी, डैशबोर्ड टिमटिमाना"),
+           T("Random warning lights", "बिना वजह चेतावनी लाइटें जलना")],
+  causes: [T("Weak or old battery (3+ years)", "कमज़ोर या पुरानी बैटरी (3+ साल)"),
+           T("Loose or corroded battery terminals", "ढीले या जंग लगे बैटरी टर्मिनल"),
+           T("Alternator not charging properly", "अल्टरनेटर ठीक से चार्ज नहीं कर रहा"),
+           T("Extra accessories draining power (lights, music system, alarm)", "एक्स्ट्रा एक्सेसरीज़ बिजली खींच रही हैं (लाइट, म्यूज़िक सिस्टम, अलार्म)")],
+  drive: T("You can drive, but the car may not start next time. Avoid leaving it parked for days.",
+           "चला सकते हैं, पर अगली बार गाड़ी स्टार्ट न हो ऐसा हो सकता है। कई दिन खड़ी न छोड़ें।"),
+  first: T("Clean and tighten the battery terminals, and get a free battery test at a battery shop.",
+           "बैटरी टर्मिनल साफ़ और टाइट कराएं, और बैटरी की दुकान पर मुफ़्त बैटरी टेस्ट कराएं।"),
+  costs: [[T("Terminal cleaning", "टर्मिनल सफ़ाई"), "₹100–500"],
+          [T("Battery replacement", "नई बैटरी"), "₹4,000–9,000"],
+          [T("Alternator repair / replace", "अल्टरनेटर रिपेयर / बदलना"), "₹4,000–12,000"]],
+  india: T("Indian heat shortens battery life. About 3 years is typical, less in hot cities.",
+           "भारत की गर्मी बैटरी की उम्र घटाती है — आमतौर पर 3 साल, गरम शहरों में इससे भी कम।"),
+},
+{
+  code: "P0087", fuel: ["Diesel"], urgency: "NOW",
+  tech: "Fuel Rail/System Pressure Too Low",
+  title: T("Diesel fuel pressure too low", "डीज़ल फ़्यूल प्रेशर बहुत कम"),
+  meaning: T("The high-pressure fuel system can't build enough pressure to spray diesel into the engine.",
+             "हाई-प्रेशर फ़्यूल सिस्टम इंजन में डीज़ल भेजने लायक़ प्रेशर नहीं बना पा रहा।"),
+  notice: [T("Loss of power or 'limp mode'", "पावर कम होना या 'लिम्प मोड'"),
+           T("Hard starting", "स्टार्ट होने में दिक़्क़त"),
+           T("Engine may cut out while driving", "चलते-चलते इंजन बंद हो सकता है")],
+  causes: [T("Clogged diesel filter or water in diesel", "बंद डीज़ल फ़िल्टर या डीज़ल में पानी"),
+           T("Air in the fuel line after a filter change", "फ़िल्टर बदलने के बाद फ़्यूल लाइन में हवा"),
+           T("Faulty rail pressure sensor", "ख़राब रेल प्रेशर सेंसर"),
+           T("Worn high-pressure pump", "घिसा हुआ हाई-प्रेशर पंप")],
+  drive: T("Avoid highways and long trips until fixed: the engine can cut out at speed, and water in the fuel can destroy the high-pressure pump.",
+           "ठीक होने तक हाईवे और लंबे सफ़र से बचें — तेज़ स्पीड पर इंजन बंद हो सकता है, और डीज़ल में पानी हाई-प्रेशर पंप ख़राब कर सकता है।"),
+  first: T("Replace the diesel filter and drain water from it. That's the cheapest and most common fix.",
+           "डीज़ल फ़िल्टर बदलवाएं और उसमें से पानी निकलवाएं — सबसे सस्ता और सबसे आम इलाज।"),
+  costs: [[T("Diesel filter", "डीज़ल फ़िल्टर"), "₹800–3,000"],
+          [T("Rail pressure sensor", "रेल प्रेशर सेंसर"), "₹3,000–10,000"],
+          [T("High-pressure pump repair / replace", "हाई-प्रेशर पंप रिपेयर / बदलना"), "₹15,000–80,000"]],
+  india: T("Water-contaminated diesel is common at some pumps. Fill up at busy, trusted pumps.",
+           "कुछ पंपों पर डीज़ल में पानी मिला होना आम है — भीड़ वाले, भरोसेमंद पंप से ही भरवाएं।"),
+},
+{
+  code: "P0401", fuel: ["Diesel", "Petrol"], urgency: "SOON",
+  tech: "Exhaust Gas Recirculation (EGR) Flow Insufficient",
+  title: T("EGR valve blocked", "EGR वाल्व बंद (जाम)"),
+  meaning: T("To cut pollution, a little exhaust gas is sent back into the engine. That path is blocked.",
+             "प्रदूषण कम करने के लिए धुएं का थोड़ा हिस्सा वापस इंजन में भेजा जाता है — वह रास्ता बंद हो गया है।"),
+  notice: [T("Often nothing at all", "अक्सर कुछ भी महसूस नहीं होता"),
+           T("More black smoke (diesel)", "ज़्यादा काला धुआं (डीज़ल)"),
+           T("Knocking sound under load; may fail PUC", "लोड पर खटखट की आवाज़; PUC में फ़ेल हो सकती है")],
+  causes: [T("Carbon-clogged EGR valve", "कार्बन से जाम EGR वाल्व"),
+           T("Soot blocking the EGR passages", "EGR के रास्तों में कालिख जमी"),
+           T("Stuck valve or faulty actuator", "अटका हुआ वाल्व या ख़राब एक्चुएटर")],
+  drive: T("Safe to drive. Get it cleaned at your next service.",
+           "गाड़ी चला सकते हैं। अगली सर्विस में इसकी सफ़ाई कराएं।"),
+  first: T("Ask for EGR cleaning, not replacement. Cleaning fixes most cases.",
+           "EGR बदलवाने के बजाय सफ़ाई कराएं — ज़्यादातर मामलों में सफ़ाई से ही ठीक हो जाता है।"),
+  costs: [[T("EGR cleaning", "EGR सफ़ाई"), "₹1,500–4,000"],
+          [T("EGR valve replacement", "नया EGR वाल्व"), "₹3,000–12,000"]],
+  india: T("Stop-start city traffic builds up soot fast. A regular highway run helps keep it clean.",
+           "शहर के रुक-रुक कर चलने वाले ट्रैफ़िक में कालिख जल्दी जमती है — बीच-बीच में हाईवे पर चलाने से मदद मिलती है।"),
+},
+{
+  code: "P0118", fuel: ["Petrol", "Diesel", "CNG"], urgency: "NOW",
+  tech: "Engine Coolant Temperature Sensor Circuit High",
+  title: T("Engine temperature sensor signal faulty", "इंजन टेम्परेचर सेंसर का सिग्नल ख़राब"),
+  meaning: T("The sensor that tells the engine how hot it is sends an impossible reading, usually because of wiring. The temperature gauge can't be trusted.",
+             "इंजन कितना गरम है यह बताने वाला सेंसर ग़लत रीडिंग भेज रहा है, ज़्यादातर वायरिंग की वजह से। इसलिए टेम्परेचर गेज पर भरोसा नहीं किया जा सकता।"),
+  notice: [T("Radiator fan runs all the time", "रेडिएटर फ़ैन लगातार चलता रहता है"),
+           T("Temperature gauge stuck or wrong", "टेम्परेचर गेज अटका या ग़लत"),
+           T("Hard starting, lower mileage", "स्टार्ट में दिक़्क़त, माइलेज कम")],
+  causes: [T("Loose or corroded sensor connector", "सेंसर का कनेक्टर ढीला या जंग लगा"),
+           T("Wire chewed by rats", "चूहों ने तार काट दिया"),
+           T("Faulty sensor", "ख़राब सेंसर")],
+  drive: T("Short trips are OK, but you can't trust the temperature gauge. Stop at once if you see steam or smell coolant.",
+           "छोटी दूरी चला सकते हैं, पर टेम्परेचर गेज पर भरोसा न करें। भाप दिखे या कूलेंट की गंध आए तो तुरंत रुकें।"),
+  first: T("Check the sensor's connector and nearby wiring for damage or bite marks.",
+           "सेंसर का कनेक्टर और आसपास के तार देखें — कहीं टूटे या कुतरे तो नहीं।"),
+  costs: [[T("Wiring repair", "वायरिंग रिपेयर"), "₹500–3,000"],
+          [T("Coolant temperature sensor", "कूलेंट टेम्परेचर सेंसर"), "₹800–3,000"]],
+  india: T("Rats chewing engine-bay wires is one of the most common causes in India.",
+           "इंजन के तारों को चूहों का कुतरना भारत में इसकी सबसे आम वजहों में से एक है।"),
+},
+{
+  code: "P0011", fuel: ["Petrol", "CNG"], urgency: "NOW",
+  tech: "Camshaft Position Timing Over-Advanced (Bank 1)",
+  title: T("Valve timing system not responding", "वाल्व टाइमिंग सिस्टम ठीक से काम नहीं कर रहा"),
+  meaning: T("The system that adjusts when the engine's valves open (VVT) isn't reaching the position the computer asks for.",
+             "इंजन के वाल्व कब खुलें, यह बदलने वाला सिस्टम (VVT) कंप्यूटर की बताई जगह तक नहीं पहुंच पा रहा।"),
+  notice: [T("Rough idle and low power", "खड़ी गाड़ी में इंजन असमान, पावर कम"),
+           T("Lower mileage", "माइलेज कम होना"),
+           T("Rattle for a second at start-up", "स्टार्ट करते समय पल भर खड़खड़ाहट")],
+  causes: [T("Low or old engine oil (VVT runs on oil pressure)", "कम या पुराना इंजन ऑयल (VVT ऑयल प्रेशर से चलता है)"),
+           T("Wrong oil grade used at service", "सर्विस में ग़लत ग्रेड का ऑयल डाला गया"),
+           T("Faulty oil control valve (VVT solenoid)", "ख़राब ऑयल कंट्रोल वाल्व (VVT सोलेनॉइड)"),
+           T("Stretched timing chain on a high-km car", "ज़्यादा चली गाड़ी में खिंची हुई टाइमिंग चेन")],
+  drive: T("Check the oil level today. If it's low, top up before driving further.",
+           "आज ही इंजन ऑयल का लेवल देखें। कम हो तो आगे चलाने से पहले ऑयल डलवाएं।"),
+  first: T("Check the dipstick. An overdue oil change often clears this code.",
+           "डिपस्टिक से ऑयल देखें — समय पर ऑयल न बदला हो तो ऑयल बदलने से अक्सर यह कोड हट जाता है।"),
+  costs: [[T("Oil change", "ऑयल बदलना"), "₹2,000–6,000"],
+          [T("Oil control valve", "ऑयल कंट्रोल वाल्व"), "₹2,000–6,000"],
+          [T("Timing chain", "टाइमिंग चेन"), "₹5,000–20,000"]],
+  india: T("Local workshops sometimes use a thicker, cheaper oil than the manual specifies. That alone can trigger this code.",
+           "लोकल वर्कशॉप कभी-कभी मैनुअल से अलग, गाढ़ा और सस्ता ऑयल डाल देते हैं — सिर्फ़ इसी से यह कोड आ सकता है।"),
+},
+{
+  code: "U0100", fuel: ["Petrol", "Diesel", "CNG"], urgency: "NOW",
+  tech: "Lost Communication With ECM/PCM",
+  title: T("Engine computer not talking to the rest of the car", "इंजन कंप्यूटर बाक़ी गाड़ी से बात नहीं कर पा रहा"),
+  meaning: T("Parts like the dashboard, ABS and gearbox lost contact with the engine computer (ECM) on the car's internal network.",
+             "गाड़ी के अंदरूनी नेटवर्क पर डैशबोर्ड, ABS और गियरबॉक्स जैसे हिस्सों का इंजन कंप्यूटर (ECM) से संपर्क टूट गया।"),
+  notice: [T("Many warning lights at once", "एक साथ कई चेतावनी लाइटें"),
+           T("Gauges drop to zero", "मीटर की सुइयां ज़ीरो पर गिर जाना"),
+           T("Car may stall or not start", "गाड़ी बंद हो सकती है या स्टार्ट न हो")],
+  causes: [T("Wiring damaged by rats", "चूहों से कटी वायरिंग"),
+           T("Loose or corroded connector at the ECM", "ECM का कनेक्टर ढीला या जंग लगा"),
+           T("Low battery voltage", "बैटरी वोल्टेज कम"),
+           T("Badly fitted accessory (reverse camera, alarm, GPS tracker)", "ग़लत तरीक़े से लगी एक्सेसरी (रिवर्स कैमरा, अलार्म, GPS ट्रैकर)"),
+           T("ECM failure (rare)", "ECM ख़राब होना (बहुत कम)")],
+  drive: T("If the car runs normally, drive gently to a workshop. If it stalls or the lights keep flashing, don't drive.",
+           "गाड़ी सामान्य चल रही हो तो धीरे-धीरे वर्कशॉप तक ले जाएं। बंद हो रही हो या लाइटें बार-बार जल रही हों तो न चलाएं।"),
+  first: T("Check the battery, look for chewed wires, and think about any accessory fitted recently.",
+           "बैटरी जांचें, कुतरे तार देखें, और याद करें कि हाल में कोई एक्सेसरी तो नहीं लगवाई।"),
+  costs: [[T("Wiring repair", "वायरिंग रिपेयर"), "₹500–5,000"],
+          [T("ECM repair / replace (rare)", "ECM रिपेयर / बदलना (बहुत कम)"), "₹15,000–60,000"]],
+  india: T("Aftermarket accessories spliced into the wiring are a frequent cause. Mention them to the workshop.",
+           "बाहर से लगवाई गई एक्सेसरीज़ जो वायरिंग में जोड़ी गई हों, अक्सर वजह होती हैं — वर्कशॉप को ज़रूर बताएं।"),
+},
+{
+  code: "P0500", fuel: ["Petrol", "Diesel", "CNG"], urgency: "SOON",
+  tech: "Vehicle Speed Sensor Malfunction",
+  title: T("Speed sensor not working", "स्पीड सेंसर काम नहीं कर रहा"),
+  meaning: T("The car isn't getting a signal for how fast it's moving.",
+             "गाड़ी को यह सिग्नल नहीं मिल रहा कि वह कितनी स्पीड से चल रही है।"),
+  notice: [T("Speedometer stops or jumps", "स्पीडोमीटर रुक जाना या उछलना"),
+           T("AMT/automatic gear shifts jerky or odd", "AMT/ऑटोमैटिक में गियर झटके से या अजीब बदलना"),
+           T("ABS light may come on too", "ABS लाइट भी जल सकती है")],
+  causes: [T("Faulty speed sensor", "ख़राब स्पीड सेंसर"),
+           T("Damaged wire or connector", "कटा तार या ख़राब कनेक्टर"),
+           T("ABS wheel sensor fault (many cars read speed from it)", "ABS व्हील सेंसर ख़राब (कई गाड़ियां स्पीड यहीं से लेती हैं)"),
+           T("Mud or water after driving through flooded roads", "पानी भरी सड़कों से गुज़रने के बाद कीचड़ या पानी")],
+  drive: T("Drivable, but you won't know your real speed and AMT/automatic cars may shift badly. Fix within two weeks.",
+           "चला सकते हैं, पर असली स्पीड पता नहीं चलेगी और AMT/ऑटोमैटिक में गियर ठीक से नहीं बदलेंगे। 2 हफ़्ते में ठीक कराएं।"),
+  first: T("If the ABS light is also on, the wheel sensor is the likely culprit; often it only needs cleaning.",
+           "अगर ABS लाइट भी जली है तो व्हील सेंसर की गड़बड़ी होने की संभावना ज़्यादा है — अक्सर सिर्फ़ सफ़ाई से ठीक हो जाता है।"),
+  costs: [[T("Sensor cleaning / wiring fix", "सेंसर सफ़ाई / वायरिंग"), "₹300–2,000"],
+          [T("Speed sensor", "स्पीड सेंसर"), "₹1,000–4,000"],
+          [T("ABS wheel sensor", "ABS व्हील सेंसर"), "₹1,500–5,000"]],
+  india: T("Very common after monsoon waterlogging.",
+           "मानसून में जलभराव के बाद यह बहुत आम है।"),
+},
+];
+
+let lang = "en";
+const esc = s => s.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+const t = o => esc(o[lang]);
+
+function render() {
+  document.body.classList.toggle("hi", lang === "hi");
+  document.documentElement.lang = lang;
+  document.getElementById("sub").textContent = UI.sub[lang];
+  document.getElementById("foot").textContent = UI.foot[lang];
+  document.getElementById("legend").innerHTML = Object.values(URGENCY)
+    .map(u => `<span class="pill" style="background:${u.c}">${t(u.l)}</span>`).join("");
+  document.getElementById("grid").innerHTML = CARDS.map(c => {
+    const u = URGENCY[c.urgency];
+    return `<article class="card">
+      <div class="top"><span class="code">${c.code}</span>
+        <span class="pill" style="background:${u.c}">${t(u.l)}</span>
+        ${c.fuel.map(f => `<span class="fuel">${f}</span>`).join("")}</div>
+      <p class="title">${t(c.title)}</p>
+      <div class="tech">${esc(c.tech)}</div>
+      <p class="meaning">${t(c.meaning)}</p>
+      <div><h3>${t(UI.notice)}</h3><ul>${c.notice.map(n => `<li>${t(n)}</li>`).join("")}</ul></div>
+      <div><h3>${t(UI.causes)}</h3><ol>${c.causes.map((x, i) => `<li>${t(x)}${i === 0 ? `<span class="tag">${t(UI.most)}</span>` : ""}</li>`).join("")}</ol></div>
+      <div class="box drive"><h3>${t(UI.drive)}</h3>${t(c.drive)}</div>
+      <div class="box"><h3>${t(UI.first)}</h3>${t(c.first)}</div>
+      <div><h3>${t(UI.cost)}</h3><table>${c.costs.map(([p, r]) => `<tr><td>${t(p)}</td><td class="r">${r}</td></tr>`).join("")}</table></div>
+      <div class="india"><b>${t(UI.india)}:</b> ${t(c.india)}</div>
+    </article>`;
+  }).join("");
+  document.getElementById("b-en").classList.toggle("on", lang === "en");
+  document.getElementById("b-hi").classList.toggle("on", lang === "hi");
+}
+document.getElementById("b-en").onclick = () => { lang = "en"; render(); };
+document.getElementById("b-hi").onclick = () => { lang = "hi"; render(); };
+render();
+</script>
+</body>
+</html>

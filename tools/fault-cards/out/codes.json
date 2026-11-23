@@ -1,0 +1,4682 @@
+[
+ {
+  "code": "C0035",
+  "brand": null,
+  "description": "Right Front Wheel Speed Sensor Supply"
+ },
+ {
+  "code": "C0036",
+  "brand": null,
+  "description": "Left Rear Tone Wheel"
+ },
+ {
+  "code": "C0037",
+  "brand": null,
+  "description": "Left Rear Wheel Speed Sensor"
+ },
+ {
+  "code": "C0038",
+  "brand": null,
+  "description": "Left Rear Wheel Speed Sensor Supply"
+ },
+ {
+  "code": "C0039",
+  "brand": null,
+  "description": "Right Rear Tone Wheel"
+ },
+ {
+  "code": "C0040",
+  "brand": null,
+  "description": "Brake Pedal Switch A"
+ },
+ {
+  "code": "C0041",
+  "brand": null,
+  "description": "Brake Pedal Switch B"
+ },
+ {
+  "code": "C0042",
+  "brand": null,
+  "description": "Brake Pedal Position Sensor Circuit A"
+ },
+ {
+  "code": "C0043",
+  "brand": null,
+  "description": "Brake Pedal Position Sensor Circuit B"
+ },
+ {
+  "code": "C0044",
+  "brand": null,
+  "description": "Brake Pressure Sensor A"
+ },
+ {
+  "code": "C0045",
+  "brand": null,
+  "description": "Brake Pressure Sensor B"
+ },
+ {
+  "code": "C0046",
+  "brand": null,
+  "description": "Brake Pressure Sensor A/B"
+ },
+ {
+  "code": "C0047",
+  "brand": null,
+  "description": "Brake Booster Pressure Sensor"
+ },
+ {
+  "code": "C0048",
+  "brand": null,
+  "description": "Brake Booster Travel Sensor"
+ },
+ {
+  "code": "C0049",
+  "brand": null,
+  "description": "Brake Fluid Level"
+ },
+ {
+  "code": "P0001",
+  "brand": null,
+  "description": "Fuel Volume Regulator A Control Circuit/Open"
+ },
+ {
+  "code": "P0008",
+  "brand": null,
+  "description": "Engine Position System Performance Bank 1"
+ },
+ {
+  "code": "P0010",
+  "brand": null,
+  "description": "A Camshaft Position Actuator A Control Circuit/Open Bank 1"
+ },
+ {
+  "code": "P0011",
+  "brand": null,
+  "description": "A Camshaft Position - Timing Over-Advanced or System Performance Bank 1"
+ },
+ {
+  "code": "P0012",
+  "brand": null,
+  "description": "A Camshaft Position - Timing Over-Retarded Bank 1"
+ },
+ {
+  "code": "P0013",
+  "brand": null,
+  "description": "B Camshaft Position Actuator A Control Circuit/Open Bank 1"
+ },
+ {
+  "code": "P0014",
+  "brand": null,
+  "description": "B Camshaft Position - Timing Over-Advanced or System Performance Bank 1"
+ },
+ {
+  "code": "P0015",
+  "brand": null,
+  "description": "B Camshaft Position - Timing Over-Retarded Bank 1"
+ },
+ {
+  "code": "P0016",
+  "brand": null,
+  "description": "Crankshaft Position - Camshaft Position Correlation Bank 1 Sensor A"
+ },
+ {
+  "code": "P0017",
+  "brand": null,
+  "description": "Crankshaft Position - Camshaft Position Correlation Bank 1 Sensor B"
+ },
+ {
+  "code": "P0018",
+  "brand": null,
+  "description": "Crankshaft Position - Camshaft Position Correlation Bank 2 Sensor A"
+ },
+ {
+  "code": "P0019",
+  "brand": null,
+  "description": "Crankshaft Position - Camshaft Position Correlation Bank 2 Sensor B"
+ },
+ {
+  "code": "P0020",
+  "brand": null,
+  "description": "A Camshaft Position Actuator A Control Circuit/Open Bank 2"
+ },
+ {
+  "code": "P0021",
+  "brand": null,
+  "description": "A Camshaft Position - Timing Over-Advanced or System Performance Bank 2"
+ },
+ {
+  "code": "P0022",
+  "brand": null,
+  "description": "A Camshaft Position - Timing Over-Retarded Bank 2"
+ },
+ {
+  "code": "P0023",
+  "brand": null,
+  "description": "B Camshaft Position Actuator A Control Circuit/Open Bank 2"
+ },
+ {
+  "code": "P0024",
+  "brand": null,
+  "description": "B Camshaft Position - Timing Over-Advanced or System Performance Bank 2"
+ },
+ {
+  "code": "P0030",
+  "brand": null,
+  "description": "HO2S Heater Control Circuit Bank 1 Sensor 1"
+ },
+ {
+  "code": "P0031",
+  "brand": null,
+  "description": "HO2S Heater Control Circuit Low Bank 1 Sensor 1"
+ },
+ {
+  "code": "P0032",
+  "brand": null,
+  "description": "HO2S Heater Control Circuit High Bank 1 Sensor 1"
+ },
+ {
+  "code": "P0033",
+  "brand": null,
+  "description": "Turbocharger/Supercharger Bypass Valve A Control Circuit"
+ },
+ {
+  "code": "P0034",
+  "brand": null,
+  "description": "Turbocharger/Supercharger Bypass Valve A Control Circuit Low"
+ },
+ {
+  "code": "P0035",
+  "brand": null,
+  "description": "Turbocharger/Supercharger Bypass Valve A Control Circuit High"
+ },
+ {
+  "code": "P0036",
+  "brand": null,
+  "description": "HO2S Heater Control Circuit Bank 1 Sensor 2"
+ },
+ {
+  "code": "P0037",
+  "brand": null,
+  "description": "HO2S Heater Control Circuit Low Bank 1 Sensor 2"
+ },
+ {
+  "code": "P0038",
+  "brand": null,
+  "description": "HO2S Heater Control Circuit High Bank 1 Sensor 2"
+ },
+ {
+  "code": "P0039",
+  "brand": null,
+  "description": "Turbocharger/Supercharger Bypass Valve A Control Circuit Range/Performance"
+ },
+ {
+  "code": "P0040",
+  "brand": null,
+  "description": "O2 Sensor Signals Swapped Bank 1 Sensor 1/Bank 2 Sensor 1"
+ },
+ {
+  "code": "P0041",
+  "brand": null,
+  "description": "O2 Sensor Signals Swapped Bank 1 Sensor 2/Bank 2 Sensor 2"
+ },
+ {
+  "code": "P0042",
+  "brand": null,
+  "description": "HO2S Heater Control Circuit Bank 1 Sensor 3"
+ },
+ {
+  "code": "P0043",
+  "brand": null,
+  "description": "HO2S Heater Control Circuit Low Bank 1 Sensor 3"
+ },
+ {
+  "code": "P0044",
+  "brand": null,
+  "description": "HO2S Heater Control Circuit High Bank 1 Sensor 3"
+ },
+ {
+  "code": "P0045",
+  "brand": null,
+  "description": "Turbocharger/Supercharger Boost Control A Circuit/Open"
+ },
+ {
+  "code": "P0046",
+  "brand": null,
+  "description": "Turbocharger/Supercharger Boost Control A Circuit Range/Performance"
+ },
+ {
+  "code": "P0047",
+  "brand": null,
+  "description": "Turbocharger/Supercharger Boost Control A Circuit Low"
+ },
+ {
+  "code": "P0048",
+  "brand": null,
+  "description": "Turbocharger/Supercharger Boost Control A Circuit High"
+ },
+ {
+  "code": "P0049",
+  "brand": null,
+  "description": "Turbocharger/Supercharger A Turbine Overspeed"
+ },
+ {
+  "code": "P0050",
+  "brand": null,
+  "description": "HO2S Heater Control Circuit Bank 2 Sensor 1"
+ },
+ {
+  "code": "P0051",
+  "brand": null,
+  "description": "HO2S Heater Control Circuit Low Bank 2 Sensor 1"
+ },
+ {
+  "code": "P0052",
+  "brand": null,
+  "description": "HO2S Heater Control Circuit High Bank 2 Sensor 1"
+ },
+ {
+  "code": "P0053",
+  "brand": null,
+  "description": "HO2S Heater Resistance Bank 1 Sensor 1"
+ },
+ {
+  "code": "P0054",
+  "brand": null,
+  "description": "HO2S Heater Resistance Bank 1 Sensor 2"
+ },
+ {
+  "code": "P0055",
+  "brand": null,
+  "description": "HO2S Heater Resistance Bank 1 Sensor 3"
+ },
+ {
+  "code": "P0056",
+  "brand": null,
+  "description": "HO2S Heater Control Circuit Bank 2 Sensor 2"
+ },
+ {
+  "code": "P0057",
+  "brand": null,
+  "description": "HO2S Heater Control Circuit Low Bank 2 Sensor 2"
+ },
+ {
+  "code": "P0058",
+  "brand": null,
+  "description": "HO2S Heater Control Circuit High Bank 2 Sensor 2"
+ },
+ {
+  "code": "P0059",
+  "brand": null,
+  "description": "HO2S Heater Resistance Bank 2 Sensor 1"
+ },
+ {
+  "code": "P0060",
+  "brand": null,
+  "description": "HO2S Heater Resistance Bank 2 Sensor 2"
+ },
+ {
+  "code": "P0061",
+  "brand": null,
+  "description": "HO2S Heater Resistance Bank 2 Sensor 3"
+ },
+ {
+  "code": "P0062",
+  "brand": null,
+  "description": "HO2S Heater Control Circuit Bank 2 Sensor 3"
+ },
+ {
+  "code": "P0063",
+  "brand": null,
+  "description": "HO2S Heater Control Circuit Low Bank 2 Sensor 3"
+ },
+ {
+  "code": "P0064",
+  "brand": null,
+  "description": "HO2S Heater Control Circuit High Bank 2 Sensor 3"
+ },
+ {
+  "code": "P0065",
+  "brand": null,
+  "description": "Air Assisted Injector Control Range/Performance"
+ },
+ {
+  "code": "P0066",
+  "brand": null,
+  "description": "Air Assisted Injector Control Circuit Low"
+ },
+ {
+  "code": "P0067",
+  "brand": null,
+  "description": "Air Assisted Injector Control Circuit High"
+ },
+ {
+  "code": "P0068",
+  "brand": null,
+  "description": "MAP/MAF - Throttle Position Correlation"
+ },
+ {
+  "code": "P0087",
+  "brand": null,
+  "description": "Fuel Rail/System Pressure - Too Low Bank 1"
+ },
+ {
+  "code": "P0088",
+  "brand": null,
+  "description": "Fuel Rail/System Pressure - Too High Bank 1"
+ },
+ {
+  "code": "P0089",
+  "brand": null,
+  "description": "Fuel Pressure Regulator A Performance"
+ },
+ {
+  "code": "P0090",
+  "brand": null,
+  "description": "Fuel Pressure Regulator A Control Circuit/Open"
+ },
+ {
+  "code": "P0091",
+  "brand": null,
+  "description": "Fuel Pressure Regulator A Control Circuit Low"
+ },
+ {
+  "code": "P0092",
+  "brand": null,
+  "description": "Fuel Pressure Regulator A Control Circuit High"
+ },
+ {
+  "code": "P0093",
+  "brand": null,
+  "description": "Fuel System Leak Detected - Large Leak"
+ },
+ {
+  "code": "P0100",
+  "brand": null,
+  "description": "Mass or Volume Air Flow Sensor A Circuit"
+ },
+ {
+  "code": "P0101",
+  "brand": null,
+  "description": "Mass or Volume Air Flow Sensor A Circuit Range/Performance"
+ },
+ {
+  "code": "P0102",
+  "brand": null,
+  "description": "Mass or Volume Air Flow Sensor A Circuit Low"
+ },
+ {
+  "code": "P0103",
+  "brand": null,
+  "description": "Mass or Volume Air Flow Sensor A Circuit High"
+ },
+ {
+  "code": "P0104",
+  "brand": null,
+  "description": "Mass or Volume Air Flow Sensor A Circuit Intermittent"
+ },
+ {
+  "code": "P0105",
+  "brand": null,
+  "description": "Manifold Absolute Pressure/Barometric Pressure Sensor Circuit"
+ },
+ {
+  "code": "P0106",
+  "brand": null,
+  "description": "Manifold Absolute Pressure/Barometric Pressure Sensor Circuit Range/Performance"
+ },
+ {
+  "code": "P0107",
+  "brand": null,
+  "description": "Manifold Absolute Pressure/Barometric Pressure Sensor Circuit Low"
+ },
+ {
+  "code": "P0108",
+  "brand": null,
+  "description": "Manifold Absolute Pressure/Barometric Pressure Sensor Circuit High"
+ },
+ {
+  "code": "P0109",
+  "brand": null,
+  "description": "Manifold Absolute Pressure/Barometric Pressure Sensor Circuit Intermittent"
+ },
+ {
+  "code": "P0110",
+  "brand": null,
+  "description": "Intake Air Temperature Sensor 1 Circuit Bank 1"
+ },
+ {
+  "code": "P0111",
+  "brand": null,
+  "description": "Intake Air Temperature Sensor 1 Circuit Range/Performance Bank 1"
+ },
+ {
+  "code": "P0112",
+  "brand": null,
+  "description": "Intake Air Temperature Sensor 1 Circuit Low Bank 1"
+ },
+ {
+  "code": "P0113",
+  "brand": null,
+  "description": "Intake Air Temperature Sensor 1 Circuit High Bank 1"
+ },
+ {
+  "code": "P0114",
+  "brand": null,
+  "description": "Intake Air Temperature Sensor 1 Circuit Intermittent Bank 1"
+ },
+ {
+  "code": "P0115",
+  "brand": null,
+  "description": "Engine Coolant Temperature Sensor 1 Circuit"
+ },
+ {
+  "code": "P0116",
+  "brand": null,
+  "description": "Engine Coolant Temperature Sensor 1 Circuit Range/Performance"
+ },
+ {
+  "code": "P0117",
+  "brand": null,
+  "description": "Engine Coolant Temperature Sensor 1 Circuit Low"
+ },
+ {
+  "code": "P0118",
+  "brand": null,
+  "description": "Engine Coolant Temperature Sensor 1 Circuit High"
+ },
+ {
+  "code": "P0119",
+  "brand": null,
+  "description": "Engine Coolant Temperature Sensor 1 Circuit Intermittent/Erratic"
+ },
+ {
+  "code": "P0120",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor/Switch A Circuit"
+ },
+ {
+  "code": "P0121",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor/Switch A Circuit Range/Performance"
+ },
+ {
+  "code": "P0122",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor/Switch A Circuit Low"
+ },
+ {
+  "code": "P0123",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor/Switch A Circuit High"
+ },
+ {
+  "code": "P0124",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor/Switch A Circuit Intermittent"
+ },
+ {
+  "code": "P0125",
+  "brand": null,
+  "description": "Insufficient Coolant Temperature for Closed Loop Fuel Control"
+ },
+ {
+  "code": "P0126",
+  "brand": null,
+  "description": "Insufficient Coolant Temperature for Stable Operation"
+ },
+ {
+  "code": "P0127",
+  "brand": null,
+  "description": "Intake Air Temperature Too High"
+ },
+ {
+  "code": "P0128",
+  "brand": null,
+  "description": "Coolant Thermostat (Coolant Temperature Below Thermostat Regulating Temperature)"
+ },
+ {
+  "code": "P0129",
+  "brand": null,
+  "description": "Barometric Pressure Too Low"
+ },
+ {
+  "code": "P0130",
+  "brand": null,
+  "description": "O2 Sensor Circuit Bank 1 Sensor 1"
+ },
+ {
+  "code": "P0131",
+  "brand": null,
+  "description": "O2 Sensor Circuit Low Voltage Bank 1 Sensor 1"
+ },
+ {
+  "code": "P0132",
+  "brand": null,
+  "description": "O2 Sensor Circuit High Voltage Bank 1 Sensor 1"
+ },
+ {
+  "code": "P0133",
+  "brand": null,
+  "description": "O2 Sensor Circuit Slow Response Bank 1 Sensor 1"
+ },
+ {
+  "code": "P0134",
+  "brand": null,
+  "description": "O2 Sensor Circuit No Activity Detected Bank 1 Sensor 1"
+ },
+ {
+  "code": "P0135",
+  "brand": null,
+  "description": "O2 Sensor Heater Circuit Bank 1 Sensor 1"
+ },
+ {
+  "code": "P0136",
+  "brand": null,
+  "description": "O2 Sensor Circuit Bank 1 Sensor 2"
+ },
+ {
+  "code": "P0137",
+  "brand": null,
+  "description": "O2 Sensor Circuit Low Voltage Bank 1 Sensor 2"
+ },
+ {
+  "code": "P0138",
+  "brand": null,
+  "description": "O2 Sensor Circuit High Voltage Bank 1 Sensor 2"
+ },
+ {
+  "code": "P0139",
+  "brand": null,
+  "description": "O2 Sensor Circuit Slow Response Bank 1 Sensor 2"
+ },
+ {
+  "code": "P0140",
+  "brand": null,
+  "description": "O2 Sensor Circuit No Activity Detected Bank 1 Sensor 2"
+ },
+ {
+  "code": "P0141",
+  "brand": null,
+  "description": "O2 Sensor Heater Circuit Bank 1 Sensor 2"
+ },
+ {
+  "code": "P0142",
+  "brand": null,
+  "description": "O2 Sensor Circuit Bank 1 Sensor 3"
+ },
+ {
+  "code": "P0143",
+  "brand": null,
+  "description": "O2 Sensor Circuit Low Voltage Bank 1 Sensor 3"
+ },
+ {
+  "code": "P0144",
+  "brand": null,
+  "description": "O2 Sensor Circuit High Voltage Bank 1 Sensor 3"
+ },
+ {
+  "code": "P0145",
+  "brand": null,
+  "description": "O2 Sensor Circuit Slow Response Bank 1 Sensor 3"
+ },
+ {
+  "code": "P0146",
+  "brand": null,
+  "description": "O2 Sensor Circuit No Activity Detected Bank 1 Sensor 3"
+ },
+ {
+  "code": "P0147",
+  "brand": null,
+  "description": "O2 Sensor Heater Circuit Bank 1 Sensor 3"
+ },
+ {
+  "code": "P0148",
+  "brand": null,
+  "description": "Fuel Delivery Error"
+ },
+ {
+  "code": "P0149",
+  "brand": null,
+  "description": "Fuel Timing Error"
+ },
+ {
+  "code": "P0150",
+  "brand": null,
+  "description": "O2 Sensor Circuit Bank 2 Sensor 1"
+ },
+ {
+  "code": "P0151",
+  "brand": null,
+  "description": "O2 Sensor Circuit Low Voltage Bank 2 Sensor 1"
+ },
+ {
+  "code": "P0152",
+  "brand": null,
+  "description": "O2 Sensor Circuit High Voltage Bank 2 Sensor 1"
+ },
+ {
+  "code": "P0153",
+  "brand": null,
+  "description": "O2 Sensor Circuit Slow Response Bank 2 Sensor 1"
+ },
+ {
+  "code": "P0154",
+  "brand": null,
+  "description": "O2 Sensor Circuit No Activity Detected Bank 2 Sensor 1"
+ },
+ {
+  "code": "P0155",
+  "brand": null,
+  "description": "O2 Sensor Heater Circuit Bank 2 Sensor 1"
+ },
+ {
+  "code": "P0156",
+  "brand": null,
+  "description": "O2 Sensor Circuit Bank 2 Sensor 2"
+ },
+ {
+  "code": "P0157",
+  "brand": null,
+  "description": "O2 Sensor Circuit Low Voltage Bank 2 Sensor 2"
+ },
+ {
+  "code": "P0158",
+  "brand": null,
+  "description": "O2 Sensor Circuit High Voltage Bank 2 Sensor 2"
+ },
+ {
+  "code": "P0159",
+  "brand": null,
+  "description": "O2 Sensor Circuit Slow Response Bank 2 Sensor 2"
+ },
+ {
+  "code": "P0160",
+  "brand": null,
+  "description": "O2 Sensor Circuit No Activity Detected Bank 2 Sensor 2"
+ },
+ {
+  "code": "P0161",
+  "brand": null,
+  "description": "O2 Sensor Heater Circuit Bank 2 Sensor 2"
+ },
+ {
+  "code": "P0162",
+  "brand": null,
+  "description": "O2 Sensor Circuit Bank 2 Sensor 3"
+ },
+ {
+  "code": "P0163",
+  "brand": null,
+  "description": "O2 Sensor Circuit Low Voltage Bank 2 Sensor 3"
+ },
+ {
+  "code": "P0164",
+  "brand": null,
+  "description": "O2 Sensor Circuit High Voltage Bank 2 Sensor 3"
+ },
+ {
+  "code": "P0165",
+  "brand": null,
+  "description": "O2 Sensor Circuit Slow Response Bank 2 Sensor 3"
+ },
+ {
+  "code": "P0166",
+  "brand": null,
+  "description": "O2 Sensor Circuit No Activity Detected Bank 2 Sensor 3"
+ },
+ {
+  "code": "P0167",
+  "brand": null,
+  "description": "O2 Sensor Heater Circuit Bank 2 Sensor 3"
+ },
+ {
+  "code": "P0168",
+  "brand": null,
+  "description": "Fuel Temperature Too High"
+ },
+ {
+  "code": "P0169",
+  "brand": null,
+  "description": "Incorrect Fuel Composition"
+ },
+ {
+  "code": "P0170",
+  "brand": null,
+  "description": "Fuel Trim Bank 1"
+ },
+ {
+  "code": "P0171",
+  "brand": null,
+  "description": "System Too Lean Bank 1"
+ },
+ {
+  "code": "P0172",
+  "brand": null,
+  "description": "System Too Rich Bank 1"
+ },
+ {
+  "code": "P0173",
+  "brand": null,
+  "description": "Fuel Trim Bank 2"
+ },
+ {
+  "code": "P0174",
+  "brand": null,
+  "description": "System Too Lean Bank 2"
+ },
+ {
+  "code": "P0175",
+  "brand": null,
+  "description": "System Too Rich Bank 2"
+ },
+ {
+  "code": "P0176",
+  "brand": null,
+  "description": "Fuel Composition Sensor Circuit"
+ },
+ {
+  "code": "P0177",
+  "brand": null,
+  "description": "Fuel Composition Sensor Circuit Range/Performance"
+ },
+ {
+  "code": "P0178",
+  "brand": null,
+  "description": "Fuel Composition Sensor Circuit Low"
+ },
+ {
+  "code": "P0179",
+  "brand": null,
+  "description": "Fuel Composition Sensor Circuit High"
+ },
+ {
+  "code": "P0180",
+  "brand": null,
+  "description": "Fuel Temperature Sensor A Circuit"
+ },
+ {
+  "code": "P0181",
+  "brand": null,
+  "description": "Fuel Temperature Sensor A Circuit Range/Performance"
+ },
+ {
+  "code": "P0182",
+  "brand": null,
+  "description": "Fuel Temperature Sensor A Circuit Low"
+ },
+ {
+  "code": "P0183",
+  "brand": null,
+  "description": "Fuel Temperature Sensor A Circuit High"
+ },
+ {
+  "code": "P0184",
+  "brand": null,
+  "description": "Fuel Temperature Sensor A Circuit Intermittent"
+ },
+ {
+  "code": "P0185",
+  "brand": null,
+  "description": "Fuel Temperature Sensor B Circuit"
+ },
+ {
+  "code": "P0186",
+  "brand": null,
+  "description": "Fuel Temperature Sensor B Circuit Range/Performance"
+ },
+ {
+  "code": "P0187",
+  "brand": null,
+  "description": "Fuel Temperature Sensor B Circuit Low"
+ },
+ {
+  "code": "P0188",
+  "brand": null,
+  "description": "Fuel Temperature Sensor B Circuit High"
+ },
+ {
+  "code": "P0189",
+  "brand": null,
+  "description": "Fuel Temperature Sensor B Circuit Intermittent"
+ },
+ {
+  "code": "P0190",
+  "brand": null,
+  "description": "Fuel Rail Pressure Sensor Circuit Bank 1"
+ },
+ {
+  "code": "P0191",
+  "brand": null,
+  "description": "Fuel Rail Pressure Sensor Circuit Range/Performance Bank 1"
+ },
+ {
+  "code": "P0192",
+  "brand": null,
+  "description": "Fuel Rail Pressure Sensor Circuit Low Bank 1"
+ },
+ {
+  "code": "P0193",
+  "brand": null,
+  "description": "Fuel Rail Pressure Sensor Circuit High Bank 1"
+ },
+ {
+  "code": "P0194",
+  "brand": null,
+  "description": "Fuel Rail Pressure Sensor Circuit Intermittent/Erratic Bank 1"
+ },
+ {
+  "code": "P0195",
+  "brand": null,
+  "description": "Engine Oil Temperature Sensor A Circuit"
+ },
+ {
+  "code": "P0196",
+  "brand": null,
+  "description": "Engine Oil Temperature Sensor A Range/Performance"
+ },
+ {
+  "code": "P0197",
+  "brand": null,
+  "description": "Engine Oil Temperature Sensor A Circuit Low"
+ },
+ {
+  "code": "P0198",
+  "brand": null,
+  "description": "Engine Oil Temperature Sensor A Circuit High"
+ },
+ {
+  "code": "P0199",
+  "brand": null,
+  "description": "Engine Oil Temperature Sensor A Circuit Intermittent/Erratic"
+ },
+ {
+  "code": "P0200",
+  "brand": null,
+  "description": "Injector Circuit/Open"
+ },
+ {
+  "code": "P0201",
+  "brand": null,
+  "description": "Cylinder 1 Injector A Circuit"
+ },
+ {
+  "code": "P0202",
+  "brand": null,
+  "description": "Cylinder 2 Injector A Circuit"
+ },
+ {
+  "code": "P0203",
+  "brand": null,
+  "description": "Cylinder 3 Injector A Circuit"
+ },
+ {
+  "code": "P0204",
+  "brand": null,
+  "description": "Cylinder 4 Injector A Circuit"
+ },
+ {
+  "code": "P0205",
+  "brand": null,
+  "description": "Cylinder 5 Injector A Circuit"
+ },
+ {
+  "code": "P0206",
+  "brand": null,
+  "description": "Cylinder 6 Injector A Circuit"
+ },
+ {
+  "code": "P0207",
+  "brand": null,
+  "description": "Cylinder 7 Injector A Circuit"
+ },
+ {
+  "code": "P0208",
+  "brand": null,
+  "description": "Cylinder 8 Injector A Circuit"
+ },
+ {
+  "code": "P0209",
+  "brand": null,
+  "description": "Cylinder 9 Injector A Circuit"
+ },
+ {
+  "code": "P0210",
+  "brand": null,
+  "description": "Cylinder 10 Injector A Circuit"
+ },
+ {
+  "code": "P0211",
+  "brand": null,
+  "description": "Cylinder 11 Injector A Circuit"
+ },
+ {
+  "code": "P0212",
+  "brand": null,
+  "description": "Cylinder 12 Injector A Circuit"
+ },
+ {
+  "code": "P0213",
+  "brand": null,
+  "description": "Cold Start Injector 1"
+ },
+ {
+  "code": "P0214",
+  "brand": null,
+  "description": "Cold Start Injector 2"
+ },
+ {
+  "code": "P0215",
+  "brand": null,
+  "description": "Engine Shutoff Solenoid"
+ },
+ {
+  "code": "P0216",
+  "brand": null,
+  "description": "Injector/Injection Timing Control Circuit"
+ },
+ {
+  "code": "P0217",
+  "brand": null,
+  "description": "Engine Coolant Over Temperature Condition"
+ },
+ {
+  "code": "P0218",
+  "brand": null,
+  "description": "Transmission Fluid Temperature Sensor A Over Temperature Condition"
+ },
+ {
+  "code": "P0219",
+  "brand": null,
+  "description": "Engine Overspeed Condition"
+ },
+ {
+  "code": "P0220",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor/Switch B Circuit"
+ },
+ {
+  "code": "P0221",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor/Switch B Circuit Range/Performance"
+ },
+ {
+  "code": "P0222",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor/Switch B Circuit Low"
+ },
+ {
+  "code": "P0223",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor/Switch B Circuit High"
+ },
+ {
+  "code": "P0224",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor/Switch B Circuit Intermittent"
+ },
+ {
+  "code": "P0225",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor/Switch C Circuit"
+ },
+ {
+  "code": "P0226",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor/Switch C Circuit Range/Performance"
+ },
+ {
+  "code": "P0227",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor/Switch C Circuit Low"
+ },
+ {
+  "code": "P0228",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor/Switch C Circuit High"
+ },
+ {
+  "code": "P0229",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor/Switch C Circuit Intermittent"
+ },
+ {
+  "code": "P0230",
+  "brand": null,
+  "description": "Fuel Pump Primary Circuit"
+ },
+ {
+  "code": "P0231",
+  "brand": null,
+  "description": "Fuel Pump Secondary Circuit Low"
+ },
+ {
+  "code": "P0232",
+  "brand": null,
+  "description": "Fuel Pump Secondary Circuit High"
+ },
+ {
+  "code": "P0233",
+  "brand": null,
+  "description": "Fuel Pump Secondary Circuit Intermittent"
+ },
+ {
+  "code": "P0234",
+  "brand": null,
+  "description": "Turbocharger/Supercharger A Overboost Condition"
+ },
+ {
+  "code": "P0235",
+  "brand": null,
+  "description": "Turbocharger/Supercharger Boost Sensor A Circuit"
+ },
+ {
+  "code": "P0236",
+  "brand": null,
+  "description": "Turbocharger/Supercharger Boost Sensor A Circuit Range/Performance"
+ },
+ {
+  "code": "P0237",
+  "brand": null,
+  "description": "Turbocharger/Supercharger Boost Sensor A Circuit Low"
+ },
+ {
+  "code": "P0238",
+  "brand": null,
+  "description": "Turbocharger/Supercharger Boost Sensor A Circuit High"
+ },
+ {
+  "code": "P0245",
+  "brand": null,
+  "description": "Turbocharger/Supercharger Wastegate Actuator A Low"
+ },
+ {
+  "code": "P0246",
+  "brand": null,
+  "description": "Turbocharger/Supercharger Wastegate Actuator A High"
+ },
+ {
+  "code": "P0251",
+  "brand": null,
+  "description": "Injection Pump Fuel Metering Control A (Cam/Rotor/Injector)"
+ },
+ {
+  "code": "P0253",
+  "brand": null,
+  "description": "Injection Pump Fuel Metering Control A Low (Cam/Rotor/Injector)"
+ },
+ {
+  "code": "P0255",
+  "brand": null,
+  "description": "Injection Pump Fuel Metering Control A Intermittent (Cam/Rotor/Injector)"
+ },
+ {
+  "code": "P0261",
+  "brand": null,
+  "description": "Cylinder 1 Injector A Circuit Low"
+ },
+ {
+  "code": "P0262",
+  "brand": null,
+  "description": "Cylinder 1 Injector A Circuit High"
+ },
+ {
+  "code": "P0263",
+  "brand": null,
+  "description": "Cylinder 1 Contribution/Balance"
+ },
+ {
+  "code": "P0264",
+  "brand": null,
+  "description": "Cylinder 2 Injector A Circuit Low"
+ },
+ {
+  "code": "P0265",
+  "brand": null,
+  "description": "Cylinder 2 Injector A Circuit High"
+ },
+ {
+  "code": "P0266",
+  "brand": null,
+  "description": "Cylinder 2 Contribution/Balance"
+ },
+ {
+  "code": "P0267",
+  "brand": null,
+  "description": "Cylinder 3 Injector A Circuit Low"
+ },
+ {
+  "code": "P0268",
+  "brand": null,
+  "description": "Cylinder 3 Injector A Circuit High"
+ },
+ {
+  "code": "P0269",
+  "brand": null,
+  "description": "Cylinder 3 Contribution/Balance"
+ },
+ {
+  "code": "P0270",
+  "brand": null,
+  "description": "Cylinder 4 Injector A Circuit Low"
+ },
+ {
+  "code": "P0271",
+  "brand": null,
+  "description": "Cylinder 4 Injector A Circuit High"
+ },
+ {
+  "code": "P0272",
+  "brand": null,
+  "description": "Cylinder 4 Contribution/Balance"
+ },
+ {
+  "code": "P0299",
+  "brand": null,
+  "description": "Turbocharger/Supercharger A Underboost Condition"
+ },
+ {
+  "code": "P0300",
+  "brand": null,
+  "description": "Random/Multiple Cylinder Misfire Detected"
+ },
+ {
+  "code": "P0301",
+  "brand": null,
+  "description": "Cylinder 1 Misfire Detected"
+ },
+ {
+  "code": "P0302",
+  "brand": null,
+  "description": "Cylinder 2 Misfire Detected"
+ },
+ {
+  "code": "P0303",
+  "brand": null,
+  "description": "Cylinder 3 Misfire Detected"
+ },
+ {
+  "code": "P0304",
+  "brand": null,
+  "description": "Cylinder 4 Misfire Detected"
+ },
+ {
+  "code": "P0305",
+  "brand": null,
+  "description": "Cylinder 5 Misfire Detected"
+ },
+ {
+  "code": "P0306",
+  "brand": null,
+  "description": "Cylinder 6 Misfire Detected"
+ },
+ {
+  "code": "P0307",
+  "brand": null,
+  "description": "Cylinder 7 Misfire Detected"
+ },
+ {
+  "code": "P0308",
+  "brand": null,
+  "description": "Cylinder 8 Misfire Detected"
+ },
+ {
+  "code": "P0313",
+  "brand": null,
+  "description": "Misfire Detected With Low Fuel"
+ },
+ {
+  "code": "P0320",
+  "brand": null,
+  "description": "Ignition/Distributor Engine Speed Input Circuit"
+ },
+ {
+  "code": "P0321",
+  "brand": null,
+  "description": "Ignition/Distributor Engine Speed Input Circuit Range/Performance"
+ },
+ {
+  "code": "P0322",
+  "brand": null,
+  "description": "Ignition/Distributor Engine Speed Input Circuit No Signal"
+ },
+ {
+  "code": "P0323",
+  "brand": null,
+  "description": "Ignition/Distributor Engine Speed Input Circuit Intermittent"
+ },
+ {
+  "code": "P0324",
+  "brand": null,
+  "description": "Knock/Combustion Vibration Control System Error"
+ },
+ {
+  "code": "P0325",
+  "brand": null,
+  "description": "Knock/Combustion Vibration Sensor A Circuit"
+ },
+ {
+  "code": "P0326",
+  "brand": null,
+  "description": "Knock/Combustion Vibration Sensor A Circuit Range/Performance"
+ },
+ {
+  "code": "P0327",
+  "brand": null,
+  "description": "Knock/Combustion Vibration Sensor A Circuit Low"
+ },
+ {
+  "code": "P0328",
+  "brand": null,
+  "description": "Knock/Combustion Vibration Sensor A Circuit High"
+ },
+ {
+  "code": "P0329",
+  "brand": null,
+  "description": "Knock/Combustion Vibration Sensor A Circuit Intermittent"
+ },
+ {
+  "code": "P0330",
+  "brand": null,
+  "description": "Knock/Combustion Vibration Sensor B Circuit"
+ },
+ {
+  "code": "P0331",
+  "brand": null,
+  "description": "Knock/Combustion Vibration Sensor B Circuit Range/Performance"
+ },
+ {
+  "code": "P0332",
+  "brand": null,
+  "description": "Knock/Combustion Vibration Sensor B Circuit Low"
+ },
+ {
+  "code": "P0333",
+  "brand": null,
+  "description": "Knock/Combustion Vibration Sensor B Circuit High"
+ },
+ {
+  "code": "P0334",
+  "brand": null,
+  "description": "Knock/Combustion Vibration Sensor B Circuit Intermittent"
+ },
+ {
+  "code": "P0335",
+  "brand": null,
+  "description": "Crankshaft Position Sensor A Circuit"
+ },
+ {
+  "code": "P0336",
+  "brand": null,
+  "description": "Crankshaft Position Sensor A Circuit Range/Performance"
+ },
+ {
+  "code": "P0337",
+  "brand": null,
+  "description": "Crankshaft Position Sensor A Circuit Low"
+ },
+ {
+  "code": "P0338",
+  "brand": null,
+  "description": "Crankshaft Position Sensor A Circuit High"
+ },
+ {
+  "code": "P0339",
+  "brand": null,
+  "description": "Crankshaft Position Sensor A Circuit Intermittent"
+ },
+ {
+  "code": "P0340",
+  "brand": null,
+  "description": "Camshaft Position Sensor A Circuit Bank 1 or Single Sensor"
+ },
+ {
+  "code": "P0341",
+  "brand": null,
+  "description": "Camshaft Position Sensor A Circuit Range/Performance Bank 1 or Single Sensor"
+ },
+ {
+  "code": "P0342",
+  "brand": null,
+  "description": "Camshaft Position Sensor A Circuit Low Bank 1 or Single Sensor"
+ },
+ {
+  "code": "P0343",
+  "brand": null,
+  "description": "Camshaft Position Sensor A Circuit High Bank 1 or Single Sensor"
+ },
+ {
+  "code": "P0344",
+  "brand": null,
+  "description": "Camshaft Position Sensor A Circuit Intermittent Bank 1 or Single Sensor"
+ },
+ {
+  "code": "P0345",
+  "brand": null,
+  "description": "Camshaft Position Sensor A Circuit Bank 2"
+ },
+ {
+  "code": "P0346",
+  "brand": null,
+  "description": "Camshaft Position Sensor A Circuit Range/Performance Bank 2"
+ },
+ {
+  "code": "P0350",
+  "brand": null,
+  "description": "Ignition Coil Primary/Secondary Circuit/Open"
+ },
+ {
+  "code": "P0351",
+  "brand": null,
+  "description": "Ignition Coil A Primary Control Circuit/Open"
+ },
+ {
+  "code": "P0352",
+  "brand": null,
+  "description": "Ignition Coil B Primary Control Circuit/Open"
+ },
+ {
+  "code": "P0353",
+  "brand": null,
+  "description": "Ignition Coil C Primary Control Circuit/Open"
+ },
+ {
+  "code": "P0354",
+  "brand": null,
+  "description": "Ignition Coil D Primary Control Circuit/Open"
+ },
+ {
+  "code": "P0371",
+  "brand": null,
+  "description": "Timing Reference High Resolution Signal A Too Many Pulses"
+ },
+ {
+  "code": "P0372",
+  "brand": null,
+  "description": "Timing Reference High Resolution Signal A Too Few Pulses"
+ },
+ {
+  "code": "P0380",
+  "brand": null,
+  "description": "Glow Plug/Heater Circuit A"
+ },
+ {
+  "code": "P0381",
+  "brand": null,
+  "description": "Glow Plug/Heater Indicator Control Circuit/Open"
+ },
+ {
+  "code": "P0382",
+  "brand": null,
+  "description": "Glow Plug/Heater Circuit B"
+ },
+ {
+  "code": "P0383",
+  "brand": null,
+  "description": "Glow Plug Control Module 1 Control Circuit Low"
+ },
+ {
+  "code": "P0384",
+  "brand": null,
+  "description": "Glow Plug Control Module 1 Control Circuit High"
+ },
+ {
+  "code": "P0400",
+  "brand": null,
+  "description": "EGR A Flow"
+ },
+ {
+  "code": "P0401",
+  "brand": null,
+  "description": "EGR A Flow Insufficient Detected"
+ },
+ {
+  "code": "P0402",
+  "brand": null,
+  "description": "EGR A Flow Excessive Detected"
+ },
+ {
+  "code": "P0403",
+  "brand": null,
+  "description": "EGR A Control Circuit/Open"
+ },
+ {
+  "code": "P0404",
+  "brand": null,
+  "description": "EGR A Control Circuit Range/Performance"
+ },
+ {
+  "code": "P0405",
+  "brand": null,
+  "description": "EGR Sensor A Circuit Low"
+ },
+ {
+  "code": "P0406",
+  "brand": null,
+  "description": "EGR Sensor A Circuit High"
+ },
+ {
+  "code": "P0407",
+  "brand": null,
+  "description": "EGR Sensor B Circuit Low"
+ },
+ {
+  "code": "P0408",
+  "brand": null,
+  "description": "EGR Sensor B Circuit High"
+ },
+ {
+  "code": "P0409",
+  "brand": null,
+  "description": "EGR Sensor A Circuit"
+ },
+ {
+  "code": "P0410",
+  "brand": null,
+  "description": "AIR System A"
+ },
+ {
+  "code": "P0411",
+  "brand": null,
+  "description": "AIR System A Incorrect Flow Detected"
+ },
+ {
+  "code": "P0412",
+  "brand": null,
+  "description": "AIR System Switching Valve A Circuit"
+ },
+ {
+  "code": "P0413",
+  "brand": null,
+  "description": "AIR System Switching Valve A Circuit Open"
+ },
+ {
+  "code": "P0414",
+  "brand": null,
+  "description": "AIR System Switching Valve A Circuit Shorted"
+ },
+ {
+  "code": "P0415",
+  "brand": null,
+  "description": "AIR System Switching Valve B Circuit"
+ },
+ {
+  "code": "P0416",
+  "brand": null,
+  "description": "AIR System Switching Valve B Circuit Open"
+ },
+ {
+  "code": "P0417",
+  "brand": null,
+  "description": "AIR System Switching Valve B Circuit Shorted"
+ },
+ {
+  "code": "P0418",
+  "brand": null,
+  "description": "AIR System Control A Circuit"
+ },
+ {
+  "code": "P0419",
+  "brand": null,
+  "description": "AIR System Control B Circuit"
+ },
+ {
+  "code": "P0420",
+  "brand": null,
+  "description": "Catalyst System Efficiency Below Threshold Bank 1"
+ },
+ {
+  "code": "P0421",
+  "brand": null,
+  "description": "Catalyst 1 Efficiency Below Threshold Bank 1"
+ },
+ {
+  "code": "P0422",
+  "brand": null,
+  "description": "Catalyst 2 Efficiency Below Threshold Bank 1"
+ },
+ {
+  "code": "P0423",
+  "brand": null,
+  "description": "Heated Catalyst Efficiency Below Threshold Bank 1"
+ },
+ {
+  "code": "P0424",
+  "brand": null,
+  "description": "Heated Catalyst Temperature Below Threshold Bank 1"
+ },
+ {
+  "code": "P0425",
+  "brand": null,
+  "description": "Catalyst Temperature Sensor Circuit Bank 1 Sensor 1"
+ },
+ {
+  "code": "P0426",
+  "brand": null,
+  "description": "Catalyst Temperature Sensor Circuit Range/Performance Bank 1 Sensor 1"
+ },
+ {
+  "code": "P0427",
+  "brand": null,
+  "description": "Catalyst Temperature Sensor Circuit Low Bank 1 Sensor 1"
+ },
+ {
+  "code": "P0428",
+  "brand": null,
+  "description": "Catalyst Temperature Sensor Circuit High Bank 1 Sensor 1"
+ },
+ {
+  "code": "P0429",
+  "brand": null,
+  "description": "Catalyst Heater Control Circuit/Open Bank 1"
+ },
+ {
+  "code": "P0430",
+  "brand": null,
+  "description": "Catalyst System Efficiency Below Threshold Bank 2"
+ },
+ {
+  "code": "P0431",
+  "brand": null,
+  "description": "Catalyst 1 Efficiency Below Threshold Bank 2"
+ },
+ {
+  "code": "P0432",
+  "brand": null,
+  "description": "Catalyst 2 Efficiency Below Threshold Bank 2"
+ },
+ {
+  "code": "P0433",
+  "brand": null,
+  "description": "Heated Catalyst Efficiency Below Threshold Bank 2"
+ },
+ {
+  "code": "P0434",
+  "brand": null,
+  "description": "Heated Catalyst Temperature Below Threshold Bank 2"
+ },
+ {
+  "code": "P0435",
+  "brand": null,
+  "description": "Catalyst Temperature Sensor Circuit Bank 2 Sensor 1"
+ },
+ {
+  "code": "P0436",
+  "brand": null,
+  "description": "Catalyst Temperature Sensor Circuit Range/Performance Bank 2 Sensor 1"
+ },
+ {
+  "code": "P0437",
+  "brand": null,
+  "description": "Catalyst Temperature Sensor Circuit Low Bank 2 Sensor 1"
+ },
+ {
+  "code": "P0438",
+  "brand": null,
+  "description": "Catalyst Temperature Sensor Circuit High Bank 2 Sensor 1"
+ },
+ {
+  "code": "P0439",
+  "brand": null,
+  "description": "Catalyst Heater Control Circuit/Open Bank 2"
+ },
+ {
+  "code": "P0440",
+  "brand": null,
+  "description": "EVAP System"
+ },
+ {
+  "code": "P0441",
+  "brand": null,
+  "description": "EVAP System Incorrect Purge Flow"
+ },
+ {
+  "code": "P0442",
+  "brand": null,
+  "description": "EVAP System Leak Detected (small leak)"
+ },
+ {
+  "code": "P0443",
+  "brand": null,
+  "description": "EVAP System Purge Control Valve A Circuit"
+ },
+ {
+  "code": "P0444",
+  "brand": null,
+  "description": "EVAP System Purge Control Valve A Circuit Open"
+ },
+ {
+  "code": "P0445",
+  "brand": null,
+  "description": "EVAP System Purge Control Valve A Circuit Shorted"
+ },
+ {
+  "code": "P0446",
+  "brand": null,
+  "description": "EVAP System Vent Control Circuit"
+ },
+ {
+  "code": "P0447",
+  "brand": null,
+  "description": "EVAP System Vent Control Circuit Open"
+ },
+ {
+  "code": "P0448",
+  "brand": null,
+  "description": "EVAP System Vent Control Circuit Shorted"
+ },
+ {
+  "code": "P0449",
+  "brand": null,
+  "description": "EVAP System Vent Valve Control Circuit/Open"
+ },
+ {
+  "code": "P0450",
+  "brand": null,
+  "description": "EVAP System Pressure Sensor/Switch A Circuit"
+ },
+ {
+  "code": "P0451",
+  "brand": null,
+  "description": "EVAP System Pressure Sensor/Switch A Circuit Range/Performance"
+ },
+ {
+  "code": "P0452",
+  "brand": null,
+  "description": "EVAP System Pressure Sensor/Switch A Circuit Low"
+ },
+ {
+  "code": "P0453",
+  "brand": null,
+  "description": "EVAP System Pressure Sensor/Switch A Circuit High"
+ },
+ {
+  "code": "P0454",
+  "brand": null,
+  "description": "EVAP System Pressure Sensor/Switch A Circuit Intermittent"
+ },
+ {
+  "code": "P0455",
+  "brand": null,
+  "description": "EVAP System Leak Detected - Large Leak"
+ },
+ {
+  "code": "P0456",
+  "brand": null,
+  "description": "EVAP System Leak Detected (very small leak)"
+ },
+ {
+  "code": "P0457",
+  "brand": null,
+  "description": "EVAP System Leak Detected (fuel cap loose/off)"
+ },
+ {
+  "code": "P0458",
+  "brand": null,
+  "description": "EVAP System Purge Control Valve A Circuit Low"
+ },
+ {
+  "code": "P0459",
+  "brand": null,
+  "description": "EVAP System Purge Control Valve A Circuit High"
+ },
+ {
+  "code": "P0460",
+  "brand": null,
+  "description": "Fuel Level Sensor A Circuit"
+ },
+ {
+  "code": "P0461",
+  "brand": null,
+  "description": "Fuel Level Sensor A Circuit Range/Performance"
+ },
+ {
+  "code": "P0462",
+  "brand": null,
+  "description": "Fuel Level Sensor A Circuit Low"
+ },
+ {
+  "code": "P0463",
+  "brand": null,
+  "description": "Fuel Level Sensor A Circuit High"
+ },
+ {
+  "code": "P0464",
+  "brand": null,
+  "description": "Fuel Level Sensor A Circuit Intermittent"
+ },
+ {
+  "code": "P0465",
+  "brand": null,
+  "description": "EVAP Purge Flow Sensor Circuit"
+ },
+ {
+  "code": "P0466",
+  "brand": null,
+  "description": "EVAP Purge Flow Sensor Circuit Range/Performance"
+ },
+ {
+  "code": "P0467",
+  "brand": null,
+  "description": "EVAP Purge Flow Sensor Circuit Low"
+ },
+ {
+  "code": "P0468",
+  "brand": null,
+  "description": "EVAP Purge Flow Sensor Circuit High"
+ },
+ {
+  "code": "P0469",
+  "brand": null,
+  "description": "EVAP Purge Flow Sensor Circuit Intermittent"
+ },
+ {
+  "code": "P0470",
+  "brand": null,
+  "description": "Exhaust Pressure Sensor A Circuit"
+ },
+ {
+  "code": "P0471",
+  "brand": null,
+  "description": "Exhaust Pressure Sensor A Circuit Range/Performance"
+ },
+ {
+  "code": "P0472",
+  "brand": null,
+  "description": "Exhaust Pressure Sensor A Circuit Low"
+ },
+ {
+  "code": "P0473",
+  "brand": null,
+  "description": "Exhaust Pressure Sensor A Circuit High"
+ },
+ {
+  "code": "P0474",
+  "brand": null,
+  "description": "Exhaust Pressure Sensor A Circuit Intermittent/Erratic"
+ },
+ {
+  "code": "P0475",
+  "brand": null,
+  "description": "Exhaust Pressure Control Valve A"
+ },
+ {
+  "code": "P0476",
+  "brand": null,
+  "description": "Exhaust Pressure Control Valve A Range/Performance"
+ },
+ {
+  "code": "P0477",
+  "brand": null,
+  "description": "Exhaust Pressure Control Valve A Low"
+ },
+ {
+  "code": "P0478",
+  "brand": null,
+  "description": "Exhaust Pressure Control Valve A High"
+ },
+ {
+  "code": "P0479",
+  "brand": null,
+  "description": "Exhaust Pressure Control Valve A Intermittent"
+ },
+ {
+  "code": "P0480",
+  "brand": null,
+  "description": "Fan 1 Control Circuit"
+ },
+ {
+  "code": "P0481",
+  "brand": null,
+  "description": "Fan 2 Control Circuit"
+ },
+ {
+  "code": "P0482",
+  "brand": null,
+  "description": "Fan 3 Control Circuit"
+ },
+ {
+  "code": "P0483",
+  "brand": null,
+  "description": "Fan Rationality Check"
+ },
+ {
+  "code": "P0484",
+  "brand": null,
+  "description": "Fan Circuit Current High"
+ },
+ {
+  "code": "P0485",
+  "brand": null,
+  "description": "Fan Power/Ground Circuit"
+ },
+ {
+  "code": "P0486",
+  "brand": null,
+  "description": "EGR Sensor B Circuit"
+ },
+ {
+  "code": "P0487",
+  "brand": null,
+  "description": "EGR Throttle Control Circuit A /Open"
+ },
+ {
+  "code": "P0488",
+  "brand": null,
+  "description": "EGR Throttle Control Circuit A Range/Performance"
+ },
+ {
+  "code": "P0489",
+  "brand": null,
+  "description": "EGR A Control Circuit Low"
+ },
+ {
+  "code": "P0490",
+  "brand": null,
+  "description": "EGR A Control Circuit High"
+ },
+ {
+  "code": "P0491",
+  "brand": null,
+  "description": "AIR System Insufficient Flow Bank 1"
+ },
+ {
+  "code": "P0492",
+  "brand": null,
+  "description": "AIR System Insufficient Flow Bank 2"
+ },
+ {
+  "code": "P0493",
+  "brand": null,
+  "description": "Fan Overspeed"
+ },
+ {
+  "code": "P0494",
+  "brand": null,
+  "description": "Fan 1 Underspeed"
+ },
+ {
+  "code": "P0495",
+  "brand": null,
+  "description": "Fan 1 Overspeed"
+ },
+ {
+  "code": "P0496",
+  "brand": null,
+  "description": "EVAP System High Purge Flow"
+ },
+ {
+  "code": "P0497",
+  "brand": null,
+  "description": "EVAP System Low Purge Flow"
+ },
+ {
+  "code": "P0498",
+  "brand": null,
+  "description": "EVAP System Vent Valve Control Circuit Low"
+ },
+ {
+  "code": "P0499",
+  "brand": null,
+  "description": "EVAP System Vent Valve Control Circuit High"
+ },
+ {
+  "code": "P0500",
+  "brand": null,
+  "description": "Vehicle Speed Sensor A Circuit"
+ },
+ {
+  "code": "P0501",
+  "brand": null,
+  "description": "Vehicle Speed Sensor A Circuit Range/Performance"
+ },
+ {
+  "code": "P0502",
+  "brand": null,
+  "description": "Vehicle Speed Sensor A Circuit Low"
+ },
+ {
+  "code": "P0503",
+  "brand": null,
+  "description": "Vehicle Speed Sensor A Circuit Intermittent/Erratic/High"
+ },
+ {
+  "code": "P0504",
+  "brand": null,
+  "description": "Brake Switch A/B Correlation"
+ },
+ {
+  "code": "P0505",
+  "brand": null,
+  "description": "Idle Control System"
+ },
+ {
+  "code": "P0506",
+  "brand": null,
+  "description": "Idle Control System RPM - Lower Than Expected"
+ },
+ {
+  "code": "P0507",
+  "brand": null,
+  "description": "Idle Control System RPM - Higher Than Expected"
+ },
+ {
+  "code": "P0508",
+  "brand": null,
+  "description": "Idle Air Control System Circuit Low"
+ },
+ {
+  "code": "P0509",
+  "brand": null,
+  "description": "Idle Air Control System Circuit High"
+ },
+ {
+  "code": "P0510",
+  "brand": null,
+  "description": "Closed Throttle Position Switch"
+ },
+ {
+  "code": "P0511",
+  "brand": null,
+  "description": "Idle Air Control Circuit"
+ },
+ {
+  "code": "P0512",
+  "brand": null,
+  "description": "Starter Request Circuit"
+ },
+ {
+  "code": "P0513",
+  "brand": null,
+  "description": "Incorrect Immobilizer Key"
+ },
+ {
+  "code": "P0514",
+  "brand": null,
+  "description": "Battery Temperature Sensor Circuit Range/Performance"
+ },
+ {
+  "code": "P0515",
+  "brand": null,
+  "description": "Battery Temperature Sensor Circuit"
+ },
+ {
+  "code": "P0516",
+  "brand": null,
+  "description": "Battery Temperature Sensor Circuit Low"
+ },
+ {
+  "code": "P0517",
+  "brand": null,
+  "description": "Battery Temperature Sensor Circuit High"
+ },
+ {
+  "code": "P0518",
+  "brand": null,
+  "description": "Idle Air Control Circuit Intermittent"
+ },
+ {
+  "code": "P0519",
+  "brand": null,
+  "description": "Idle Air Control System Performance"
+ },
+ {
+  "code": "P0520",
+  "brand": null,
+  "description": "Engine Oil Pressure Sensor/Switch A Circuit"
+ },
+ {
+  "code": "P0521",
+  "brand": null,
+  "description": "Engine Oil Pressure Sensor/Switch A Range/Performance"
+ },
+ {
+  "code": "P0522",
+  "brand": null,
+  "description": "Engine Oil Pressure Sensor/Switch A Low"
+ },
+ {
+  "code": "P0523",
+  "brand": null,
+  "description": "Engine Oil Pressure Sensor/Switch A High"
+ },
+ {
+  "code": "P0524",
+  "brand": null,
+  "description": "Engine Oil Pressure Too Low"
+ },
+ {
+  "code": "P0525",
+  "brand": null,
+  "description": "Cruise Control Servo Control Circuit Range/Performance"
+ },
+ {
+  "code": "P0526",
+  "brand": null,
+  "description": "Fan Speed Sensor Circuit"
+ },
+ {
+  "code": "P0527",
+  "brand": null,
+  "description": "Fan Speed Sensor Circuit Range/Performance"
+ },
+ {
+  "code": "P0528",
+  "brand": null,
+  "description": "Fan Speed Sensor Circuit No Signal"
+ },
+ {
+  "code": "P0529",
+  "brand": null,
+  "description": "Fan Speed Sensor Circuit Intermittent"
+ },
+ {
+  "code": "P0530",
+  "brand": null,
+  "description": "A/C Refrigerant Pressure Sensor A Circuit"
+ },
+ {
+  "code": "P0531",
+  "brand": null,
+  "description": "A/C Refrigerant Pressure Sensor A Circuit Range/Performance"
+ },
+ {
+  "code": "P0532",
+  "brand": null,
+  "description": "A/C Refrigerant Pressure Sensor A Circuit Low"
+ },
+ {
+  "code": "P0533",
+  "brand": null,
+  "description": "A/C Refrigerant Pressure Sensor A Circuit High"
+ },
+ {
+  "code": "P0534",
+  "brand": null,
+  "description": "A/C Refrigerant Charge Loss"
+ },
+ {
+  "code": "P0535",
+  "brand": null,
+  "description": "A/C Evaporator Temperature Sensor Circuit"
+ },
+ {
+  "code": "P0536",
+  "brand": null,
+  "description": "A/C Evaporator Temperature Sensor Circuit Range/Performance"
+ },
+ {
+  "code": "P0537",
+  "brand": null,
+  "description": "A/C Evaporator Temperature Sensor Circuit Low"
+ },
+ {
+  "code": "P0538",
+  "brand": null,
+  "description": "A/C Evaporator Temperature Sensor Circuit High"
+ },
+ {
+  "code": "P0539",
+  "brand": null,
+  "description": "A/C Evaporator Temperature Sensor Circuit Intermittent"
+ },
+ {
+  "code": "P0540",
+  "brand": null,
+  "description": "Intake Air Heater A Circuit"
+ },
+ {
+  "code": "P0541",
+  "brand": null,
+  "description": "Intake Air Heater A Circuit Low"
+ },
+ {
+  "code": "P0542",
+  "brand": null,
+  "description": "Intake Air Heater A Circuit High"
+ },
+ {
+  "code": "P0543",
+  "brand": null,
+  "description": "Intake Air Heater A Circuit Open"
+ },
+ {
+  "code": "P0544",
+  "brand": null,
+  "description": "Exhaust Gas Temperature Sensor Circuit Bank 1 Sensor 1"
+ },
+ {
+  "code": "P0545",
+  "brand": null,
+  "description": "Exhaust Gas Temperature Sensor Circuit Low Bank 1 Sensor 1"
+ },
+ {
+  "code": "P0546",
+  "brand": null,
+  "description": "Exhaust Gas Temperature Sensor Circuit High Bank 1 Sensor 1"
+ },
+ {
+  "code": "P0547",
+  "brand": null,
+  "description": "Exhaust Gas Temperature Sensor Circuit Bank 2 Sensor 1"
+ },
+ {
+  "code": "P0548",
+  "brand": null,
+  "description": "Exhaust Gas Temperature Sensor Circuit Low Bank 2 Sensor 1"
+ },
+ {
+  "code": "P0549",
+  "brand": null,
+  "description": "Exhaust Gas Temperature Sensor Circuit High Bank 2 Sensor 1"
+ },
+ {
+  "code": "P0550",
+  "brand": null,
+  "description": "Power Steering Pressure Sensor/Switch Circuit"
+ },
+ {
+  "code": "P0551",
+  "brand": null,
+  "description": "Power Steering Pressure Sensor/Switch Circuit Range/Performance"
+ },
+ {
+  "code": "P0552",
+  "brand": null,
+  "description": "Power Steering Pressure Sensor/Switch Circuit Low"
+ },
+ {
+  "code": "P0553",
+  "brand": null,
+  "description": "Power Steering Pressure Sensor/Switch Circuit High"
+ },
+ {
+  "code": "P0554",
+  "brand": null,
+  "description": "Power Steering Pressure Sensor/Switch Circuit Intermittent"
+ },
+ {
+  "code": "P0555",
+  "brand": null,
+  "description": "Brake Booster Pressure Sensor Circuit"
+ },
+ {
+  "code": "P0556",
+  "brand": null,
+  "description": "Brake Booster Pressure Sensor Circuit Range/Performance"
+ },
+ {
+  "code": "P0557",
+  "brand": null,
+  "description": "Brake Booster Pressure Sensor Circuit Low"
+ },
+ {
+  "code": "P0558",
+  "brand": null,
+  "description": "Brake Booster Pressure Sensor Circuit High"
+ },
+ {
+  "code": "P0559",
+  "brand": null,
+  "description": "Brake Booster Pressure Sensor Circuit Intermittent"
+ },
+ {
+  "code": "P0560",
+  "brand": null,
+  "description": "System Voltage"
+ },
+ {
+  "code": "P0561",
+  "brand": null,
+  "description": "System Voltage Unstable"
+ },
+ {
+  "code": "P0562",
+  "brand": null,
+  "description": "System Voltage Low"
+ },
+ {
+  "code": "P0563",
+  "brand": null,
+  "description": "System Voltage High"
+ },
+ {
+  "code": "P0564",
+  "brand": null,
+  "description": "Cruise Control Multi-Function Input A Circuit"
+ },
+ {
+  "code": "P0565",
+  "brand": null,
+  "description": "Cruise Control On Signal"
+ },
+ {
+  "code": "P0566",
+  "brand": null,
+  "description": "Cruise Control Off Signal"
+ },
+ {
+  "code": "P0567",
+  "brand": null,
+  "description": "Cruise Control Resume Signal"
+ },
+ {
+  "code": "P0568",
+  "brand": null,
+  "description": "Cruise Control Set Signal"
+ },
+ {
+  "code": "P0569",
+  "brand": null,
+  "description": "Cruise Control Coast Signal"
+ },
+ {
+  "code": "P0570",
+  "brand": null,
+  "description": "Cruise Control Accelerate Signal"
+ },
+ {
+  "code": "P0571",
+  "brand": null,
+  "description": "Brake Switch A Circuit"
+ },
+ {
+  "code": "P0572",
+  "brand": null,
+  "description": "Brake Switch A Circuit Low"
+ },
+ {
+  "code": "P0573",
+  "brand": null,
+  "description": "Brake Switch A Circuit High"
+ },
+ {
+  "code": "P0574",
+  "brand": null,
+  "description": "Cruise Control System - Vehicle Speed Too High"
+ },
+ {
+  "code": "P0575",
+  "brand": null,
+  "description": "Cruise Control Input Circuit"
+ },
+ {
+  "code": "P0576",
+  "brand": null,
+  "description": "Cruise Control Input Circuit Low"
+ },
+ {
+  "code": "P0577",
+  "brand": null,
+  "description": "Cruise Control Input Circuit High"
+ },
+ {
+  "code": "P0578",
+  "brand": null,
+  "description": "Cruise Control Multi-Function Input A Circuit Stuck"
+ },
+ {
+  "code": "P0579",
+  "brand": null,
+  "description": "Cruise Control Multi-Function Input A Circuit Range/Performance"
+ },
+ {
+  "code": "P0580",
+  "brand": null,
+  "description": "Cruise Control Multi-Function Input A Circuit Low"
+ },
+ {
+  "code": "P0581",
+  "brand": null,
+  "description": "Cruise Control Multi-Function Input A Circuit High"
+ },
+ {
+  "code": "P0582",
+  "brand": null,
+  "description": "Cruise Control Vacuum Control Circuit/Open"
+ },
+ {
+  "code": "P0583",
+  "brand": null,
+  "description": "Cruise Control Vacuum Control Circuit Low"
+ },
+ {
+  "code": "P0584",
+  "brand": null,
+  "description": "Cruise Control Vacuum Control Circuit High"
+ },
+ {
+  "code": "P0585",
+  "brand": null,
+  "description": "Cruise Control Multi-Function Input A/B Correlation"
+ },
+ {
+  "code": "P0586",
+  "brand": null,
+  "description": "Cruise Control Vent Control Circuit/Open"
+ },
+ {
+  "code": "P0587",
+  "brand": null,
+  "description": "Cruise Control Vent Control Circuit Low"
+ },
+ {
+  "code": "P0588",
+  "brand": null,
+  "description": "Cruise Control Vent Control Circuit High"
+ },
+ {
+  "code": "P0589",
+  "brand": null,
+  "description": "Cruise Control Multi-Function Input B Circuit"
+ },
+ {
+  "code": "P0590",
+  "brand": null,
+  "description": "Cruise Control Multi-Function Input B Circuit Stuck"
+ },
+ {
+  "code": "P0591",
+  "brand": null,
+  "description": "Cruise Control Multi-Function Input B Circuit Range/Performance"
+ },
+ {
+  "code": "P0592",
+  "brand": null,
+  "description": "Cruise Control Multi-Function Input B Circuit Low"
+ },
+ {
+  "code": "P0593",
+  "brand": null,
+  "description": "Cruise Control Multi-Function Input B Circuit High"
+ },
+ {
+  "code": "P0594",
+  "brand": null,
+  "description": "Cruise Control Servo Control Circuit/Open"
+ },
+ {
+  "code": "P0595",
+  "brand": null,
+  "description": "Cruise Control Servo Control Circuit Low"
+ },
+ {
+  "code": "P0596",
+  "brand": null,
+  "description": "Cruise Control Servo Control Circuit High"
+ },
+ {
+  "code": "P0597",
+  "brand": null,
+  "description": "Thermostat Heater Control Circuit/Open"
+ },
+ {
+  "code": "P0598",
+  "brand": null,
+  "description": "Thermostat Heater Control Circuit Low"
+ },
+ {
+  "code": "P0599",
+  "brand": null,
+  "description": "Thermostat Heater Control Circuit High"
+ },
+ {
+  "code": "P0600",
+  "brand": null,
+  "description": "Serial Communication Link"
+ },
+ {
+  "code": "P0601",
+  "brand": null,
+  "description": "Internal Control Module Memory Checksum Error"
+ },
+ {
+  "code": "P0602",
+  "brand": null,
+  "description": "Control Module Programming Error"
+ },
+ {
+  "code": "P0603",
+  "brand": null,
+  "description": "Internal Control Module Keep Alive Memory (KAM) Error"
+ },
+ {
+  "code": "P0604",
+  "brand": null,
+  "description": "Internal Control Module Random Access Memory (RAM) Error"
+ },
+ {
+  "code": "P0605",
+  "brand": null,
+  "description": "Internal Control Module Read Only Memory (ROM) Error"
+ },
+ {
+  "code": "P0606",
+  "brand": null,
+  "description": "Control Module Processor"
+ },
+ {
+  "code": "P0607",
+  "brand": null,
+  "description": "Control Module Performance"
+ },
+ {
+  "code": "P0608",
+  "brand": null,
+  "description": "Control Module VSS Output A"
+ },
+ {
+  "code": "P0609",
+  "brand": null,
+  "description": "Control Module VSS Output B"
+ },
+ {
+  "code": "P0610",
+  "brand": null,
+  "description": "Control Module Vehicle Options Error"
+ },
+ {
+  "code": "P0611",
+  "brand": null,
+  "description": "Fuel Injector Control Module Performance"
+ },
+ {
+  "code": "P0620",
+  "brand": null,
+  "description": "Generator Control Circuit"
+ },
+ {
+  "code": "P0627",
+  "brand": null,
+  "description": "Fuel Pump A Control Circuit/Open"
+ },
+ {
+  "code": "P0628",
+  "brand": null,
+  "description": "Fuel Pump A Control Circuit Low"
+ },
+ {
+  "code": "P0629",
+  "brand": null,
+  "description": "Fuel Pump A Control Circuit High"
+ },
+ {
+  "code": "P0641",
+  "brand": null,
+  "description": "Sensor Reference Voltage A Circuit/Open"
+ },
+ {
+  "code": "P0642",
+  "brand": null,
+  "description": "Sensor Reference Voltage A Circuit Low"
+ },
+ {
+  "code": "P0643",
+  "brand": null,
+  "description": "Sensor Reference Voltage A Circuit High"
+ },
+ {
+  "code": "P0644",
+  "brand": null,
+  "description": "Driver Display Serial Communication Circuit"
+ },
+ {
+  "code": "P0645",
+  "brand": null,
+  "description": "A/C Clutch Relay Control Circuit"
+ },
+ {
+  "code": "P0646",
+  "brand": null,
+  "description": "A/C Clutch Relay Control Circuit Low"
+ },
+ {
+  "code": "P0647",
+  "brand": null,
+  "description": "A/C Clutch Relay Control Circuit High"
+ },
+ {
+  "code": "P0648",
+  "brand": null,
+  "description": "Immobilizer Lamp Control Circuit"
+ },
+ {
+  "code": "P0649",
+  "brand": null,
+  "description": "Speed Control Lamp Control Circuit"
+ },
+ {
+  "code": "P0650",
+  "brand": null,
+  "description": "MIL Control Circuit/Open"
+ },
+ {
+  "code": "P0651",
+  "brand": null,
+  "description": "Sensor Reference Voltage B Circuit/Open"
+ },
+ {
+  "code": "P0652",
+  "brand": null,
+  "description": "Sensor Reference Voltage B Circuit Low"
+ },
+ {
+  "code": "P0685",
+  "brand": null,
+  "description": "ECM/PCM Power Relay Control Circuit/Open"
+ },
+ {
+  "code": "P0691",
+  "brand": null,
+  "description": "Fan 1 Control Circuit Low"
+ },
+ {
+  "code": "P0692",
+  "brand": null,
+  "description": "Fan 1 Control Circuit High"
+ },
+ {
+  "code": "P0693",
+  "brand": null,
+  "description": "Fan 2 Control Circuit Low"
+ },
+ {
+  "code": "P0694",
+  "brand": null,
+  "description": "Fan 2 Control Circuit High"
+ },
+ {
+  "code": "P0698",
+  "brand": null,
+  "description": "Sensor Reference Voltage C Circuit Low"
+ },
+ {
+  "code": "P0699",
+  "brand": null,
+  "description": "Sensor Reference Voltage C Circuit High"
+ },
+ {
+  "code": "P0700",
+  "brand": null,
+  "description": "Transmission Control System (MIL Request)"
+ },
+ {
+  "code": "P0701",
+  "brand": null,
+  "description": "Transmission Control System Range/Performance"
+ },
+ {
+  "code": "P0702",
+  "brand": null,
+  "description": "Transmission Control System Electrical"
+ },
+ {
+  "code": "P0703",
+  "brand": null,
+  "description": "Brake Switch B Circuit"
+ },
+ {
+  "code": "P0704",
+  "brand": null,
+  "description": "Clutch Switch Input Circuit"
+ },
+ {
+  "code": "P0705",
+  "brand": null,
+  "description": "Transmission Range Sensor A Circuit (PRNDL Input)"
+ },
+ {
+  "code": "P0706",
+  "brand": null,
+  "description": "Transmission Range Sensor A Circuit Range/Performance"
+ },
+ {
+  "code": "P0707",
+  "brand": null,
+  "description": "Transmission Range Sensor A Circuit Low"
+ },
+ {
+  "code": "P0708",
+  "brand": null,
+  "description": "Transmission Range Sensor A Circuit High"
+ },
+ {
+  "code": "P0709",
+  "brand": null,
+  "description": "Transmission Range Sensor A Circuit Intermittent"
+ },
+ {
+  "code": "P0710",
+  "brand": null,
+  "description": "Transmission Fluid Temperature Sensor A Circuit"
+ },
+ {
+  "code": "P0711",
+  "brand": null,
+  "description": "Transmission Fluid Temperature Sensor A Circuit Range/Performance"
+ },
+ {
+  "code": "P0712",
+  "brand": null,
+  "description": "Transmission Fluid Temperature Sensor A Circuit Low"
+ },
+ {
+  "code": "P0713",
+  "brand": null,
+  "description": "Transmission Fluid Temperature Sensor A Circuit High"
+ },
+ {
+  "code": "P0714",
+  "brand": null,
+  "description": "Transmission Fluid Temperature Sensor A Circuit Intermittent"
+ },
+ {
+  "code": "P0715",
+  "brand": null,
+  "description": "Input/Turbine Shaft Speed Sensor A Circuit"
+ },
+ {
+  "code": "P0716",
+  "brand": null,
+  "description": "Input/Turbine Shaft Speed Sensor A Circuit Range/Performance"
+ },
+ {
+  "code": "P0717",
+  "brand": null,
+  "description": "Input/Turbine Shaft Speed Sensor A Circuit No Signal"
+ },
+ {
+  "code": "P0718",
+  "brand": null,
+  "description": "Input/Turbine Shaft Speed Sensor A Circuit Intermittent"
+ },
+ {
+  "code": "P0719",
+  "brand": null,
+  "description": "Brake Switch B Circuit Low"
+ },
+ {
+  "code": "P0720",
+  "brand": null,
+  "description": "Output Shaft Speed Sensor Circuit"
+ },
+ {
+  "code": "P0721",
+  "brand": null,
+  "description": "Output Shaft Speed Sensor Circuit Range/Performance"
+ },
+ {
+  "code": "P0722",
+  "brand": null,
+  "description": "Output Shaft Speed Sensor Circuit No Signal"
+ },
+ {
+  "code": "P0723",
+  "brand": null,
+  "description": "Output Shaft Speed Sensor Circuit Intermittent"
+ },
+ {
+  "code": "P0724",
+  "brand": null,
+  "description": "Brake Switch B Circuit High"
+ },
+ {
+  "code": "P0725",
+  "brand": null,
+  "description": "Engine Speed Input Circuit"
+ },
+ {
+  "code": "P0726",
+  "brand": null,
+  "description": "Engine Speed Input Circuit Range/Performance"
+ },
+ {
+  "code": "P0727",
+  "brand": null,
+  "description": "Engine Speed Input Circuit No Signal"
+ },
+ {
+  "code": "P0728",
+  "brand": null,
+  "description": "Engine Speed Input Circuit Intermittent"
+ },
+ {
+  "code": "P0729",
+  "brand": null,
+  "description": "Gear 6 Incorrect Ratio"
+ },
+ {
+  "code": "P0730",
+  "brand": null,
+  "description": "Incorrect Gear Ratio"
+ },
+ {
+  "code": "P0731",
+  "brand": null,
+  "description": "Gear 1 Incorrect Ratio"
+ },
+ {
+  "code": "P0732",
+  "brand": null,
+  "description": "Gear 2 Incorrect Ratio"
+ },
+ {
+  "code": "P0733",
+  "brand": null,
+  "description": "Gear 3 Incorrect Ratio"
+ },
+ {
+  "code": "P0734",
+  "brand": null,
+  "description": "Gear 4 Incorrect Ratio"
+ },
+ {
+  "code": "P0735",
+  "brand": null,
+  "description": "Gear 5 Incorrect Ratio"
+ },
+ {
+  "code": "P0736",
+  "brand": null,
+  "description": "Reverse Incorrect Ratio"
+ },
+ {
+  "code": "P0737",
+  "brand": null,
+  "description": "TCM Engine Speed Output Circuit"
+ },
+ {
+  "code": "P0738",
+  "brand": null,
+  "description": "TCM Engine Speed Output Circuit Low"
+ },
+ {
+  "code": "P0739",
+  "brand": null,
+  "description": "TCM Engine Speed Output Circuit High"
+ },
+ {
+  "code": "P0740",
+  "brand": null,
+  "description": "Torque Converter Clutch Circuit/Open"
+ },
+ {
+  "code": "P0741",
+  "brand": null,
+  "description": "Torque Converter Clutch Circuit Performance/Stuck Off"
+ },
+ {
+  "code": "P0742",
+  "brand": null,
+  "description": "Torque Converter Clutch Circuit Stuck On"
+ },
+ {
+  "code": "P0743",
+  "brand": null,
+  "description": "Torque Converter Clutch Circuit Electrical"
+ },
+ {
+  "code": "P0744",
+  "brand": null,
+  "description": "Torque Converter Clutch Circuit Intermittent"
+ },
+ {
+  "code": "P0745",
+  "brand": null,
+  "description": "Pressure Control Solenoid A"
+ },
+ {
+  "code": "P0746",
+  "brand": null,
+  "description": "Pressure Control Solenoid A Performance/Stuck Off"
+ },
+ {
+  "code": "P0747",
+  "brand": null,
+  "description": "Pressure Control Solenoid A Stuck On"
+ },
+ {
+  "code": "P0748",
+  "brand": null,
+  "description": "Pressure Control Solenoid A Electrical"
+ },
+ {
+  "code": "P0749",
+  "brand": null,
+  "description": "Pressure Control Solenoid A Intermittent"
+ },
+ {
+  "code": "P0750",
+  "brand": null,
+  "description": "Shift Solenoid A"
+ },
+ {
+  "code": "P0751",
+  "brand": null,
+  "description": "Shift Solenoid A Performance/Stuck Off"
+ },
+ {
+  "code": "P0752",
+  "brand": null,
+  "description": "Shift Solenoid A Stuck On"
+ },
+ {
+  "code": "P0753",
+  "brand": null,
+  "description": "Shift Solenoid A Electrical"
+ },
+ {
+  "code": "P0754",
+  "brand": null,
+  "description": "Shift Solenoid A Intermittent"
+ },
+ {
+  "code": "P0755",
+  "brand": null,
+  "description": "Shift Solenoid B"
+ },
+ {
+  "code": "P0756",
+  "brand": null,
+  "description": "Shift Solenoid B Performance/Stuck Off"
+ },
+ {
+  "code": "P0757",
+  "brand": null,
+  "description": "Shift Solenoid B Stuck On"
+ },
+ {
+  "code": "P0758",
+  "brand": null,
+  "description": "Shift Solenoid B Electrical"
+ },
+ {
+  "code": "P0759",
+  "brand": null,
+  "description": "Shift Solenoid B Intermittent"
+ },
+ {
+  "code": "P0760",
+  "brand": null,
+  "description": "Shift Solenoid C"
+ },
+ {
+  "code": "P0761",
+  "brand": null,
+  "description": "Shift Solenoid C Performance/Stuck Off"
+ },
+ {
+  "code": "P0762",
+  "brand": null,
+  "description": "Shift Solenoid C Stuck On"
+ },
+ {
+  "code": "P0763",
+  "brand": null,
+  "description": "Shift Solenoid C Electrical"
+ },
+ {
+  "code": "P0764",
+  "brand": null,
+  "description": "Shift Solenoid C Intermittent"
+ },
+ {
+  "code": "P0765",
+  "brand": null,
+  "description": "Shift Solenoid D"
+ },
+ {
+  "code": "P0766",
+  "brand": null,
+  "description": "Shift Solenoid D Performance/Stuck Off"
+ },
+ {
+  "code": "P0767",
+  "brand": null,
+  "description": "Shift Solenoid D Stuck On"
+ },
+ {
+  "code": "P0768",
+  "brand": null,
+  "description": "Shift Solenoid D Electrical"
+ },
+ {
+  "code": "P0769",
+  "brand": null,
+  "description": "Shift Solenoid D Intermittent"
+ },
+ {
+  "code": "P0770",
+  "brand": null,
+  "description": "Shift Solenoid E"
+ },
+ {
+  "code": "P0771",
+  "brand": null,
+  "description": "Shift Solenoid E Performance/Stuck Off"
+ },
+ {
+  "code": "P0772",
+  "brand": null,
+  "description": "Shift Solenoid E Stuck On"
+ },
+ {
+  "code": "P0773",
+  "brand": null,
+  "description": "Shift Solenoid E Electrical"
+ },
+ {
+  "code": "P0774",
+  "brand": null,
+  "description": "Shift Solenoid E Intermittent"
+ },
+ {
+  "code": "P0775",
+  "brand": null,
+  "description": "Pressure Control Solenoid B"
+ },
+ {
+  "code": "P0776",
+  "brand": null,
+  "description": "Pressure Control Solenoid B Performance/Stuck Off"
+ },
+ {
+  "code": "P0777",
+  "brand": null,
+  "description": "Pressure Control Solenoid B Stuck On"
+ },
+ {
+  "code": "P0778",
+  "brand": null,
+  "description": "Pressure Control Solenoid B Electrical"
+ },
+ {
+  "code": "P0779",
+  "brand": null,
+  "description": "Pressure Control Solenoid B Intermittent"
+ },
+ {
+  "code": "P0780",
+  "brand": null,
+  "description": "Shift Error"
+ },
+ {
+  "code": "P0781",
+  "brand": null,
+  "description": "1-2 Shift"
+ },
+ {
+  "code": "P0782",
+  "brand": null,
+  "description": "2-3 Shift"
+ },
+ {
+  "code": "P0783",
+  "brand": null,
+  "description": "3-4 Shift"
+ },
+ {
+  "code": "P0784",
+  "brand": null,
+  "description": "4-5 Shift"
+ },
+ {
+  "code": "P0785",
+  "brand": null,
+  "description": "Shift Timing Solenoid A"
+ },
+ {
+  "code": "P0786",
+  "brand": null,
+  "description": "Shift Timing Solenoid A Range/Performance"
+ },
+ {
+  "code": "P0787",
+  "brand": null,
+  "description": "Shift Timing Solenoid A Low"
+ },
+ {
+  "code": "P0788",
+  "brand": null,
+  "description": "Shift Timing Solenoid A High"
+ },
+ {
+  "code": "P0789",
+  "brand": null,
+  "description": "Shift Timing Solenoid A Intermittent"
+ },
+ {
+  "code": "P0790",
+  "brand": null,
+  "description": "Normal/Performance Switch Circuit"
+ },
+ {
+  "code": "P0791",
+  "brand": null,
+  "description": "Intermediate Shaft Speed Sensor A Circuit"
+ },
+ {
+  "code": "P0792",
+  "brand": null,
+  "description": "Intermediate Shaft Speed Sensor A Circuit Range/Performance"
+ },
+ {
+  "code": "P0793",
+  "brand": null,
+  "description": "Intermediate Shaft Speed Sensor A Circuit No Signal"
+ },
+ {
+  "code": "P0794",
+  "brand": null,
+  "description": "Intermediate Shaft Speed Sensor A Circuit Intermittent"
+ },
+ {
+  "code": "P0795",
+  "brand": null,
+  "description": "Pressure Control Solenoid C"
+ },
+ {
+  "code": "P0796",
+  "brand": null,
+  "description": "Pressure Control Solenoid C Performance/Stuck Off"
+ },
+ {
+  "code": "P0797",
+  "brand": null,
+  "description": "Pressure Control Solenoid C Stuck On"
+ },
+ {
+  "code": "P0798",
+  "brand": null,
+  "description": "Pressure Control Solenoid C Electrical"
+ },
+ {
+  "code": "P0799",
+  "brand": null,
+  "description": "Pressure Control Solenoid C Intermittent"
+ },
+ {
+  "code": "P0801",
+  "brand": null,
+  "description": "Reverse Inhibit Control Circuit/Open"
+ },
+ {
+  "code": "P0815",
+  "brand": null,
+  "description": "Upshift Switch Circuit"
+ },
+ {
+  "code": "P0816",
+  "brand": null,
+  "description": "Downshift Switch Circuit"
+ },
+ {
+  "code": "P0A80",
+  "brand": null,
+  "description": "Replace Hybrid/EV Battery Pack"
+ },
+ {
+  "code": "P2002",
+  "brand": null,
+  "description": "Particulate Filter Efficiency Below Threshold Bank 1"
+ },
+ {
+  "code": "P2003",
+  "brand": null,
+  "description": "Particulate Filter Efficiency Below Threshold Bank 2"
+ },
+ {
+  "code": "P2009",
+  "brand": null,
+  "description": "Intake Manifold Runner Control Circuit Low Bank 1"
+ },
+ {
+  "code": "P2010",
+  "brand": null,
+  "description": "Intake Manifold Runner Control Circuit High Bank 1"
+ },
+ {
+  "code": "P2015",
+  "brand": null,
+  "description": "Intake Manifold Runner Position Sensor/Switch Circuit Range/Performance Bank 1"
+ },
+ {
+  "code": "P2096",
+  "brand": null,
+  "description": "Post Catalyst Fuel Trim System Too Lean Bank 1"
+ },
+ {
+  "code": "P2097",
+  "brand": null,
+  "description": "Post Catalyst Fuel Trim System Too Rich Bank 1"
+ },
+ {
+  "code": "P2098",
+  "brand": null,
+  "description": "Post Catalyst Fuel Trim System Too Lean Bank 2"
+ },
+ {
+  "code": "P2099",
+  "brand": null,
+  "description": "Post Catalyst Fuel Trim System Too Rich Bank 2"
+ },
+ {
+  "code": "P20EE",
+  "brand": null,
+  "description": "SCR NOx Catalyst Efficiency Below Threshold Bank 1 Catalyst 1"
+ },
+ {
+  "code": "P2100",
+  "brand": null,
+  "description": "Throttle Actuator A Control Motor Circuit/Open"
+ },
+ {
+  "code": "P2101",
+  "brand": null,
+  "description": "Throttle Actuator A Control Motor Circuit Range/Performance"
+ },
+ {
+  "code": "P2102",
+  "brand": null,
+  "description": "Throttle Actuator A Control Motor Circuit Low"
+ },
+ {
+  "code": "P2103",
+  "brand": null,
+  "description": "Throttle Actuator A Control Motor Circuit High"
+ },
+ {
+  "code": "P2104",
+  "brand": null,
+  "description": "Throttle Actuator Control System - Forced Idle"
+ },
+ {
+  "code": "P2105",
+  "brand": null,
+  "description": "Throttle Actuator Control System - Forced Engine Shutdown"
+ },
+ {
+  "code": "P2106",
+  "brand": null,
+  "description": "Throttle Actuator Control System - Forced Limited Power"
+ },
+ {
+  "code": "P2107",
+  "brand": null,
+  "description": "Throttle Actuator A Control Module Processor"
+ },
+ {
+  "code": "P2108",
+  "brand": null,
+  "description": "Throttle Actuator A Control Module Performance"
+ },
+ {
+  "code": "P2109",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor A Minimum Stop Performance"
+ },
+ {
+  "code": "P2110",
+  "brand": null,
+  "description": "Throttle Actuator A Control System - Forced Limited RPM"
+ },
+ {
+  "code": "P2111",
+  "brand": null,
+  "description": "Throttle Actuator A Control System - Stuck Open"
+ },
+ {
+  "code": "P2112",
+  "brand": null,
+  "description": "Throttle Actuator A Control System - Stuck Closed"
+ },
+ {
+  "code": "P2113",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor B Minimum Stop Performance"
+ },
+ {
+  "code": "P2114",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor C Minimum Stop Performance"
+ },
+ {
+  "code": "P2115",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor D Minimum Stop Performance"
+ },
+ {
+  "code": "P2116",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor E Minimum Stop Performance"
+ },
+ {
+  "code": "P2117",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor F Minimum Stop Performance"
+ },
+ {
+  "code": "P2118",
+  "brand": null,
+  "description": "Throttle Actuator A Control Motor Current Range/Performance"
+ },
+ {
+  "code": "P2119",
+  "brand": null,
+  "description": "Throttle Actuator A Control Throttle Body Range/Performance"
+ },
+ {
+  "code": "P2135",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor/Switch A/B Voltage Correlation"
+ },
+ {
+  "code": "P2136",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor/Switch A/C Voltage Correlation"
+ },
+ {
+  "code": "P2137",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor/Switch B/C Voltage Correlation"
+ },
+ {
+  "code": "P2138",
+  "brand": null,
+  "description": "Throttle/Pedal Position Sensor/Switch D/E Voltage Correlation"
+ },
+ {
+  "code": "P2141",
+  "brand": null,
+  "description": "EGR Throttle Control Circuit A Low"
+ },
+ {
+  "code": "P2142",
+  "brand": null,
+  "description": "EGR Throttle Control Circuit A High"
+ },
+ {
+  "code": "P2147",
+  "brand": null,
+  "description": "Fuel Injector Group A Supply Voltage Circuit Low"
+ },
+ {
+  "code": "P2148",
+  "brand": null,
+  "description": "Fuel Injector Group A Supply Voltage Circuit High"
+ },
+ {
+  "code": "P2150",
+  "brand": null,
+  "description": "Fuel Injector Group B Supply Voltage Circuit Low"
+ },
+ {
+  "code": "P2151",
+  "brand": null,
+  "description": "Fuel Injector Group B Supply Voltage Circuit High"
+ },
+ {
+  "code": "P2187",
+  "brand": null,
+  "description": "System Too Lean at Idle Bank 1"
+ },
+ {
+  "code": "P2188",
+  "brand": null,
+  "description": "System Too Rich at Idle Bank 1"
+ },
+ {
+  "code": "P2189",
+  "brand": null,
+  "description": "System Too Lean at Idle Bank 2"
+ },
+ {
+  "code": "P2190",
+  "brand": null,
+  "description": "System Too Rich at Idle Bank 2"
+ },
+ {
+  "code": "P2191",
+  "brand": null,
+  "description": "System Too Lean at Higher Load Bank 1"
+ },
+ {
+  "code": "P2192",
+  "brand": null,
+  "description": "System Too Rich at Higher Load Bank 1"
+ },
+ {
+  "code": "P2193",
+  "brand": null,
+  "description": "System Too Lean at Higher Load Bank 2"
+ },
+ {
+  "code": "P2194",
+  "brand": null,
+  "description": "System Too Rich at Higher Load Bank 2"
+ },
+ {
+  "code": "P2195",
+  "brand": null,
+  "description": "O2 Sensor Signal Biased/Stuck Lean Bank 1 Sensor 1"
+ },
+ {
+  "code": "P2196",
+  "brand": null,
+  "description": "O2 Sensor Signal Biased/Stuck Rich Bank 1 Sensor 1"
+ },
+ {
+  "code": "P2263",
+  "brand": null,
+  "description": "Turbocharger/Supercharger A Boost System Performance"
+ },
+ {
+  "code": "P2269",
+  "brand": null,
+  "description": "Water in Fuel Condition - Sensor A"
+ },
+ {
+  "code": "P2279",
+  "brand": null,
+  "description": "Intake Air System Leak Bank 1"
+ },
+ {
+  "code": "P2299",
+  "brand": null,
+  "description": "Brake Pedal Position/Accelerator Pedal Position Incompatible"
+ },
+ {
+  "code": "P242F",
+  "brand": null,
+  "description": "Particulate Filter Restriction - Ash Accumulation Bank 1"
+ },
+ {
+  "code": "P2457",
+  "brand": null,
+  "description": "EGR Cooler A Efficiency Below Threshold"
+ },
+ {
+  "code": "P2458",
+  "brand": null,
+  "description": "Particulate Filter Regeneration Duration Bank 1"
+ },
+ {
+  "code": "P2459",
+  "brand": null,
+  "description": "Particulate Filter Regeneration Frequency Bank 1"
+ },
+ {
+  "code": "P2460",
+  "brand": null,
+  "description": "Particulate Filter Pressure Sensor B Circuit Low"
+ },
+ {
+  "code": "P2461",
+  "brand": null,
+  "description": "Particulate Filter Pressure Sensor B Circuit High"
+ },
+ {
+  "code": "P2462",
+  "brand": null,
+  "description": "Particulate Filter Pressure Sensor B Circuit Intermittent/Erratic"
+ },
+ {
+  "code": "P2463",
+  "brand": null,
+  "description": "Particulate Filter Restriction - Soot Accumulation Bank 1"
+ },
+ {
+  "code": "U0001",
+  "brand": null,
+  "description": "High Speed CAN Communication Bus"
+ },
+ {
+  "code": "U0073",
+  "brand": null,
+  "description": "Control Module Communication Bus A Off"
+ },
+ {
+  "code": "U0100",
+  "brand": null,
+  "description": "Lost Communication With ECM/PCM A"
+ },
+ {
+  "code": "U0101",
+  "brand": null,
+  "description": "Lost Communication With TCM"
+ },
+ {
+  "code": "U0102",
+  "brand": null,
+  "description": "Lost Communication With Transfer Case Control Module"
+ },
+ {
+  "code": "U0103",
+  "brand": null,
+  "description": "Lost Communication With Gear Shift Control Module A"
+ },
+ {
+  "code": "U0104",
+  "brand": null,
+  "description": "Lost Communication With Cruise Control Module"
+ },
+ {
+  "code": "U0105",
+  "brand": null,
+  "description": "Lost Communication With Fuel Injector Control Module"
+ },
+ {
+  "code": "U0106",
+  "brand": null,
+  "description": "Lost Communication With Glow Plug Control Module 1"
+ },
+ {
+  "code": "U0107",
+  "brand": null,
+  "description": "Lost Communication With Throttle Actuator A Control Module"
+ },
+ {
+  "code": "U0108",
+  "brand": null,
+  "description": "Lost Communication With Alternative Fuel Control Module"
+ },
+ {
+  "code": "U0109",
+  "brand": null,
+  "description": "Lost Communication With Fuel Pump Control Module A"
+ },
+ {
+  "code": "U0110",
+  "brand": null,
+  "description": "Lost Communication With Drive Motor Control Module A"
+ },
+ {
+  "code": "U0111",
+  "brand": null,
+  "description": "Lost Communication With Battery Energy Control Module A"
+ },
+ {
+  "code": "U0112",
+  "brand": null,
+  "description": "Lost Communication With Battery Energy Control Module B"
+ },
+ {
+  "code": "U0113",
+  "brand": null,
+  "description": "Lost Communication With Emissions Critical Control Information"
+ },
+ {
+  "code": "U0114",
+  "brand": null,
+  "description": "Lost Communication With Four-Wheel Drive Clutch Control Module"
+ },
+ {
+  "code": "U0115",
+  "brand": null,
+  "description": "Lost Communication With ECM/PCM B"
+ },
+ {
+  "code": "U0116",
+  "brand": null,
+  "description": "Lost Communication With Coolant Temperature Control Module"
+ },
+ {
+  "code": "U0117",
+  "brand": null,
+  "description": "Lost Communication With PTO Control Module"
+ },
+ {
+  "code": "U0118",
+  "brand": null,
+  "description": "Lost Communication With Fuel Additive Control Module"
+ },
+ {
+  "code": "U0119",
+  "brand": null,
+  "description": "Lost Communication With Fuel Cell Control Module"
+ },
+ {
+  "code": "U0120",
+  "brand": null,
+  "description": "Lost Communication With Starter / Generator Control Module"
+ },
+ {
+  "code": "U0121",
+  "brand": null,
+  "description": "Lost Communication With Anti-Lock Brake System (ABS) Control Module A"
+ },
+ {
+  "code": "U0122",
+  "brand": null,
+  "description": "Lost Communication With Vehicle Dynamics Control Module"
+ },
+ {
+  "code": "U0123",
+  "brand": null,
+  "description": "Lost Communication With Yaw Rate Sensor Module"
+ },
+ {
+  "code": "U0124",
+  "brand": null,
+  "description": "Lost Communication With Lateral Acceleration Sensor Module"
+ },
+ {
+  "code": "U0125",
+  "brand": null,
+  "description": "Lost Communication With Multi-axis Acceleration Sensor Module A"
+ },
+ {
+  "code": "U0126",
+  "brand": null,
+  "description": "Lost Communication With Steering Angle Sensor Module"
+ },
+ {
+  "code": "U0127",
+  "brand": null,
+  "description": "Lost Communication With Tire Pressure Monitor Module"
+ },
+ {
+  "code": "U0128",
+  "brand": null,
+  "description": "Lost Communication With Park Brake Control Module"
+ },
+ {
+  "code": "U0129",
+  "brand": null,
+  "description": "Lost Communication With Brake System Control Module A"
+ },
+ {
+  "code": "U0130",
+  "brand": null,
+  "description": "Lost Communication With Steering Effort Control Module"
+ },
+ {
+  "code": "U0131",
+  "brand": null,
+  "description": "Lost Communication With Power Steering Control Module A"
+ },
+ {
+  "code": "U0132",
+  "brand": null,
+  "description": "Lost Communication With Suspension Control Module A"
+ },
+ {
+  "code": "U0133",
+  "brand": null,
+  "description": "Lost Communication With Active Roll Control Module"
+ },
+ {
+  "code": "U0134",
+  "brand": null,
+  "description": "Lost Communication With Power Steering Control Module - Rear"
+ },
+ {
+  "code": "U0135",
+  "brand": null,
+  "description": "Lost Communication With Differential Control Module - Front"
+ },
+ {
+  "code": "U0136",
+  "brand": null,
+  "description": "Lost Communication With Differential Control Module - Rear"
+ },
+ {
+  "code": "U0137",
+  "brand": null,
+  "description": "Lost Communication With Trailer Brake Control Module"
+ },
+ {
+  "code": "U0138",
+  "brand": null,
+  "description": "Lost Communication With All Terrain Control Module"
+ },
+ {
+  "code": "U0139",
+  "brand": null,
+  "description": "Lost Communication With Suspension Control Module B"
+ },
+ {
+  "code": "U0140",
+  "brand": null,
+  "description": "Lost Communication With Body Control Module"
+ },
+ {
+  "code": "U0141",
+  "brand": null,
+  "description": "Lost Communication With Body Control Module A"
+ },
+ {
+  "code": "U0142",
+  "brand": null,
+  "description": "Lost Communication With Body Control Module B"
+ },
+ {
+  "code": "U0143",
+  "brand": null,
+  "description": "Lost Communication With Body Control Module C"
+ },
+ {
+  "code": "U0144",
+  "brand": null,
+  "description": "Lost Communication With Body Control Module D"
+ },
+ {
+  "code": "U0145",
+  "brand": null,
+  "description": "Lost Communication With Body Control Module E"
+ },
+ {
+  "code": "U0146",
+  "brand": null,
+  "description": "Lost Communication With Serial Data Gateway Module A"
+ },
+ {
+  "code": "U0147",
+  "brand": null,
+  "description": "Lost Communication With Serial Data Gateway Module B"
+ },
+ {
+  "code": "U0148",
+  "brand": null,
+  "description": "Lost Communication With Serial Data Gateway Module C"
+ },
+ {
+  "code": "U0149",
+  "brand": null,
+  "description": "Lost Communication With Serial Data Gateway Module D"
+ },
+ {
+  "code": "U0150",
+  "brand": null,
+  "description": "Lost Communication With Serial Data Gateway Module E"
+ },
+ {
+  "code": "U0151",
+  "brand": null,
+  "description": "Lost Communication With Restraints Control Module"
+ },
+ {
+  "code": "U0152",
+  "brand": null,
+  "description": "Lost Communication With Side Restraints Control Module - Left"
+ },
+ {
+  "code": "U0153",
+  "brand": null,
+  "description": "Lost Communication With Side Restraints Control Module - Right"
+ },
+ {
+  "code": "U0154",
+  "brand": null,
+  "description": "Lost Communication With Restraints Occupant Classification System Module"
+ },
+ {
+  "code": "U0155",
+  "brand": null,
+  "description": "Lost Communication With Instrument Panel Cluster (IPC) Control Module"
+ },
+ {
+  "code": "U0156",
+  "brand": null,
+  "description": "Lost Communication With Information Center A"
+ },
+ {
+  "code": "U0157",
+  "brand": null,
+  "description": "Lost Communication With Information Center B"
+ },
+ {
+  "code": "U0158",
+  "brand": null,
+  "description": "Lost Communication With Head Up Display"
+ },
+ {
+  "code": "U0159",
+  "brand": null,
+  "description": "Lost Communication With Parking Assist Control Module A"
+ },
+ {
+  "code": "U0160",
+  "brand": null,
+  "description": "Lost Communication With Audible Alert Control Module"
+ },
+ {
+  "code": "U0161",
+  "brand": null,
+  "description": "Lost Communication With Compass Module"
+ },
+ {
+  "code": "U0162",
+  "brand": null,
+  "description": "Lost Communication With Navigation Display Module"
+ },
+ {
+  "code": "U0163",
+  "brand": null,
+  "description": "Lost Communication With Navigation Control Module"
+ },
+ {
+  "code": "U0164",
+  "brand": null,
+  "description": "Lost Communication With HVAC Control Module"
+ },
+ {
+  "code": "U0401",
+  "brand": null,
+  "description": "Invalid Data Received From ECM/PCM A"
+ },
+ {
+  "code": "P1500",
+  "brand": "HONDA",
+  "description": "Throttle position sensor - circuit fault"
+ },
+ {
+  "code": "P1501",
+  "brand": "HONDA",
+  "description": "Throttle position sensor - signal low"
+ },
+ {
+  "code": "P1502",
+  "brand": "HONDA",
+  "description": "Throttle position sensor - signal high"
+ },
+ {
+  "code": "P1503",
+  "brand": "HONDA",
+  "description": "Throttle position sensor - implausible signal"
+ },
+ {
+  "code": "P1504",
+  "brand": "HONDA",
+  "description": "Idle air control valve - open circuit"
+ },
+ {
+  "code": "P1505",
+  "brand": "HONDA",
+  "description": "Idle air control valve - short to ground"
+ },
+ {
+  "code": "P1506",
+  "brand": "HONDA",
+  "description": "Idle air control valve - short to battery"
+ },
+ {
+  "code": "P1507",
+  "brand": "HONDA",
+  "description": "Idle speed control - target not reached"
+ },
+ {
+  "code": "P1508",
+  "brand": "HONDA",
+  "description": "Idle speed control - overspeed"
+ },
+ {
+  "code": "P1509",
+  "brand": "HONDA",
+  "description": "Throttle valve actuator - mechanical fault"
+ },
+ {
+  "code": "P1510",
+  "brand": "HONDA",
+  "description": "Throttle valve actuator - electrical fault"
+ },
+ {
+  "code": "P1511",
+  "brand": "HONDA",
+  "description": "Throttle valve adaptation - start not performed"
+ },
+ {
+  "code": "P1512",
+  "brand": "HONDA",
+  "description": "Throttle valve adaptation - running not performed"
+ },
+ {
+  "code": "P1513",
+  "brand": "HONDA",
+  "description": "Side stand switch - circuit fault"
+ },
+ {
+  "code": "P1514",
+  "brand": "HONDA",
+  "description": "Neutral switch - circuit fault"
+ },
+ {
+  "code": "P1515",
+  "brand": "HONDA",
+  "description": "Gear position sensor - signal implausible"
+ },
+ {
+  "code": "P1516",
+  "brand": "HONDA",
+  "description": "Gear position sensor - circuit low"
+ },
+ {
+  "code": "P1517",
+  "brand": "HONDA",
+  "description": "Gear position sensor - circuit high"
+ },
+ {
+  "code": "P1518",
+  "brand": "HONDA",
+  "description": "Start/stop switch - circuit fault"
+ },
+ {
+  "code": "P1519",
+  "brand": "HONDA",
+  "description": "Start/stop - not adapted"
+ },
+ {
+  "code": "P1520",
+  "brand": "HONDA",
+  "description": "Honda select - gear position sensor fault"
+ },
+ {
+  "code": "P1521",
+  "brand": "HONDA",
+  "description": "Honda select - actuator fault"
+ },
+ {
+  "code": "P1001",
+  "brand": "MAHINDRA",
+  "description": "Fuel metering unit - open load fault"
+ },
+ {
+  "code": "P1106",
+  "brand": "MAHINDRA",
+  "description": "EGR H-bridge valve - overcurrent fault"
+ },
+ {
+  "code": "P1107",
+  "brand": "MAHINDRA",
+  "description": "EGR H-bridge valve - overtemperature fault"
+ },
+ {
+  "code": "P1108",
+  "brand": "MAHINDRA",
+  "description": "EGR H-bridge valve Out1 - short to battery"
+ },
+ {
+  "code": "P1109",
+  "brand": "MAHINDRA",
+  "description": "EGR H-bridge valve Out2 - short to battery"
+ },
+ {
+  "code": "P1110",
+  "brand": "MAHINDRA",
+  "description": "EGR H-bridge valve Out1 - short to ground"
+ },
+ {
+  "code": "P1111",
+  "brand": "MAHINDRA",
+  "description": "Engine speed signal to instrument cluster - open circuit"
+ },
+ {
+  "code": "P1112",
+  "brand": "MAHINDRA",
+  "description": "Engine speed signal to cluster - driver overtemperature"
+ },
+ {
+  "code": "P1113",
+  "brand": "MAHINDRA",
+  "description": "Engine speed sensor wire to cluster - short to battery"
+ },
+ {
+  "code": "P1114",
+  "brand": "MAHINDRA",
+  "description": "Engine speed to cluster wire - short to ground"
+ },
+ {
+  "code": "P1131",
+  "brand": "MAHINDRA",
+  "description": "EGR H-bridge valve Out2 - short to ground"
+ },
+ {
+  "code": "P1132",
+  "brand": "MAHINDRA",
+  "description": "EGR H-bridge valve - short circuit / overload fault"
+ },
+ {
+  "code": "P1133",
+  "brand": "MAHINDRA",
+  "description": "EGR H-bridge valve - temperature-dependent overcurrent fault"
+ },
+ {
+  "code": "P1134",
+  "brand": "MAHINDRA",
+  "description": "EGR H-bridge valve - undervoltage fault"
+ },
+ {
+  "code": "P1135",
+  "brand": "MAHINDRA",
+  "description": "EGR powerstage valve - open load fault"
+ },
+ {
+  "code": "P1200",
+  "brand": "MAHINDRA",
+  "description": "Injection quantity limited by battery charge balance"
+ },
+ {
+  "code": "P1201",
+  "brand": "MAHINDRA",
+  "description": "Injection quantity limited by system"
+ },
+ {
+  "code": "P1202",
+  "brand": "MAHINDRA",
+  "description": "Injection quantity limited by execution time"
+ },
+ {
+  "code": "P1203",
+  "brand": "MAHINDRA",
+  "description": "Minimum rail pressure check failed - pressure too low"
+ },
+ {
+  "code": "P1204",
+  "brand": "MAHINDRA",
+  "description": "Short circuit in injector bank"
+ },
+ {
+  "code": "P1206",
+  "brand": "MAHINDRA",
+  "description": "Injector driver chip fault"
+ },
+ {
+  "code": "P1221",
+  "brand": "MAHINDRA",
+  "description": "Injector trim/calibration value not programmed"
+ },
+ {
+  "code": "P1222",
+  "brand": "MAHINDRA",
+  "description": "Injector trim/calibration value not programmed"
+ },
+ {
+  "code": "P1223",
+  "brand": "MAHINDRA",
+  "description": "Injector trim/calibration value not programmed"
+ },
+ {
+  "code": "P1300",
+  "brand": "MAHINDRA",
+  "description": "Check engine lamp - open load"
+ },
+ {
+  "code": "P1301",
+  "brand": "MAHINDRA",
+  "description": "Check engine lamp driver - overtemperature"
+ },
+ {
+  "code": "P1302",
+  "brand": "MAHINDRA",
+  "description": "Check engine lamp - short to battery"
+ },
+ {
+  "code": "P1303",
+  "brand": "MAHINDRA",
+  "description": "Check engine lamp - short to battery"
+ },
+ {
+  "code": "P1404",
+  "brand": "MAHINDRA",
+  "description": "EGR valve stuck closed"
+ },
+ {
+  "code": "P1413",
+  "brand": "MAHINDRA",
+  "description": "EGR valve stuck open"
+ },
+ {
+  "code": "P1416",
+  "brand": "MAHINDRA",
+  "description": "Loose connection between fuel metering unit and ECU"
+ },
+ {
+  "code": "P1417",
+  "brand": "MAHINDRA",
+  "description": "Metering unit driver - overtemperature"
+ },
+ {
+  "code": "P1418",
+  "brand": "MAHINDRA",
+  "description": "MIL lamp - open load fault"
+ },
+ {
+  "code": "P1419",
+  "brand": "MAHINDRA",
+  "description": "MIL lamp - short to battery"
+ },
+ {
+  "code": "P1420",
+  "brand": "MAHINDRA",
+  "description": "MIL lamp - short to ground"
+ },
+ {
+  "code": "P1423",
+  "brand": "MAHINDRA",
+  "description": "Rail pressure exceeded maximum limit"
+ },
+ {
+  "code": "P1424",
+  "brand": "MAHINDRA",
+  "description": "Rail pressure exceeded maximum limit (stage 2)"
+ },
+ {
+  "code": "P1602",
+  "brand": "MAHINDRA",
+  "description": "Rail pressure regulator deviation - actual pressure higher than desired"
+ },
+ {
+  "code": "P1606",
+  "brand": "MAHINDRA",
+  "description": "Pump metering unit plausibility fault at idle"
+ },
+ {
+  "code": "P1611",
+  "brand": "MAHINDRA",
+  "description": "Main relay opened early"
+ },
+ {
+  "code": "P1612",
+  "brand": "MAHINDRA",
+  "description": "Main relay stuck"
+ },
+ {
+  "code": "P1650",
+  "brand": "MAHINDRA",
+  "description": "MIL driver - overtemperature"
+ },
+ {
+  "code": "P1701",
+  "brand": "MAHINDRA",
+  "description": "SPI/communication fault (Cy320 chip)"
+ },
+ {
+  "code": "P1702",
+  "brand": "MAHINDRA",
+  "description": "EEPROM erase error (multiple blocks)"
+ },
+ {
+  "code": "P1703",
+  "brand": "MAHINDRA",
+  "description": "EEPROM read error (multiple blocks)"
+ },
+ {
+  "code": "P1704",
+  "brand": "MAHINDRA",
+  "description": "EEPROM write error (single block)"
+ },
+ {
+  "code": "P1705",
+  "brand": "MAHINDRA",
+  "description": "Test pulse check failed under no-load condition"
+ },
+ {
+  "code": "P1706",
+  "brand": "MAHINDRA",
+  "description": "Test voltage plausibility fault"
+ },
+ {
+  "code": "P1707",
+  "brand": "MAHINDRA",
+  "description": "Metric ratio correction check fault"
+ },
+ {
+  "code": "P1708",
+  "brand": "MAHINDRA",
+  "description": "Fc/Mm signal plausibility fault"
+ },
+ {
+  "code": "P1709",
+  "brand": "MAHINDRA",
+  "description": "Fault reported due to interrupted SPI communication"
+ },
+ {
+  "code": "P1710",
+  "brand": "MAHINDRA",
+  "description": "Multiple faults detected during full ROM test (post-drive)"
+ },
+ {
+  "code": "P1711",
+  "brand": "MAHINDRA",
+  "description": "Too few bytes received by monitoring module from CPU"
+ },
+ {
+  "code": "P1712",
+  "brand": "MAHINDRA",
+  "description": "Torque limit set pending monitoring-module response after fault"
+ },
+ {
+  "code": "P1713",
+  "brand": "MAHINDRA",
+  "description": "Fault setting monitoring module response time"
+ },
+ {
+  "code": "P1714",
+  "brand": "MAHINDRA",
+  "description": "SPI communication fault detected"
+ },
+ {
+  "code": "P1715",
+  "brand": "MAHINDRA",
+  "description": "Shutoff path undervoltage detection test fault"
+ },
+ {
+  "code": "P1716",
+  "brand": "MAHINDRA",
+  "description": "Monitoring module shutoff path fault"
+ },
+ {
+  "code": "P1717",
+  "brand": "MAHINDRA",
+  "description": "Timeout setting/cancelling watchdog task"
+ },
+ {
+  "code": "P1718",
+  "brand": "MAHINDRA",
+  "description": "Diagnostic check reports positive test failed"
+ },
+ {
+  "code": "P1719",
+  "brand": "MAHINDRA",
+  "description": "Shutoff path test timing fault"
+ },
+ {
+  "code": "P1720",
+  "brand": "MAHINDRA",
+  "description": "Shutoff path overvoltage detection test fault"
+ },
+ {
+  "code": "P1726",
+  "brand": "MAHINDRA",
+  "description": "'WDA Active' fault due to communication request/response defect"
+ },
+ {
+  "code": "P1727",
+  "brand": "MAHINDRA",
+  "description": "'ABE Active' fault due to undervoltage detection"
+ },
+ {
+  "code": "P1728",
+  "brand": "MAHINDRA",
+  "description": "'ABE Active' fault due to overvoltage detection"
+ },
+ {
+  "code": "P1729",
+  "brand": "MAHINDRA",
+  "description": "'ABE/WDA Active' fault, unknown cause"
+ },
+ {
+  "code": "P1730",
+  "brand": "MAHINDRA",
+  "description": "MSC R2S2 reported faults"
+ },
+ {
+  "code": "P1731",
+  "brand": "MAHINDRA",
+  "description": "Sensor 1 supply fault"
+ },
+ {
+  "code": "P1732",
+  "brand": "MAHINDRA",
+  "description": "Sensor 2 supply fault"
+ },
+ {
+  "code": "P1738",
+  "brand": "MAHINDRA",
+  "description": "Software resets visible in DSM log"
+ },
+ {
+  "code": "P1741",
+  "brand": "MAHINDRA",
+  "description": "SPI communication fault (TLE6232 chip)"
+ },
+ {
+  "code": "P1742",
+  "brand": "MAHINDRA",
+  "description": "Injection cutoff request (ICO) to shutoff coordinator"
+ },
+ {
+  "code": "P1743",
+  "brand": "MAHINDRA",
+  "description": "Mismatch between engine speed level 1 and level 2 signals"
+ },
+ {
+  "code": "P1750",
+  "brand": "MAHINDRA",
+  "description": "Current on-time vs. maximum allowed on-time plausibility fault"
+ },
+ {
+  "code": "P1751",
+  "brand": "MAHINDRA",
+  "description": "Open circuit between coolant temp display and control unit"
+ },
+ {
+  "code": "P1752",
+  "brand": "MAHINDRA",
+  "description": "Coolant temp display driver - overtemperature"
+ },
+ {
+  "code": "P1753",
+  "brand": "MAHINDRA",
+  "description": "Coolant temp display wire - short to battery"
+ },
+ {
+  "code": "P1754",
+  "brand": "MAHINDRA",
+  "description": "Coolant temp display wire - short to ground"
+ },
+ {
+  "code": "P1801",
+  "brand": "MAHINDRA",
+  "description": "Rail pressure limiting valve open-state counter exceeded limit"
+ },
+ {
+  "code": "P1802",
+  "brand": "MAHINDRA",
+  "description": "Rail pressure limiting valve forced open"
+ },
+ {
+  "code": "P1803",
+  "brand": "MAHINDRA",
+  "description": "Rail pressure limiting valve forced open by pressure spikes"
+ },
+ {
+  "code": "P1804",
+  "brand": "MAHINDRA",
+  "description": "Rail pressure limiting valve open"
+ },
+ {
+  "code": "P1805",
+  "brand": "MAHINDRA",
+  "description": "Quantity balance check assuming pressure relief valve opened successfully"
+ },
+ {
+  "code": "P1807",
+  "brand": "MAHINDRA",
+  "description": "Rail pressure limiting valve total open time exceeded limit"
+ },
+ {
+  "code": "P1B87",
+  "brand": "MAHINDRA",
+  "description": "Fuel rail pressure reading higher than ECM expects"
+ },
+ {
+  "code": "P1408",
+  "brand": "SUZUKI",
+  "description": "Manifold differential pressure (MDP) sensor circuit fault"
+ },
+ {
+  "code": "P1410",
+  "brand": "SUZUKI",
+  "description": "Fuel tank pressure control system malfunction"
+ },
+ {
+  "code": "P1450",
+  "brand": "SUZUKI",
+  "description": "Barometric pressure sensor voltage high/low"
+ },
+ {
+  "code": "P1451",
+  "brand": "SUZUKI",
+  "description": "Barometric pressure sensor performance problem"
+ },
+ {
+  "code": "P1460",
+  "brand": "SUZUKI",
+  "description": "Radiator cooling fan control system malfunction"
+ },
+ {
+  "code": "P1500",
+  "brand": "SUZUKI",
+  "description": "Engine starter signal circuit malfunction"
+ },
+ {
+  "code": "P1510",
+  "brand": "SUZUKI",
+  "description": "ECM backup power supply malfunction"
+ },
+ {
+  "code": "P1530",
+  "brand": "SUZUKI",
+  "description": "Ignition timing adjustment switch circuit malfunction"
+ },
+ {
+  "code": "P1600",
+  "brand": "SUZUKI",
+  "description": "Serial communication problem between ECM and TCM"
+ },
+ {
+  "code": "P1700",
+  "brand": "SUZUKI",
+  "description": "Throttle position input signal malfunction"
+ },
+ {
+  "code": "P1705",
+  "brand": "SUZUKI",
+  "description": "Coolant temperature input signal malfunction"
+ },
+ {
+  "code": "P1717",
+  "brand": "SUZUKI",
+  "description": "Transmission range signal circuit malfunction"
+ },
+ {
+  "code": "P1895",
+  "brand": "SUZUKI",
+  "description": "Torque reduction signal circuit malfunction between TCM and ECM"
+ },
+ {
+  "code": "P1100",
+  "brand": "TATA",
+  "description": "AMF sensor VEXT fault"
+ },
+ {
+  "code": "P1101",
+  "brand": "TATA",
+  "description": "AMF sensor electrical fault"
+ },
+ {
+  "code": "P1105",
+  "brand": "TATA",
+  "description": "Atmospheric pressure sensor supply (VEXT) fault"
+ },
+ {
+  "code": "P1107",
+  "brand": "TATA",
+  "description": "Atmospheric pressure signal - generic fault"
+ },
+ {
+  "code": "P1110",
+  "brand": "TATA",
+  "description": "Air temperature sensor supply (VEXT) fault"
+ },
+ {
+  "code": "P1115",
+  "brand": "TATA",
+  "description": "Coolant temperature sensor supply (VEXT) fault"
+ },
+ {
+  "code": "P1120",
+  "brand": "TATA",
+  "description": "Pedal sensor track 1 supply fault"
+ },
+ {
+  "code": "P1121",
+  "brand": "TATA",
+  "description": "Reduced flow mode activated"
+ },
+ {
+  "code": "P1123",
+  "brand": "TATA",
+  "description": "Pedal sensor track 1 & 2 correlation fault (1 > 2)"
+ },
+ {
+  "code": "P1171",
+  "brand": "TATA",
+  "description": "Cylinder 1 injector - drift fault"
+ },
+ {
+  "code": "P1172",
+  "brand": "TATA",
+  "description": "Cylinder 2 injector - drift fault"
+ },
+ {
+  "code": "P1173",
+  "brand": "TATA",
+  "description": "Cylinder 3 injector - drift fault"
+ },
+ {
+  "code": "P1174",
+  "brand": "TATA",
+  "description": "Cylinder 4 injector - drift fault"
+ },
+ {
+  "code": "P1180",
+  "brand": "TATA",
+  "description": "Fuel temperature sensor supply (VEXT) fault"
+ },
+ {
+  "code": "P1190",
+  "brand": "TATA",
+  "description": "Rail pressure sensor supply (VEXT) fault"
+ },
+ {
+  "code": "P1191",
+  "brand": "TATA",
+  "description": "Rail pressure sensor fault at key-on"
+ },
+ {
+  "code": "P1192",
+  "brand": "TATA",
+  "description": "Rail pressure low when ignition switched on"
+ },
+ {
+  "code": "P1193",
+  "brand": "TATA",
+  "description": "Rail pressure high when ignition switched on"
+ },
+ {
+  "code": "P1201",
+  "brand": "TATA",
+  "description": "Cylinder 1 injector - short circuit"
+ },
+ {
+  "code": "P1202",
+  "brand": "TATA",
+  "description": "Cylinder 2 injector - short circuit"
+ },
+ {
+  "code": "P1203",
+  "brand": "TATA",
+  "description": "Cylinder 3 injector - short circuit"
+ },
+ {
+  "code": "P1204",
+  "brand": "TATA",
+  "description": "Cylinder 4 injector - short circuit"
+ },
+ {
+  "code": "P1216",
+  "brand": "TATA",
+  "description": "Injection timing current too high on bank 2"
+ },
+ {
+  "code": "P1220",
+  "brand": "TATA",
+  "description": "Pedal sensor track 2 - electrical/VEXT fault"
+ },
+ {
+  "code": "P1223",
+  "brand": "TATA",
+  "description": "Pedal sensor track 1 & 2 correlation fault (2 > 1)"
+ },
+ {
+  "code": "P1235",
+  "brand": "TATA",
+  "description": "Boost pressure sensor supply fault"
+ },
+ {
+  "code": "P1236",
+  "brand": "TATA",
+  "description": "Boost pressure sensor electrical fault"
+ },
+ {
+  "code": "P1237",
+  "brand": "TATA",
+  "description": "Boost pressure signal low (at ignition on)"
+ },
+ {
+  "code": "P1238",
+  "brand": "TATA",
+  "description": "Boost pressure signal high (at ignition on)"
+ },
+ {
+  "code": "P1253",
+  "brand": "TATA",
+  "description": "Rail pressure control - negative error"
+ },
+ {
+  "code": "P1254",
+  "brand": "TATA",
+  "description": "Rail pressure control - positive error"
+ },
+ {
+  "code": "P1256",
+  "brand": "TATA",
+  "description": "Rail pressure control - trim low, flow low"
+ },
+ {
+  "code": "P1257",
+  "brand": "TATA",
+  "description": "Rail pressure control - trim low, flow high"
+ },
+ {
+  "code": "P1258",
+  "brand": "TATA",
+  "description": "Rail pressure control - trim high, flow low"
+ },
+ {
+  "code": "P1259",
+  "brand": "TATA",
+  "description": "Rail pressure control - trim high, flow high"
+ },
+ {
+  "code": "P1286",
+  "brand": "TATA",
+  "description": "Cylinder 1 injector - resistance too low"
+ },
+ {
+  "code": "P1287",
+  "brand": "TATA",
+  "description": "Cylinder 1 injector - resistance too high"
+ },
+ {
+  "code": "P1288",
+  "brand": "TATA",
+  "description": "Cylinder 2 injector - resistance too low"
+ },
+ {
+  "code": "P1289",
+  "brand": "TATA",
+  "description": "Cylinder 2 injector - resistance too high"
+ },
+ {
+  "code": "P1290",
+  "brand": "TATA",
+  "description": "Cylinder 3 injector - resistance too low"
+ },
+ {
+  "code": "P1291",
+  "brand": "TATA",
+  "description": "Cylinder 3 injector - resistance too high"
+ },
+ {
+  "code": "P1292",
+  "brand": "TATA",
+  "description": "Cylinder 4 injector - resistance too low"
+ },
+ {
+  "code": "P1293",
+  "brand": "TATA",
+  "description": "Cylinder 4 injector - resistance too high"
+ },
+ {
+  "code": "P1526",
+  "brand": "TATA",
+  "description": "High-speed cooling fan control - open circuit"
+ },
+ {
+  "code": "P1560",
+  "brand": "TATA",
+  "description": "Battery voltage signal - A/D converter fault"
+ },
+ {
+  "code": "P1571",
+  "brand": "TATA",
+  "description": "Brake safety signal fault"
+ },
+ {
+  "code": "P1572",
+  "brand": "TATA",
+  "description": "Brake light signal fault"
+ },
+ {
+  "code": "P1600",
+  "brand": "TATA",
+  "description": "Watchdog interference on injector cutoff signal"
+ },
+ {
+  "code": "P1601",
+  "brand": "TATA",
+  "description": "CPU or CPU clock fault"
+ },
+ {
+  "code": "P1602",
+  "brand": "TATA",
+  "description": "TPU or TPU clock fault"
+ },
+ {
+  "code": "P1603",
+  "brand": "TATA",
+  "description": "ECU RAM fault - code"
+ },
+ {
+  "code": "P1604",
+  "brand": "TATA",
+  "description": "ECU RAM fault - calibration"
+ },
+ {
+  "code": "P1605",
+  "brand": "TATA",
+  "description": "ECU RAM fault"
+ },
+ {
+  "code": "P1606",
+  "brand": "TATA",
+  "description": "Non-volatile memory fault (CAN or KW)"
+ },
+ {
+  "code": "P1607",
+  "brand": "TATA",
+  "description": "Watchdog - injector cutoff impossible"
+ },
+ {
+  "code": "P1608",
+  "brand": "TATA",
+  "description": "Watchdog - injector unlock during startup"
+ },
+ {
+  "code": "P1650",
+  "brand": "TATA",
+  "description": "Check engine lamp fault"
+ },
+ {
+  "code": "P1678",
+  "brand": "TATA",
+  "description": "Glow plug driver fault - open circuit"
+ },
+ {
+  "code": "P1679",
+  "brand": "TATA",
+  "description": "Glow plug driver fault - short circuit"
+ },
+ {
+  "code": "P1680",
+  "brand": "TATA",
+  "description": "Glow plug driver fault - short to ground"
+ },
+ {
+  "code": "P1685",
+  "brand": "TATA",
+  "description": "ECU supply control - relay open"
+ },
+ {
+  "code": "P1691",
+  "brand": "TATA",
+  "description": "Low-speed cooling fan control - open circuit"
+ },
+ {
+  "code": "P1693",
+  "brand": "TATA",
+  "description": "Cooling fan 2 control - open circuit"
+ }
+]

@@ -1,0 +1,16 @@
+{
+  "name": "fault-cards",
+  "private": true,
+  "type": "module",
+  "description": "Generates plain-language fault-code cards (English + Hindi) with the Claude Batch API.",
+  "scripts": {
+    "codes": "node select-codes.mjs",
+    "smoke": "node generate.mjs smoke",
+    "submit": "node generate.mjs submit",
+    "collect": "node generate.mjs collect"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.12.0",
+    "sql.js": "^1.17.0"
+  }
+}

@@ -1,9 +1,11 @@
 package com.enginesense.app.vehicle
 
 import com.enginesense.app.obd.Severity
+import com.enginesense.app.vehicle.ai.CarSize
 import com.enginesense.app.vehicle.ai.CommonDtcGlossary
 import com.enginesense.app.vehicle.ai.RepairCostEntry
 import com.enginesense.app.vehicle.ai.RepairCostReference
+import com.enginesense.app.vehicle.ai.forSize
 import com.enginesense.app.vehiclelookup.RcLookupResult
 import com.enginesense.app.vehiclelookup.RtoRecord
 import com.enginesense.app.vehiclelookup.ValidityLine
@@ -116,7 +118,10 @@ object PrePurchaseReportBuilder {
         currentYear: Int,
         today: LocalDate = LocalDate.now(),
         /** What the buyer counted on the body, tyres and cabin — see [ExteriorDamage]. */
-        exteriorCounts: Map<String, Int> = emptyMap()
+        exteriorCounts: Map<String, Int> = emptyMap(),
+        /** Brand as in [com.enginesense.app.vehicle.pricing.ExShowroomPrices] and RTO fuel type — both nudge the fair price. */
+        make: String? = null,
+        fuelType: String? = null
     ): PrePurchaseReport {
         val insight = PrePurchaseAnalyzer.analyze(findings, healthScore, readiness, snapshot)
 
@@ -216,7 +221,7 @@ object PrePurchaseReportBuilder {
                 )
             }
 
-        val faults = faultLines(findings, snapshot) + ExteriorDamage.lines(exteriorCounts)
+        val faults = faultLines(findings, snapshot, CarSize.fromExShowroom(exShowroomPriceInr)) + ExteriorDamage.lines(exteriorCounts)
         val priced = faults.filter { it.countedInTotal }.mapNotNull { it.cost }.distinctBy { it.category }
         val repairMin = priced.sumOf { it.minInr }
         val repairMax = priced.sumOf { it.maxInr }
@@ -230,7 +235,7 @@ object PrePurchaseReportBuilder {
                 null to "Add the year of manufacture (or check RTO records) to see a fair value."
             else -> {
                 val age = (currentYear - manufactureYear).toDouble().coerceAtLeast(0.5)
-                val fair = FairPriceEstimator.estimate(exShowroomPriceInr, age, km)
+                val fair = FairPriceEstimator.estimate(exShowroomPriceInr, age, km, make, fuelType)
                 ValueEstimate(
                     fair = fair,
                     afterRepairsLow = (fair.lowEstimate - repairMax).coerceAtLeast(0.0),
@@ -272,14 +277,15 @@ object PrePurchaseReportBuilder {
         if (odometer.match == OdometerMatch.MATCHES) add("Dashboard km matches the computer")
     }
 
-    private fun faultLines(findings: List<DiagnosticFinding>, snapshot: VehicleSnapshot?): List<FaultCostLine> {
+    /** [size] narrows each repair range to the car's class when the model is known. */
+    private fun faultLines(findings: List<DiagnosticFinding>, snapshot: VehicleSnapshot?, size: CarSize?): List<FaultCostLine> {
         val stored = findings
             .filter { it.severity != Severity.INFO && !it.isUnconfirmedCode }
             .sortedBy { it.severity.ordinal }
             .map { f ->
                 val code = f.relatedDtcCodes.firstOrNull()
                 // Always a tentative range, as everywhere else: the usual cost for that system when no part matches.
-                FaultCostLine(code, f.title, FaultKind.STORED, f.severity, costFor(f.title, code) ?: RepairCostReference.fallbackFor(code), countedInTotal = true)
+                FaultCostLine(code, f.title, FaultKind.STORED, f.severity, (costFor(f.title, code) ?: RepairCostReference.fallbackFor(code)).forSize(size), countedInTotal = true)
             }
         val storedCodes = stored.mapNotNull { it.code?.uppercase() }.toSet() +
             snapshot?.dtcs.orEmpty().filter { it.source == DtcSource.STORED }.map { it.code.uppercase() }
@@ -288,7 +294,7 @@ object PrePurchaseReportBuilder {
             .filter { it !in storedCodes }
             .map { code ->
                 val meaning = CommonDtcGlossary.lookup(code)?.meaning ?: "Fault code $code"
-                FaultCostLine(code, meaning, kind, severity = null, cost = costFor(meaning, code), countedInTotal = counted)
+                FaultCostLine(code, meaning, kind, severity = null, cost = costFor(meaning, code)?.forSize(size), countedInTotal = counted)
             }
         return stored + fromCodes(DtcSource.PERMANENT, FaultKind.HIDDEN_PERMANENT, counted = true) +
             fromCodes(DtcSource.PENDING, FaultKind.PENDING, counted = false)
