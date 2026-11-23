@@ -51,10 +51,13 @@ data class AiVehicleContext(
     val milOn: Boolean? = null,
     val readyForEmissionsTest: Boolean? = null,
     /** The car picked in My Garage, as the owner entered it — so answers are about this car even with no scan. */
-    val car: AiCarDetails? = null
+    val car: AiCarDetails? = null,
+    /** GetAutoSure's own cards for the codes in play — general reference, not facts about this car. */
+    val faultCards: List<String> = emptyList()
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         car?.let { put("car", it.toJson()) }
+        if (faultCards.isNotEmpty()) put("faultCards", JSONArray(faultCards))
         put("generatedAtMillis", generatedAtMillis)
         put("vehicleBrand", vehicleBrand ?: JSONObject.NULL)
         put("signals", JSONArray(signals.map { it.toJson() }))

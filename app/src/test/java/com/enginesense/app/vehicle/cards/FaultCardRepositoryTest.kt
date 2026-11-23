@@ -56,6 +56,15 @@ class FaultCardRepositoryTest {
     }
 
     @Test
+    fun `the AI summary carries urgency, causes in order and costs`() {
+        val hint = FaultCardRepository.find(cards, "P1100", "Tata")!!.toAiHint()
+        assertTrue(hint, hint.startsWith("P1100 (TATA-specific): Tata air-flow."))
+        assertTrue(hint, "Urgency: SOON" in hint)
+        assertTrue(hint, "most common first: c1; c2" in hint)
+        assertTrue(hint, "p ₹500–2000" in hint)
+    }
+
+    @Test
     fun `labels exist for every app language`() {
         for (lang in com.enginesense.app.storage.AppLanguage.entries) {
             assertTrue(lang.code, FaultCardLabels.of(lang.code).urgency.size == CardUrgency.entries.size)

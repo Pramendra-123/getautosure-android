@@ -35,6 +35,15 @@ data class FaultCard(
     /** The text in [language], or English when that language isn't translated yet. */
     fun textIn(language: String): FaultCardText = text[language] ?: text.getValue("en")
     fun has(language: String) = language in text
+
+    /** The card's facts in one English paragraph, for AI Mechanic to stay consistent with (it replies in the user's language itself). */
+    fun toAiHint(): String {
+        val t = textIn("en")
+        val costs = t.costParts.zip(costs).joinToString("; ") { (part, r) -> "$part ₹${r.first}–${r.last}" }
+        return "$code${brand?.let { " ($it-specific)" } ?: ""}: ${t.title}. ${t.meaning} Urgency: ${urgency.name}. " +
+            "Likely causes, most common first: ${t.causes.joinToString("; ")}. Can I keep driving: ${t.drive} " +
+            "Cheapest first check: ${t.firstCheck} Tentative costs: $costs."
+    }
 }
 
 /** Loads the bundled cards once and finds the one for a code, preferring the car maker's own card. */

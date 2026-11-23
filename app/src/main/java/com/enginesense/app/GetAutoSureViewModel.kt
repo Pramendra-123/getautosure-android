@@ -60,6 +60,7 @@ import com.enginesense.app.vehicle.ai.AiCarHealthReport
 import com.enginesense.app.vehicle.ai.AiCarHealthReportService
 import com.enginesense.app.vehicle.ai.AiMechanicChatService
 import com.enginesense.app.vehicle.ai.AiCarDetails
+import com.enginesense.app.vehicle.cards.FaultCardRepository
 import com.enginesense.app.vehicle.ai.AiVehicleContext
 import com.enginesense.app.vehicle.ai.ChatMessage
 import com.enginesense.app.vehicle.ai.FallbackAiMechanicChatService
@@ -1126,6 +1127,21 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         )
     }
 
+    /**
+     * The fault cards for codes the question names, else for the scan's own faults (at most three),
+     * so AI Mechanic's answer agrees with the card the owner sees. Empty if the cards can't load.
+     */
+    private suspend fun faultCardHints(question: String, scan: ScanResult?, brand: String?): List<String> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val asked = Regex("""\b[PBCU][0-9A-F]{4}\b""").findAll(question.uppercase()).map { it.value }.toList()
+                val codes = asked.ifEmpty { scan?.findings.orEmpty().flatMap { it.relatedDtcCodes } }.distinct().take(3)
+                if (codes.isEmpty()) return@runCatching emptyList()
+                val cards = FaultCardRepository.load(getApplication())
+                codes.mapNotNull { FaultCardRepository.find(cards, it, brand)?.toAiHint() }
+            }.getOrDefault(emptyList())
+        }
+
     /** [aboutUsedCar]: answer from the seller's car being checked (the Used Car Check), not the user's own. */
     fun askAiMechanic(question: String, uiContext: Context, aboutUsedCar: Boolean = false) {
         val scan = if (aboutUsedCar) _prePurchaseResult.value else _latestResult.value
@@ -1149,7 +1165,8 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
             _aiMechanicLoading.value = true
             authUiContext = uiContext
             try {
-                val reply = aiChatService.ask(context, priorHistory, question)
+                val withCards = context.copy(faultCards = faultCardHints(question, scan, if (aboutUsedCar) null else ownCar?.brand))
+                val reply = aiChatService.ask(withCards, priorHistory, question)
                 _chatMessages.update { (it + reply).takeLast(MAX_CHAT_MESSAGES) }
             } catch (e: CancellationException) {
                 // Must always propagate — e.g. this screen was navigated away from while a
