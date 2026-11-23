@@ -5,6 +5,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.runtime.LaunchedEffect
+import com.enginesense.app.owner.PendingPayment
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -199,6 +207,11 @@ fun WalletScreen(viewModel: GetAutoSureViewModel, onNavigate: (String) -> Unit) 
     var whyOpen by rememberSaveable { mutableStateOf(false) }
     val today = LocalDate.now()
     val carTitle = garage.active?.title ?: "Your car"
+    var aiSheet by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    // Queued alerts are sorted here, where the sign-in AI needs is at hand.
+    LaunchedEffect(owner.aiSortingOn, owner.pendingPayments.count { it.suggestion == null }) { viewModel.sortPendingPayments(context) }
+    if (aiSheet) AiSortingSheet(onDismiss = { aiSheet = false }) { aiSheet = false; viewModel.setAiSorting(true) }
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -207,7 +220,13 @@ fun WalletScreen(viewModel: GetAutoSureViewModel, onNavigate: (String) -> Unit) 
     ) {
         item { Text("Car wallet", style = OwnerText.Section.copy(fontSize = 26.sp)) }
         item { YearCard(carTitle, s) }
-        item { AutoCaptureStrip(autoOn, owner, today) { onNavigate("autoCapture") } }
+        // AI's unsure guesses, for the owner to confirm — at most three at a time.
+        owner.pendingPayments.filter { it.needsAnswer }.take(3).forEach { p ->
+            item(key = "pending-${p.id}") { PaymentQuestion(p, carTitle) { category -> viewModel.answerPendingPayment(p.id, category) } }
+        }
+        item {
+            AutoCaptureStrip(autoOn, owner, today, onAiSwitch = { on -> if (on) aiSheet = true else viewModel.setAiSorting(false) }) { onNavigate("autoCapture") }
+        }
         if (askKm || (owner.monthlyKm == null && s.km.source != KmSource.TRIPS)) {
             item { KmQuestion(s.km.km.takeIf { owner.monthlyKm != null }) { km -> askKm = false; viewModel.updateOwnerData { it.copy(monthlyKm = km) } } }
         }
@@ -286,7 +305,11 @@ fun WalletScreen(viewModel: GetAutoSureViewModel, onNavigate: (String) -> Unit) 
             else ListGroup {
                 recent.forEachIndexed { i, r ->
                     if (i > 0) ListDivider()
-                    ListRow(r.icon, r.title, r.sub)
+                    if (r.aiId != null) {
+                        ListRow(r.icon, r.title, r.sub, subtitleColor = GetAutoSureColors.AccentPurple) {
+                            TextButton(onClick = { viewModel.undoAiEntry(r.aiId) }) { Text("Undo", color = GetAutoSureColors.Accent, fontWeight = FontWeight.Bold) }
+                        }
+                    } else ListRow(r.icon, r.title, r.sub)
                 }
             }
         }
@@ -449,25 +472,85 @@ private fun Tag(text: String, good: Boolean) {
 }
 
 @Composable
-private fun AutoCaptureStrip(on: Boolean, owner: OwnerCarData, today: LocalDate, onOpen: () -> Unit) {
+private fun AutoCaptureStrip(on: Boolean, owner: OwnerCarData, today: LocalDate, onAiSwitch: (Boolean) -> Unit, onOpen: () -> Unit) {
     val monthStart = today.withDayOfMonth(1)
     fun thisMonth(date: String) = runCatching { !LocalDate.parse(date).isBefore(monthStart) }.getOrDefault(false)
-    val added = owner.fuel.count { it.source == EntrySource.ALERT && thisMonth(it.date) } + owner.expenses.count { it.source == EntrySource.ALERT && thisMonth(it.date) }
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(GetAutoSureColors.AccentSoft).clickable(onClick = onOpen).padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(Icons.Filled.Bolt, contentDescription = null, tint = GetAutoSureColors.Accent)
-        Spacer(Modifier.width(10.dp))
-        Column(Modifier.weight(1f)) {
-            Text(if (on) "Auto-capture on" else "Track car costs automatically", style = OwnerText.RowTitle.copy(fontSize = 15.sp))
-            Text(
-                if (on) (if (added > 0) "$added payment${if (added == 1) "" else "s"} added this month" else "Fuel, toll and parking payments are added as they happen")
-                else "Fuel, toll and parking payments, straight from your payment alerts",
-                style = OwnerText.RowSub.copy(fontSize = 13.sp)
-            )
+    val auto = setOf(EntrySource.ALERT, EntrySource.AI)
+    val added = owner.fuel.count { it.source in auto && thisMonth(it.date) } + owner.expenses.count { it.source in auto && thisMonth(it.date) }
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(GetAutoSureColors.AccentSoft)) {
+        Row(Modifier.fillMaxWidth().clickable(onClick = onOpen).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.Bolt, contentDescription = null, tint = GetAutoSureColors.Accent)
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(if (on) "Auto-capture on" else "Track car costs automatically", style = OwnerText.RowTitle.copy(fontSize = 15.sp))
+                Text(
+                    if (on) (if (added > 0) "$added payment${if (added == 1) "" else "s"} added this month" else "Fuel, toll and parking payments are added as they happen")
+                    else "Fuel, toll and parking payments, straight from your payment alerts",
+                    style = OwnerText.RowSub.copy(fontSize = 13.sp)
+                )
+            }
+            if (!on) Text("Turn on", style = OwnerText.RowTitle.copy(color = GetAutoSureColors.Accent, fontSize = 15.sp))
         }
-        if (!on) Text("Turn on", style = OwnerText.RowTitle.copy(color = GetAutoSureColors.Accent, fontSize = 15.sp))
+        // AI sorting only does anything while alerts are being read, so it's offered once auto-capture is on.
+        if (on) {
+            Box(Modifier.fillMaxWidth().padding(horizontal = 14.dp).height(1.dp).background(Color(0xFFF7D3B8)))
+            Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Sort other car payments with AI", style = OwnerText.RowTitle.copy(fontSize = 14.sp))
+                    Text("Workshops, parts, insurance, wash", style = OwnerText.RowSub.copy(fontSize = 12.sp))
+                }
+                Switch(checked = owner.aiSortingOn, onCheckedChange = onAiSwitch)
+            }
+        }
+    }
+}
+
+/** AI's guess for a payment it wasn't sure about: confirm, pick another kind, or "Not for my car". */
+@Composable
+private fun PaymentQuestion(p: PendingPayment, carTitle: String, onAnswer: (String?) -> Unit) {
+    val options = listOf(ExpenseCategory.REPAIR, ExpenseCategory.SERVICE, ExpenseCategory.PARTS, ExpenseCategory.INSURANCE, ExpenseCategory.WASH, ExpenseCategory.OTHER)
+    val guess = options.firstOrNull { it.name == p.suggestion }
+    var picked by remember(p.id) { mutableStateOf(guess ?: ExpenseCategory.OTHER) }
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(GetAutoSureColors.Surface)
+            .border(1.5.dp, GetAutoSureColors.Border, RoundedCornerShape(14.dp)).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        guess?.let { Text("✦ AI thinks this was ${if (it == ExpenseCategory.OTHER) "a car expense" else "a ${it.label}"}", style = OwnerText.RowSub.copy(fontSize = 12.sp, color = GetAutoSureColors.AccentPurple, fontWeight = FontWeight.Bold)) }
+        Text("Was ${OwnerInsights.inr(p.amountInr)} to ${p.merchant} for your $carTitle?", style = OwnerText.RowTitle.copy(fontSize = 15.sp))
+        Text("${runCatching { LocalDate.parse(p.date).format(DAY) }.getOrDefault(p.date)} · from a payment alert", style = OwnerText.RowSub.copy(fontSize = 12.sp))
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+            options.forEach { c ->
+                val on = c == picked
+                Text(
+                    c.label,
+                    style = OwnerText.RowSub.copy(fontSize = 13.sp, color = if (on) GetAutoSureColors.OnInk else GetAutoSureColors.TextPrimary, fontWeight = FontWeight.SemiBold),
+                    modifier = Modifier.clip(RoundedCornerShape(16.dp)).background(if (on) GetAutoSureColors.Ink else GetAutoSureColors.Background)
+                        .clickable { picked = c }.padding(horizontal = 10.dp, vertical = 6.dp)
+                )
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = { onAnswer(picked.name) }, modifier = Modifier.weight(1f)) { Text("Yes, add it") }
+            OutlinedButton(onClick = { onAnswer(null) }, modifier = Modifier.weight(1f)) { Text("Not for my car") }
+        }
+    }
+}
+
+/** Before AI sorting is turned on: exactly what's sent and what never is. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AiSortingSheet(onDismiss: () -> Unit, onTurnOn: () -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = GetAutoSureColors.Surface) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(start = 16.dp, end = 16.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Let AI sort other car payments?", style = OwnerText.Section)
+            Text("When a payment alert isn't fuel, toll or parking, AI works out if it was for your car.", style = OwnerText.RowSub.copy(fontSize = 14.sp))
+            Text("Sent: shop name, amount, and the alert with numbers removed.", style = OwnerText.RowSub.copy(fontSize = 14.sp, color = GetAutoSureColors.Good))
+            Text("Never sent: account or card numbers, balance, UPI ids, other messages.", style = OwnerText.RowSub.copy(fontSize = 14.sp, color = GetAutoSureColors.Attention))
+            Text("Nothing is stored on our server. Shops you've sorted once are sorted on your phone after that.", style = OwnerText.RowSub.copy(fontSize = 14.sp))
+            Button(onClick = onTurnOn, modifier = Modifier.fillMaxWidth()) { Text("Turn on") }
+            TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("Not now") }
+        }
     }
 }
 
@@ -520,18 +603,19 @@ private fun WhyMileage(wallet: WalletState, result: com.enginesense.app.ScanResu
     }
 }
 
-private class RecentEntry(val date: String, val icon: ImageVector, val title: String, val sub: String)
+/** [aiId]: an entry AI sorted, which the owner can undo. */
+private class RecentEntry(val date: String, val icon: ImageVector, val title: String, val sub: String, val aiId: Long? = null)
 
 private fun recentEntries(owner: OwnerCarData): List<RecentEntry> {
     fun day(d: String) = runCatching { LocalDate.parse(d).format(DAY) }.getOrDefault(d)
     val fuel = owner.fuel.map { f ->
         RecentEntry(f.date, Icons.Filled.LocalGasStation, "Fuel · ${OwnerInsights.inr(f.amountInr)}",
-            listOfNotNull(day(f.date), f.litres?.let { "%.1f L".format(it) }, f.source.label).joinToString(" · "))
+            listOfNotNull(day(f.date), f.litres?.let { "%.1f L".format(it) }, f.source.label).joinToString(" · "), aiId = f.id.takeIf { f.source == EntrySource.AI })
     }
     val expenses = owner.expenses.map { e ->
         RecentEntry(e.date, if (e.category == ExpenseCategory.INSURANCE) Icons.Filled.Shield else Icons.Filled.Receipt,
             "${e.category.label}${e.note.takeIf { it.isNotBlank() }?.let { " · $it" } ?: ""} · ${OwnerInsights.inr(e.amountInr)}",
-            "${day(e.date)} · ${e.source.label}")
+            "${day(e.date)} · ${e.source.label}", aiId = e.id.takeIf { e.source == EntrySource.AI })
     }
     val services = owner.services.filter { it.costInr != null }.map { s ->
         RecentEntry(s.date, Icons.Filled.Build, "${s.work} · ${OwnerInsights.inr(s.costInr!!)}", "${day(s.date)} · Service log")

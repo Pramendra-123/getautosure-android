@@ -662,6 +662,19 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
+    /** Undo on a payment AI added: it's removed, and its shop is remembered as not for the car. */
+    fun undoAiEntry(id: Long) {
+        updateOwnerData { d ->
+            val e = d.expenses.firstOrNull { it.id == id && it.source == EntrySource.AI }
+            val learned = e?.note?.takeIf { it.isNotBlank() }?.let { d.merchantCategories + (PaymentAiSort.merchantKey(it) to PaymentAiSort.NOT_CAR) } ?: d.merchantCategories
+            d.copy(
+                expenses = d.expenses.filterNot { it.id == id && it.source == EntrySource.AI },
+                fuel = d.fuel.filterNot { it.id == id && it.source == EntrySource.AI },
+                merchantCategories = learned
+            )
+        }
+    }
+
     /** The owner's answer to "Was this for your car?": [category] to add it, null for "not for my car". Either way the merchant is remembered. */
     fun answerPendingPayment(id: String, category: String?) {
         updateOwnerData { d ->
@@ -688,7 +701,8 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         updateOwnerData { d ->
             d.copy(
                 expenses = if (paidInr != null && paidInr > 0) d.expenses + ExpenseEntry(now, today, ExpenseCategory.REPAIR, paidInr, "$title ($code)") else d.expenses,
-                services = d.services + ServiceEntry(now, today, _vehicleOdometerKm.value, "Repair: $title ($code)", paidInr),
+                // The cost lives on the Wallet expense; the log entry carries none, or the year's spend would count it twice.
+                services = d.services + ServiceEntry(now, today, _vehicleOdometerKm.value, "Repair: $title ($code)", null),
                 fixedRepairs = d.fixedRepairs.filter { it.code != code || it.verified } + FixedRepair(code, title, today, paidInr, afterScan)
             )
         }
