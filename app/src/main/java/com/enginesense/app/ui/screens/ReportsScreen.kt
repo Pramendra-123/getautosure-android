@@ -80,17 +80,10 @@ private val GUIDES_ITEMS = listOf(
     )
 )
 
-private val PRO_ITEMS = listOf(
-    DiscoverMoreItem("issueForecast", "Issue Forecast", "Trend-based prediction from scan history", Icons.Filled.TrendingUp, isPremium = true),
-    DiscoverMoreItem("detailedDiagnosis", "Detailed Repair Diagnosis", "Cross-signal analysis, not one reading", Icons.Filled.Biotech, isPremium = true),
-    DiscoverMoreItem("emissionsTrend", "Emissions Trend History", "Beyond this scan's free pass/fail status", Icons.Filled.ShowChart, isPremium = true),
-    DiscoverMoreItem("repairCostReference", "Repair Cost Reference", "Beyond the free Service Cost Estimate above", Icons.Filled.RequestQuote, isPremium = true),
-    DiscoverMoreItem("pro", "Advanced Live Data", "Logging, export & multi-session graphing", Icons.Filled.Insights, isPremium = true),
-)
-
 /**
  * Reports — everything about your car beyond the Home summary: this scan's detail screens,
- * reference guides, Pro features, and the scan-over-time timeline at the bottom. Moved here
+ * reference guides, and the scan-over-time timeline at the bottom. No Pro section and no
+ * "Share with my mechanic": the owner app is free, and help comes from the AI Mechanic. Moved here
  * from Home's old 17-row "My Dashboard" list so Home could stay to one hero number + one
  * action; nothing was removed, just relocated and grouped by what it's for.
  */
@@ -99,7 +92,6 @@ fun ReportsScreen(viewModel: GetAutoSureViewModel, onNavigate: (String) -> Unit)
     val history by viewModel.history.collectAsState()
     val dateFormat = remember { SimpleDateFormat("d MMM, h:mm a", Locale.getDefault()) }
     val context = LocalContext.current
-    val shareScope = androidx.compose.runtime.rememberCoroutineScope()
 
     fun open(item: DiscoverMoreItem) {
         val url = item.externalUrl
@@ -114,19 +106,10 @@ fun ReportsScreen(viewModel: GetAutoSureViewModel, onNavigate: (String) -> Unit)
             Text("Everything about your car, beyond the summary", style = GetAutoSureType.Caption)
         }
 
-        item {
-            com.enginesense.app.ui.components.ListGroup {
-                com.enginesense.app.ui.components.ListRow(
-                    Icons.Filled.Share, "Share with my mechanic", "Send the latest report on WhatsApp",
-                    onClick = { shareScope.launch { com.enginesense.app.ui.components.shareLatestReport(context, viewModel) } }
-                )
-            }
-        }
         item { ReportsSection("Latest Scan", startExpanded = true) { LATEST_SCAN_ITEMS.forEach { DiscoverMoreRow(it) { open(it) } } } }
         item { ReportsSection("Diagnostic Details", startExpanded = true) { DIAGNOSTIC_ITEMS.forEach { DiscoverMoreRow(it) { open(it) } } } }
         item { ReportsSection("Performance & Live Data") { PERFORMANCE_ITEMS.forEach { DiscoverMoreRow(it) { open(it) } } } }
         item { ReportsSection("Guides & Tools") { GUIDES_ITEMS.forEach { DiscoverMoreRow(it) { open(it) } } } }
-        item { ReportsSection("Pro") { PRO_ITEMS.forEach { DiscoverMoreRow(it) { open(it) } } } }
 
         item {
             Column {

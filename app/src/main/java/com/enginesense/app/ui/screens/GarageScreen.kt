@@ -164,7 +164,7 @@ fun GarageScreen(
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item { GarageHeader(onNavigate) }
+        item { GarageHeader() }
         item { CarCard(viewModel, result, onAddCar, onNavigate) }
         item { FillUpPrompt(viewModel) }
         item {
@@ -276,17 +276,11 @@ private fun lastScanned(millis: Long): String =
     "Last scanned " + DateUtils.getRelativeTimeSpanString(millis, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString().replaceFirstChar { it.lowercase() }
 
 @Composable
-private fun GarageHeader(onNavigate: (String) -> Unit) {
+private fun GarageHeader() {
+    // No Pro badge: everything for owners is free (only Dealer Saathi and expert calls are paid).
     Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Text("GetAuto", style = GetAutoSureType.SectionTitle.copy(fontSize = 22.sp))
         Text("Sure", style = GetAutoSureType.SectionTitle.copy(fontSize = 22.sp, color = GetAutoSureColors.Accent))
-        Spacer(Modifier.weight(1f))
-        Text(
-            "👑 Pro",
-            style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.AccentGold, fontWeight = FontWeight.SemiBold),
-            modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(GetAutoSureColors.AccentGold.copy(alpha = 0.15f))
-                .clickable { onNavigate("pro") }.padding(horizontal = 12.dp, vertical = 6.dp)
-        )
     }
 }
 
