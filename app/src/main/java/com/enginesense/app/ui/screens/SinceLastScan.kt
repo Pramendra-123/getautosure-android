@@ -168,6 +168,25 @@ fun SinceLastScanBlock(c: ScanComparison, onOpen: () -> Unit, onGotIt: () -> Uni
     }
 }
 
+/** The Garage's one line for the last two scans, once any new changes have been seen; opens the full comparison. */
+@Composable
+fun SinceLastScanLine(c: ScanComparison, onOpen: () -> Unit) {
+    val n = c.changes.size
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(GetAutoSureColors.Surface).clickable(onClick = onOpen).padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text("Since your last scan", style = OwnerText.RowTitle)
+            Text(
+                if (n == 0) "Nothing changed since ${dayText(c.previousMillis)}" else "$n change${if (n == 1) "" else "s"} since ${dayText(c.previousMillis)}",
+                style = OwnerText.RowSub
+            )
+        }
+        Text("›", style = OwnerText.RowSub.copy(color = GetAutoSureColors.Accent, fontSize = 20.sp))
+    }
+}
+
 /** "Nothing changed since 12 Nov" — the reassurance line when every comparison came back the same. */
 @Composable
 fun NothingChangedLine(c: ScanComparison) {

@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,7 +34,9 @@ import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FactCheck
 import androidx.compose.material.icons.filled.Handyman
 import androidx.compose.material.icons.filled.LocalGasStation
@@ -122,7 +125,10 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
-private val CHIPS = listOf("Health", "Fuel", "Service", "Renewals")
+/** The four Garage sections, shown as tiles that each say what they've found; tapping one opens its list below. */
+private val CHIPS = listOf("Health insights", "Fuel & mileage", "Service", "Renewals")
+private val CHIP_ICONS = listOf(Icons.Filled.Favorite, Icons.Filled.LocalGasStation, Icons.Filled.Build, Icons.Filled.Description)
+private val SHORT_DAY = DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH)
 
 /** A chip another screen asked the Garage to open, e.g. "fuel" from Needs your attention → See all. */
 val garageChipRequest = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
@@ -171,12 +177,97 @@ fun GarageScreen(
         }
         item { AttentionCard(attention, open, onSeeAll = { onNavigate("attention") }) }
         item { CostLine(viewModel, owner, onNavigate) }
-        item { FilterChipRow(CHIPS, chip) { chip = it } }
+        attention.changes?.takeIf { it.changes.isEmpty() || attention.changesSeen }?.let { c ->
+            item { SinceLastScanLine(c) { onNavigate("sinceLastScan") } }
+        }
+        item {
+            val lines = listOf(healthLine(result), fuelLine(fuel), serviceLine(attention.nextService), renewalLine(attention.renewals))
+            InsightTiles(chip, lines) { chip = it }
+        }
         when (chip) {
             0 -> healthItems(viewModel, result, history, drives, onNavigate)
             1 -> fuelItems(fuel, onNavigate)
             2 -> serviceItems(viewModel, owner, onNavigate)
             else -> renewalItems(viewModel, owner)
+        }
+    }
+}
+
+/** A tile's one-line finding; [watch] colours it as something to keep an eye on. */
+private class TileLine(val text: String, val watch: Boolean = false)
+
+private fun healthLine(result: ScanResult?): TileLine {
+    val cats = result?.health?.categories?.filter { it.state != CategoryState.UNAVAILABLE } ?: return TileLine("Scan to see")
+    val flagged = cats.count { it.state == CategoryState.WATCH || it.state == CategoryState.ATTENTION }
+    return if (flagged == 0) TileLine("All ${cats.size} good") else TileLine("$flagged to watch of ${cats.size}", watch = true)
+}
+
+private fun fuelLine(fuel: FuelIntelState): TileLine {
+    val m = fuel.mileage ?: return TileLine("Learning your mileage")
+    val kmpl = "%.1f km/l".format(m.kmPerLitre)
+    return fuel.drop?.let { TileLine("$kmpl · ↓ ${it.percent}%", watch = true) } ?: TileLine(kmpl)
+}
+
+private fun serviceLine(s: com.enginesense.app.owner.NextService?): TileLine = when {
+    s == null -> TileLine("Add your last service")
+    s.overdue -> TileLine("Overdue", watch = true)
+    s.kmLeft != null && s.kmLeft <= 1_500 -> TileLine("Due in ~%,d km".format(s.kmLeft))
+    else -> TileLine("Due by ${s.dueDate.format(SHORT_DAY)}")
+}
+
+private fun renewalLine(items: List<com.enginesense.app.owner.RenewalItem>): TileLine {
+    items.firstOrNull { it.status == ValidityStatus.EXPIRED }?.let { return TileLine("${it.kind.label} expired", watch = true) }
+    val next = items.filter { (it.daysLeft ?: -1) >= 0 }.minByOrNull { it.daysLeft!! }
+        ?: return TileLine(if (items.isEmpty()) "Add your dates" else "All valid")
+    val days = next.daysLeft!!
+    return when {
+        days == 0L -> TileLine("${next.kind.label} due today", watch = true)
+        days <= 60 -> TileLine("${next.kind.label} in $days day${if (days == 1L) "" else "s"}", watch = days <= 7)
+        else -> TileLine("Next: ${next.kind.label}, ${next.date?.format(SHORT_DAY) ?: next.display}")
+    }
+}
+
+/** Two rows of two tiles in place of the old chip row; the picked one is inked, like a selected chip. */
+@Composable
+private fun InsightTiles(selected: Int, lines: List<TileLine>, onSelect: (Int) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        CHIPS.indices.chunked(2).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                row.forEach { i -> InsightTile(i, i == selected, lines[i], Modifier.weight(1f)) { onSelect(i) } }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InsightTile(index: Int, on: Boolean, line: TileLine, modifier: Modifier, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    Row(
+        modifier.clip(shape)
+            .background(if (on) GetAutoSureColors.Ink else GetAutoSureColors.Surface)
+            .border(1.dp, if (on) GetAutoSureColors.Ink else GetAutoSureColors.Border, shape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(CHIP_ICONS[index], null, tint = if (on) GetAutoSureColors.AccentBright else GetAutoSureColors.Accent, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(10.dp))
+        Column {
+            Text(
+                CHIPS[index], maxLines = 1, overflow = TextOverflow.Ellipsis,
+                style = OwnerText.RowTitle.copy(fontSize = 14.sp, color = if (on) GetAutoSureColors.OnInk else GetAutoSureColors.TextPrimary)
+            )
+            Text(
+                line.text, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                style = OwnerText.RowSub.copy(
+                    fontSize = 12.sp,
+                    color = when {
+                        line.watch -> if (on) GetAutoSureColors.AccentBright else GetAutoSureColors.Watch
+                        on -> GetAutoSureColors.OnInkMuted
+                        else -> GetAutoSureColors.TextSecondary
+                    }
+                )
+            )
         }
     }
 }

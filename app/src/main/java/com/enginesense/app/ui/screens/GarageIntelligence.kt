@@ -84,7 +84,7 @@ private val SHORT_DAY = DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH)
 private const val DAY_MS = 86_400_000L
 private const val RECENT_ALERT_DAYS = 14L
 /** "Needs your attention" shows this many lines; the rest are behind See all. */
-private const val CARD_ITEMS = 3
+private const val CARD_ITEMS = 4
 
 private fun dayOf(millis: Long): LocalDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
 
@@ -153,7 +153,10 @@ class AttentionState(
     val changes: com.enginesense.app.owner.ScanComparison? = null,
     /** The owner tapped "Got it" on these changes. */
     val changesSeen: Boolean = false,
-    val markChangesSeen: () -> Unit = {}
+    val markChangesSeen: () -> Unit = {},
+    /** For the Service and Renewals tiles' one-line summaries. */
+    val nextService: com.enginesense.app.owner.NextService? = null,
+    val renewals: List<com.enginesense.app.owner.RenewalItem> = emptyList()
 )
 
 @Composable
@@ -198,7 +201,10 @@ fun rememberAttention(viewModel: GetAutoSureViewModel): AttentionState {
     )
     val changes = rememberScanComparison(viewModel)
     val (seen, markSeen) = rememberChangesSeen(viewModel, changes?.let { result?.timestampMillis })
-    return AttentionState(CarAttention.items(inputs), CarAttention.allGoodLine(inputs), learning, CarAttention.staleLine(lastSeen, today), changes, seen, markSeen)
+    return AttentionState(
+        CarAttention.items(inputs), CarAttention.allGoodLine(inputs), learning, CarAttention.staleLine(lastSeen, today), changes, seen, markSeen,
+        nextService = inputs.nextService, renewals = inputs.renewals
+    )
 }
 
 /** Garage chips an attention line can open instead of a screen. */
@@ -278,11 +284,9 @@ fun AttentionCard(state: AttentionState, onOpen: (String) -> Unit, onSeeAll: () 
             Text(it, style = OwnerText.RowSub.copy(fontSize = 13.sp, color = GetAutoSureColors.Watch))
             Spacer(Modifier.height(6.dp))
         }
+        // New changes lead the card until "Got it"; otherwise the Garage shows them as one line of their own (SinceLastScanLine).
         if (showChanges) {
             SinceLastScanBlock(state.changes!!, onOpen = { onOpen("sinceLastScan") }, onGotIt = state.markChangesSeen)
-            Spacer(Modifier.height(8.dp))
-        } else if (state.changes != null && state.changes.changes.isEmpty()) {
-            NothingChangedLine(state.changes)
             Spacer(Modifier.height(8.dp))
         }
         when {

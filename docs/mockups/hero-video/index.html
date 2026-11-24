@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hero Video Screen</title>
+<style>
+  :root { --ink: #12151A; --muted: #6B7280; --line: #E6E8EB; --orange: #C2410C; --soft: #FFF1EA; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Inter, system-ui, sans-serif; background: #fff; color: var(--ink); padding: 32px 16px 64px; }
+  main { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .lead { color: var(--muted); font-size: 15.5px; line-height: 1.6; max-width: 760px; margin-bottom: 28px; }
+  figure { margin-bottom: 28px; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  figure img { display: block; width: 100%; height: auto; }
+  figcaption { padding: 14px 18px; font-size: 14.5px; line-height: 1.55; }
+  figcaption b { display: block; font-size: 16px; margin-bottom: 2px; }
+  .pick { border: 2px solid var(--orange); }
+  .pick figcaption b::after { content: "Recommended"; margin-left: 8px; font-size: 11px; font-weight: 700; color: var(--orange); background: var(--soft); padding: 2px 8px; border-radius: 999px; vertical-align: 2px; }
+  .muted { color: var(--muted); }
+  .shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .shots figure { margin: 0; }
+  @media (max-width: 700px) { .shots { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Hero video: the phone screen</h1>
+  <p class="lead">One frame from the homepage video (second 15), with the new My Garage screen put onto the phone. These are still mockups, not a new render. The video also has a second phone shot (seconds 16–18) showing the old report screen, which needs the same change.</p>
+
+  <figure>
+    <img src="now.jpg" alt="Current video frame: the old black Home screen">
+    <figcaption><b>A · What the video shows today</b><span class="muted">The old Home screen: "Pro" badge, "34 sensors", Scan and AI Mechanic tabs, an Explore grid. None of these are in the app any more, whatever the colour.</span></figcaption>
+  </figure>
+
+  <figure class="pick">
+    <img src="white.jpg" alt="Video frame with the new white My Garage screen">
+    <figcaption><b>B · New My Garage, white (as in the app)</b><span class="muted">Matches what people see when they open the app. The bright screen stands out against the dark cabin, and the black health card keeps some of the dark look you like.</span></figcaption>
+  </figure>
+
+  <figure>
+    <img src="dark.jpg" alt="Video frame with the new My Garage screen in black">
+    <figcaption><b>C · New My Garage, kept black</b><span class="muted">Same new layout, dark colours. Moodier and blends into the cabin, but it's a version of the app that doesn't exist.</span></figcaption>
+  </figure>
+
+  <h1 style="margin-top:40px">Chosen: black. Screens for the video</h1>
+  <p class="lead">Full phone resolution (1112 × 2408). Shot 1 (about 13–16 s): My Garage. Shot 2 (about 16–18 s): the Full report, then scrolled down to the "Prepare PDF report" button for the tap.</p>
+  <div class="shots">
+    <figure><img src="garage-screen-dark.png" alt="My Garage in black"><figcaption><b>Shot 1 · My Garage</b><span class="muted">garage-screen-dark.png</span></figcaption></figure>
+    <figure><img src="report-top-dark.png" alt="Full report top in black"><figcaption><b>Shot 2 · Full report</b><span class="muted">report-top-dark.png</span></figcaption></figure>
+    <figure><img src="report-pdf-dark.png" alt="Full report PDF button in black"><figcaption><b>Shot 2 · Scrolled to the PDF button</b><span class="muted">report-pdf-dark.png</span></figcaption></figure>
+  </div>
+</main>
+</body>
+</html>

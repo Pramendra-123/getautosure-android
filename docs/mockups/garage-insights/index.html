@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Garage Insights Mockup</title>
+<style>
+  :root { --ink: #12151A; --muted: #6B7280; --line: #E6E8EB; --orange: #C2410C; --soft: #FFF1EA; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Inter, system-ui, sans-serif; background: #fff; color: var(--ink); padding: 32px 16px 64px; }
+  main { max-width: 980px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .lead { color: var(--muted); font-size: 15.5px; line-height: 1.6; max-width: 720px; margin-bottom: 24px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr); gap: 24px; align-items: start; }
+  figure { margin: 0; }
+  figure img { width: 100%; height: auto; border-radius: 24px; border: 1px solid var(--line); display: block; }
+  figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; text-align: center; }
+  .changes { background: var(--soft); border: 1px solid #FFD9C2; border-radius: 16px; padding: 20px; }
+  .changes h2 { font-size: 17px; margin-bottom: 10px; }
+  .changes ol { padding-left: 18px; font-size: 14.5px; line-height: 1.6; }
+  .changes li { margin-bottom: 10px; }
+  .changes b { color: var(--ink); }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>My Garage: fuller and smarter</h1>
+  <p class="lead">Fills the empty space on the Garage and makes each section look like it has worked something out. Light is the app and website; black is the video.</p>
+  <h2 style="font-size:18px;margin-bottom:12px">With the car picture (as the app shows it)</h2>
+  <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));max-width:640px;margin-bottom:36px">
+    <figure><img src="light-car.png" alt="My Garage with the car picture, light"><figcaption>App and website · the rest scrolls below</figcaption></figure>
+    <figure><img src="dark-car.png" alt="My Garage with the car picture, black"><figcaption>Hero video</figcaption></figure>
+  </div>
+  <h2 style="font-size:18px;margin-bottom:12px">Without the picture (everything on one screen)</h2>
+  <div class="grid">
+    <figure><img src="light.png" alt="My Garage, light"><figcaption>App and website</figcaption></figure>
+    <figure><img src="dark.png" alt="My Garage, black"><figcaption>Hero video</figcaption></figure>
+    <div class="changes">
+      <h2>What changes in the app</h2>
+      <ol>
+        <li><b>Needs your attention shows 4 lines, not 3.</b> Now, then Coming up, as today. Each "Now" line keeps its reason underneath (13.6 V → 13.1 V; fuel mix running lean · ≈ ₹600 a month). The rest stay behind See all.</li>
+        <li><b>The four chips become insight tiles</b>, each with what it has found:
+          <br>Health → <b>Health insights</b> · "2 to watch of 6"
+          <br>Fuel → <b>Fuel &amp; mileage</b> · "16.4 km/l · ↓ 8%"
+          <br>Service · "Due in ~600 km"
+          <br>Renewals · "PUC in 6 days"</li>
+        <li><b>Since your last scan</b> becomes one tappable line ("Nothing cleared or changed"), opening its detail screen.</li>
+        <li>Tapping a tile still opens its list on the same page, as the chips do now.</li>
+      </ol>
+    </div>
+  </div>
+</main>
+</body>
+</html>
