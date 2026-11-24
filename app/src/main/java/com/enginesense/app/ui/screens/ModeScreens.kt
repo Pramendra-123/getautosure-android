@@ -158,10 +158,12 @@ fun BuyerHomeScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text("Know what you're buying before you pay", color = GetAutoSureColors.OnInk, fontSize = 20.sp, lineHeight = 25.sp, fontWeight = FontWeight.SemiBold)
+            // The same order the check runs in (PrePurchaseResultScreen's steps).
             listOf(
-                "Car number and the seller's price",
-                "RTO record: owners, loan, insurance",
                 "Plug in the scanner, engine on",
+                "See what the seller might be hiding",
+                "Car number: RTO record, owners, loan",
+                "Look around: body, tyres, accident signs",
                 "Verdict, repair costs and fair price"
             ).forEachIndexed { i, step ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -188,33 +190,28 @@ fun BuyerHomeScreen(
             onClick = onExpert
         )
 
-        Text("Car you checked", style = GetAutoSureType.SectionTitle)
+        val checked by viewModel.checkedCars.collectAsState()
+        Text(if (checked.size > 1) "Cars you checked" else "Car you checked", style = GetAutoSureType.SectionTitle)
         val result = last
-        if (result == null) {
-            Text("Cars you check show up here, with their score and repair costs.", style = GetAutoSureType.Caption)
+        if (checked.isEmpty() && result == null) {
+            Text("Cars you check show up here, with their verdict and price.", style = GetAutoSureType.Caption)
         } else {
-            val score = result.health.score
-            Row(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(GetAutoSureColors.Surface).clickable(onClick = onOpenLastCheck).padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text(result.vehicleId.vin?.let { "VIN …${it.takeLast(6)}" } ?: "Last car checked", style = GetAutoSureType.Body.copy(fontWeight = FontWeight.SemiBold))
-                    Text(
-                        "${SimpleDateFormat("d MMM", Locale.getDefault()).format(Date(result.timestampMillis))} · ${result.findings.size} issue${if (result.findings.size == 1) "" else "s"} found",
-                        style = GetAutoSureType.Caption
-                    )
+            checked.forEach { car ->
+                // Only the check still open in this session can be reopened in full; older ones show their summary.
+                val open = result != null && result.timestampMillis == car.scanMillis
+                CheckedCarRow(car, onClick = if (open) onOpenLastCheck else null)
+            }
+            if (checked.isEmpty() && result != null) {
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(GetAutoSureColors.Surface).clickable(onClick = onOpenLastCheck).padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Check in progress", style = GetAutoSureType.Body.copy(fontWeight = FontWeight.SemiBold))
+                        Text("Scanned ${SimpleDateFormat("d MMM, h:mm a", Locale.getDefault()).format(Date(result.timestampMillis))} · tap to carry on", style = GetAutoSureType.Caption)
+                    }
+                    Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = GetAutoSureColors.TextSecondary)
                 }
-                Text(
-                    score?.toString() ?: "–",
-                    color = when {
-                        score == null -> GetAutoSureColors.Unavailable
-                        score >= 80 -> GetAutoSureColors.Good
-                        score >= 60 -> GetAutoSureColors.Watch
-                        else -> GetAutoSureColors.Attention
-                    },
-                    fontSize = 20.sp, fontWeight = FontWeight.Bold
-                )
             }
             Row(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(GetAutoSureColors.AccentSoft).clickable(onClick = onBoughtIt).padding(14.dp),
@@ -228,6 +225,42 @@ fun BuyerHomeScreen(
             }
         }
         Spacer(Modifier.height(8.dp))
+    }
+}
+
+/** A checked car: name and number, when, verdict and red flags, and the price as it stands. */
+@Composable
+private fun CheckedCarRow(car: com.enginesense.app.vehicle.CheckedCar, onClick: (() -> Unit)?) {
+    val (verdict, color) = when (car.verdict) {
+        com.enginesense.app.vehicle.PurchaseVerdict.GOOD_BUY -> "Good buy" to GetAutoSureColors.Good
+        com.enginesense.app.vehicle.PurchaseVerdict.BUY_WITH_CAUTION -> "Buy with caution" to GetAutoSureColors.Watch
+        com.enginesense.app.vehicle.PurchaseVerdict.AVOID -> "Avoid" to GetAutoSureColors.Attention
+    }
+    fun lakh(v: Double) = if (v >= 100_000) "%.2f L".format(v / 100_000) else "%,.0f".format(v)
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(GetAutoSureColors.Surface)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier).padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(car.name ?: "Car checked", style = GetAutoSureType.Body.copy(fontWeight = FontWeight.SemiBold))
+            Text(
+                listOfNotNull(car.registration, SimpleDateFormat("d MMM", Locale.getDefault()).format(Date(car.scanMillis))).joinToString(" · "),
+                style = GetAutoSureType.Caption
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                verdict + if (car.redFlags > 0) " · ${car.redFlags} red flag${if (car.redFlags == 1) "" else "s"}" else "",
+                style = GetAutoSureType.Caption.copy(color = color, fontWeight = FontWeight.SemiBold)
+            )
+        }
+        if (car.priceLow != null && car.priceHigh != null) {
+            Column(horizontalAlignment = Alignment.End) {
+                Text("₹${lakh(car.priceLow)}–${lakh(car.priceHigh)}", style = GetAutoSureType.Body.copy(fontWeight = FontWeight.Bold, color = GetAutoSureColors.Accent))
+                Text("as it stands", style = GetAutoSureType.Caption)
+            }
+        }
+        if (onClick != null) Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = GetAutoSureColors.TextSecondary)
     }
 }
 

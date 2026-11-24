@@ -354,7 +354,13 @@ object PrePurchaseReportPdfGenerator {
             b.y += drawBanner(b.canvas, b.y, report.valueMissingReason ?: "Fair value not available.", GRAY_LIGHT, BORDER, GRAY)
             b.y += 16f
         } else {
-            sectionTitle(b, "Tentative price", "From the car's new price, its age and km — a rough guide, not a valuation.", PAGE_COST)
+            val ai = value.ai?.takeIf { value.basis == com.enginesense.app.vehicle.pricing.PriceBasis.AI_MARKET }
+            sectionTitle(
+                b, "Tentative price",
+                if (ai != null) "AI market check: from current listings for this car, found online — a rough guide, not a valuation."
+                else "Our estimate: from the car's new price, its age and km — a rough guide, not a valuation.",
+                PAGE_COST
+            )
             val boxH = 74f
             b.ensure(boxH + 50f, PAGE_COST)
             val half = (CONTENT_RIGHT - MARGIN - 10f) / 2
@@ -371,10 +377,27 @@ object PrePurchaseReportPdfGenerator {
                 drawWrapped(b.canvas, x + 12f, b.y + 50f, half - 24f, note, textPaint(GRAY, 7.5f))
             }
             b.y += boxH + 10f
-            val basis = "${value.fair.depreciationPercent}% depreciation over ${value.fair.ageYears} year${if (value.fair.ageYears == 1) "" else "s"}" +
-                (report.odometer.dashboardKm ?: report.odometer.ecuKm)?.let { ", adjusted for ${km(it)}" }.orEmpty() + "." +
-                (if (value.fair.beyondPublishedSchedule) " Cars over 10 years old vary a lot, so treat this as a loose guide." else "")
-            b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, basis, textPaint(GRAY, 8f))
+            if (ai != null) {
+                ai.steps.forEachIndexed { i, step ->
+                    b.ensure(24f, PAGE_COST)
+                    b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, "${i + 1}. $step", textPaint(INK, 8f))
+                    b.y += 3f
+                }
+                val compared = ai.comparables.joinToString("; ") { "${it.description} ${rupees(it.priceInr)}${if (it.site.isNotBlank()) " (${it.site})" else ""}" }
+                if (compared.isNotBlank()) {
+                    b.ensure(30f, PAGE_COST)
+                    b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, "Listings compared: $compared.", textPaint(GRAY, 7.5f))
+                }
+                value.formula?.let {
+                    b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, "GetAutoSure's own formula said ${rupees(it.lowEstimate)} – ${rupees(it.highEstimate, symbol = false)}.", textPaint(GRAY, 7.5f))
+                }
+            } else {
+                val basis = "${value.fair.depreciationPercent}% depreciation over ${value.fair.ageYears} year${if (value.fair.ageYears == 1) "" else "s"}" +
+                    (report.odometer.dashboardKm ?: report.odometer.ecuKm)?.let { ", adjusted for ${km(it)}" }.orEmpty() + "." +
+                    (if (value.fair.beyondPublishedSchedule) " Cars over 10 years old vary a lot, so treat this as a loose guide." else "")
+                b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, basis, textPaint(GRAY, 8f))
+                value.note?.let { b.y += 3f; b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, it, textPaint(WATCH, 8f)) }
+            }
             b.y += 18f
         }
 

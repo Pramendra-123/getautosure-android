@@ -130,11 +130,13 @@ class PrePurchaseReportTest {
     }
 
     @Test
-    fun `dealer RC details - a loan is a red flag but buyable, a blacklisting means avoid`() {
+    fun `dealer RC details - a loan is something to sort out, not a red flag, and a blacklisting means avoid`() {
+        val clean = build(rc = rc().copy(mode = "dealer", financed = false, rcStatus = "ACTIVE"))
         val loan = build(rc = rc().copy(mode = "dealer", financed = true, financer = "HDFC BANK", rcStatus = "ACTIVE"))
-        assertEquals(PurchaseVerdict.BUY_WITH_CAUTION, loan.verdict)
-        assertTrue(loan.redFlags.any { it.title == "Loan on the car" && it.evidence.contains("HDFC BANK") })
-        assertEquals(CheckOutcome.FLAGGED, loan.checks.first { it.label == "No loan on the car" }.outcome)
+        assertEquals(clean.verdict, loan.verdict)
+        assertTrue(loan.redFlags.none { it.title.startsWith("Loan") })
+        assertTrue(loan.worthAsking.any { it.title == "Loan on the car with HDFC BANK" && it.advice.contains("NOC") })
+        assertEquals(CheckOutcome.WORTH_ASKING, loan.checks.first { it.label == "No loan on the car" }.outcome)
         assertEquals(CheckOutcome.CLEAR, loan.checks.first { it.label == "RC active" }.outcome)
 
         val blacklisted = build(rc = rc().copy(mode = "dealer", blacklistStatus = "BLACKLISTED"))
@@ -142,6 +144,17 @@ class PrePurchaseReportTest {
 
         // A customer-mode lookup never adds the dealer-only checks.
         assertTrue(build(rc = rc()).checks.none { it.label == "No loan on the car" })
+    }
+
+    @Test
+    fun `accident signs are a named red flag in the headline`() {
+        val r = PrePurchaseReportBuilder.build(
+            findings = emptyList(), healthScore = 92, readiness = null, snapshot = null, vin = null, dashboardKm = null,
+            rc = null, registration = null, exShowroomPriceInr = null, buyerEnteredYear = null, currentYear = 2026,
+            accidentSigns = listOf("One panel a different shade")
+        )
+        assertTrue(r.redFlags.any { it.title == "Signs of accident repair" && it.evidence.contains("different shade") })
+        if (r.verdict == PurchaseVerdict.BUY_WITH_CAUTION) assertTrue(r.headline.contains("signs of accident repair"))
     }
 
     @Test

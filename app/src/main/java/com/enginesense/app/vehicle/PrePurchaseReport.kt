@@ -6,6 +6,9 @@ import com.enginesense.app.vehicle.ai.CommonDtcGlossary
 import com.enginesense.app.vehicle.ai.RepairCostEntry
 import com.enginesense.app.vehicle.ai.RepairCostReference
 import com.enginesense.app.vehicle.ai.forSize
+import com.enginesense.app.vehicle.pricing.AiPriceEstimate
+import com.enginesense.app.vehicle.pricing.MarketPriceChooser
+import com.enginesense.app.vehicle.pricing.PriceBasis
 import com.enginesense.app.vehiclelookup.RcLookupResult
 import com.enginesense.app.vehiclelookup.RtoRecord
 import com.enginesense.app.vehiclelookup.ValidityLine
@@ -40,8 +43,21 @@ data class OdometerEvidence(
     val kmWithWarningLightOn: Double?
 )
 
-/** [fair] from [FairPriceEstimator]; the "after repairs" range takes off the repair-cost range so a buyer sees what the car is worth as it stands. */
-data class ValueEstimate(val fair: FairPriceEstimate, val afterRepairsLow: Double, val afterRepairsHigh: Double)
+/**
+ * [fair] is the price before repairs: the AI market price when [basis] is AI_MARKET, else our own
+ * [FairPriceEstimator] figure. The "after repairs" range takes off the repair-cost range so a buyer
+ * sees what the car is worth as it stands. [ai] is kept even when set aside, and [note] says why.
+ */
+data class ValueEstimate(
+    val fair: FairPriceEstimate,
+    val afterRepairsLow: Double,
+    val afterRepairsHigh: Double,
+    val basis: PriceBasis = PriceBasis.FORMULA,
+    val ai: AiPriceEstimate? = null,
+    /** Our formula's own range, for comparison; null when the car isn't in our price list. */
+    val formula: FairPriceEstimate? = null,
+    val note: String? = null
+)
 
 /**
  * A dealer's own asking range, raised or dropped from the estimate as they see fit. Always shown
@@ -121,7 +137,11 @@ object PrePurchaseReportBuilder {
         exteriorCounts: Map<String, Int> = emptyMap(),
         /** Brand as in [com.enginesense.app.vehicle.pricing.ExShowroomPrices] and RTO fuel type — both nudge the fair price. */
         make: String? = null,
-        fuelType: String? = null
+        fuelType: String? = null,
+        /** The AI market price for this car, when the price-estimate function answered; our formula is the backup. */
+        aiPrice: AiPriceEstimate? = null,
+        /** Accident-repair signs the buyer saw on the look-around, in plain words; any one is a red flag. */
+        accidentSigns: List<String> = emptyList()
     ): PrePurchaseReport {
         val insight = PrePurchaseAnalyzer.analyze(findings, healthScore, readiness, snapshot)
 
@@ -160,14 +180,24 @@ object PrePurchaseReportBuilder {
                 advice = "Ask why, and don't pay until the RC is active again — an inactive RC can block the transfer."
             )
         }
-        val loanFlag = if (rc?.financed == true) BuyerSignal(
-            title = "Loan on the car",
-            evidence = "The RC shows the car is hypothecated" + (rc.financer?.let { " to $it" } ?: "") + " — the lender has a claim on it until the loan is closed.",
-            advice = "Ask for the lender's NOC and a signed Form 35, and make sure the loan is closed before you pay."
+        // A loan is normal paperwork, not a red flag: it's closed as part of the transfer. It's a step
+        // to get right, so it sits with the things worth asking about and never changes the verdict.
+        val loanNote = if (rc?.financed == true) BuyerSignal(
+            title = "Loan on the car" + (rc.financer?.let { " with $it" } ?: ""),
+            evidence = "The RC shows a loan (hypothecation). That's common, and it's closed when the car is transferred to you.",
+            advice = "Before you pay in full, get the bank's NOC and a signed Form 35, or pay the bank directly to close the loan."
         ) else null
+        // Accident repair the buyer spotted on the look-around — a red flag, but not one that rules the car out alone.
+        val accidentFlag = accidentSigns.takeIf { it.isNotEmpty() }?.let { signs ->
+            BuyerSignal(
+                title = "Signs of accident repair",
+                evidence = "You saw: " + signs.joinToString("; ").replaceFirstChar { it.lowercase() } + ".",
+                advice = "Ask: \"Has this car had any body work? Can I see the insurance claim history?\" Get a body shop to look before you pay."
+            )
+        }
         // These mean the car's papers or history don't add up — on their own they rule the car out.
         val seriousFlags = listOfNotNull(odometerFlag, blacklistFlag, rcStatusFlag)
-        val redFlags = insight.fraudRiskFlags + seriousFlags + listOfNotNull(loanFlag)
+        val redFlags = insight.fraudRiskFlags + seriousFlags + listOfNotNull(accidentFlag)
 
         val checks = insight.checks + listOf(
             PurchaseCheck(
@@ -181,7 +211,7 @@ object PrePurchaseReportBuilder {
         ) + if (rc?.hasDealerDetails != true) emptyList() else listOf(
             PurchaseCheck(
                 "No loan on the car",
-                when (rc.financed) { true -> CheckOutcome.FLAGGED; false -> CheckOutcome.CLEAR; null -> CheckOutcome.NOT_AVAILABLE }
+                when (rc.financed) { true -> CheckOutcome.WORTH_ASKING; false -> CheckOutcome.CLEAR; null -> CheckOutcome.NOT_AVAILABLE }
             ),
             PurchaseCheck(
                 "Not blacklisted",
@@ -207,7 +237,10 @@ object PrePurchaseReportBuilder {
             avoidForFlags && seriousFlags.isNotEmpty() ->
                 "This car's records don't add up — ${seriousFlags.first().title.replaceFirstChar { it.lowercase() }}. Don't buy unless the seller can prove why."
             avoidForFlags -> "Several signs that faults were hidden before the sale. Don't buy unless the seller can explain them."
-            capped -> "No serious faults found, but there's a red flag the seller needs to explain before you buy."
+            capped && redFlags.size == 1 ->
+                "No serious faults found, but ask the seller about this before you buy: ${redFlags.first().title.replaceFirstChar { it.lowercase() }}."
+            capped -> "No serious faults found, but ask the seller about these ${redFlags.size} red flags before you buy: " +
+                redFlags.joinToString("; ") { it.title.replaceFirstChar { c -> c.lowercase() } } + "."
             else -> insight.headline
         }
 
@@ -228,18 +261,35 @@ object PrePurchaseReportBuilder {
 
         val manufactureYear = rc?.manufacturingMonth?.take(4)?.toIntOrNull() ?: buyerEnteredYear
         val km = (dashboardKm ?: ecuKm)?.toInt()
+        val age = manufactureYear?.let { (currentYear - it).toDouble().coerceAtLeast(0.5) }
+        val formula = if (age != null && exShowroomPriceInr != null && exShowroomPriceInr > 0)
+            FairPriceEstimator.estimate(exShowroomPriceInr, age, km, make, fuelType) else null
+        val choice = if (age != null) MarketPriceChooser.choose(aiPrice, formula?.lowEstimate, formula?.highEstimate) else null
         val (value, valueMissing) = when {
-            exShowroomPriceInr == null || exShowroomPriceInr <= 0 ->
-                null to "Pick the car's make and model on the Used Car Check screen to see a tentative price."
             manufactureYear == null ->
                 null to "Add the year of manufacture (or check RTO records) to see a fair value."
+            choice == null ->
+                null to "Pick the car's make and model on the Used Car Check screen to see a tentative price."
             else -> {
-                val age = (currentYear - manufactureYear).toDouble().coerceAtLeast(0.5)
-                val fair = FairPriceEstimator.estimate(exShowroomPriceInr, age, km, make, fuelType)
+                val fair = if (choice.basis == PriceBasis.FORMULA && formula != null) formula else {
+                    val newPrice = aiPrice?.newPriceInr ?: exShowroomPriceInr
+                    FairPriceEstimate(
+                        lowEstimate = choice.low,
+                        highEstimate = choice.high,
+                        depreciationPercent = newPrice?.takeIf { it > 0 }
+                            ?.let { (100 * (1 - (choice.low + choice.high) / 2 / it)).toInt().coerceIn(0, 95) } ?: 0,
+                        ageYears = age!!.toInt(),
+                        beyondPublishedSchedule = age > 10.0
+                    )
+                }
                 ValueEstimate(
                     fair = fair,
                     afterRepairsLow = (fair.lowEstimate - repairMax).coerceAtLeast(0.0),
-                    afterRepairsHigh = (fair.highEstimate - repairMin).coerceAtLeast(0.0)
+                    afterRepairsHigh = (fair.highEstimate - repairMin).coerceAtLeast(0.0),
+                    basis = choice.basis,
+                    ai = aiPrice,
+                    formula = formula,
+                    note = choice.note
                 ) to null
             }
         }
@@ -248,7 +298,7 @@ object PrePurchaseReportBuilder {
             verdict = verdict,
             headline = headline,
             redFlags = redFlags,
-            worthAsking = insight.cautionNotes + validityNotes,
+            worthAsking = insight.cautionNotes + validityNotes + listOfNotNull(loanNote),
             checks = checks,
             odometer = odometer,
             rc = rc,
@@ -304,4 +354,35 @@ object PrePurchaseReportBuilder {
     private fun costFor(title: String, code: String?): RepairCostEntry? =
         RepairCostReference.findByTitle(title)
             ?: code?.let { CommonDtcGlossary.lookup(it)?.meaning }?.let { RepairCostReference.findByTitle(it) }
+}
+
+/**
+ * The report in plain lines for the AI Mechanic, so "what was the red flag?" or "is the loan a
+ * problem?" get answered from what the buyer sees, not guessed. [carName] as shown on the report.
+ */
+fun PrePurchaseReport.aiSummaryLines(carName: String?): List<String> = buildList {
+    fun inr(v: Double) = "₹" + "%,.0f".format(v)
+    carName?.let { add("Car being checked: $it" + (registration?.let { r -> " ($r)" } ?: "") + (manufactureYear?.let { y -> ", made $y" } ?: "")) }
+    add("Verdict: ${verdict.name.lowercase().replace('_', ' ')}. $headline")
+    if (redFlags.isEmpty()) add("Red flags: none.")
+    redFlags.forEach { add("Red flag — ${it.title}: ${it.evidence} What to do: ${it.advice}") }
+    worthAsking.forEach { add("Worth asking (not a red flag) — ${it.title}: ${it.evidence} What to do: ${it.advice}") }
+    checks.forEach { add("Check — ${it.label}: ${it.outcome.name.lowercase().replace('_', ' ')}") }
+    rc?.let { r ->
+        val rto = listOfNotNull(
+            r.model?.let { "model on RC $it" },
+            r.ownerCount?.let { "owners so far $it" },
+            r.rcStatus?.let { "RC status $it" },
+            r.financed?.let { if (it) "loan on the car" + (r.financer?.let { f -> " with $f" } ?: "") else "no loan" },
+            r.insuranceUpto?.let { "insurance until $it" }
+        )
+        if (rto.isNotEmpty()) add("RTO record: " + rto.joinToString(", ") + ".")
+    }
+    faults.forEach { f -> add("Repair item — ${f.title}" + (f.cost?.let { c -> ": ${inr(c.minInr.toDouble())}–${inr(c.maxInr.toDouble())}" } ?: ": needs a workshop quote")) }
+    if (repairMaxInr > 0) add("Repairs total: ${inr(repairMinInr.toDouble())}–${inr(repairMaxInr.toDouble())}.")
+    value?.let { v ->
+        val source = if (v.basis == com.enginesense.app.vehicle.pricing.PriceBasis.AI_MARKET) "AI market check of current listings" else "GetAutoSure's own formula"
+        add("Tentative price in good order: ${inr(v.fair.lowEstimate)}–${inr(v.fair.highEstimate)} ($source); after repairs ${inr(v.afterRepairsLow)}–${inr(v.afterRepairsHigh)}.")
+        v.ai?.steps?.takeIf { v.basis == com.enginesense.app.vehicle.pricing.PriceBasis.AI_MARKET }?.let { add("How the price was worked out: " + it.joinToString(" ")) }
+    }
 }

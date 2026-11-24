@@ -53,10 +53,20 @@ data class AiVehicleContext(
     /** The car picked in My Garage, as the owner entered it — so answers are about this car even with no scan. */
     val car: AiCarDetails? = null,
     /** GetAutoSure's own cards for the codes in play — general reference, not facts about this car. */
-    val faultCards: List<String> = emptyList()
+    val faultCards: List<String> = emptyList(),
+    /**
+     * When the question comes from the Used Car Check: that report in plain lines (verdict, red
+     * flags with evidence, things to ask, RTO record, price). It's about the seller's car, not the user's.
+     */
+    val usedCarCheck: List<String> = emptyList()
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         car?.let { put("car", it.toJson()) }
+        if (usedCarCheck.isNotEmpty()) {
+            put("usedCarCheckReport", JSONObject()
+                .put("about", "The GetAutoSure Used Car Check report the buyer is looking at, for a car they are thinking of buying (not their own). Facts here are confirmed for this car; answer questions about red flags, the verdict, the loan or the price from it.")
+                .put("lines", JSONArray(usedCarCheck)))
+        }
         if (faultCards.isNotEmpty()) put("faultCards", JSONArray(faultCards))
         put("generatedAtMillis", generatedAtMillis)
         put("vehicleBrand", vehicleBrand ?: JSONObject.NULL)

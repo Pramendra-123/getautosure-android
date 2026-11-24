@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Used Car Check Lead</title>
+<style>
+  :root {
+    --bg: #F5F4F2; --surface: #fff; --raised: #EDEBE7; --line: #E3E8EE;
+    --ink: #111; --muted: #5B6675; --accent: #C2410C; --bright: #FF8A1F; --soft: #FFF1E6;
+    --good: #0B7A63; --watch: #A15C07; --bad: #B42318; --na: #7A828E;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif; background: #fff; color: var(--ink); padding: 32px 16px 64px; }
+  main { max-width: 1180px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .lead { color: var(--muted); font-size: 15.5px; line-height: 1.6; max-width: 820px; margin-bottom: 28px; }
+  .row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; align-items: start; }
+  @media (max-width: 1000px) { .row { grid-template-columns: 1fr; justify-items: center; } }
+  .col h2 { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
+  .col p.note { font-size: 13.5px; color: var(--muted); line-height: 1.5; margin-bottom: 14px; min-height: 60px; }
+  .col.today h2 { color: var(--muted); }
+  .col.pick h2::after { content: "New"; margin-left: 8px; font-size: 11px; font-weight: 700; color: var(--accent); background: var(--soft); padding: 2px 8px; border-radius: 999px; vertical-align: 2px; }
+
+  .phone { width: 340px; max-width: 100%; height: 720px; background: var(--bg); border: 10px solid #111; border-radius: 42px; overflow: hidden; position: relative; }
+  .scr { height: 100%; overflow-y: auto; padding: 18px 16px 24px; font-size: 13.5px; }
+  .scr::-webkit-scrollbar { width: 0; }
+  .status { display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 600; margin-bottom: 12px; }
+  .steps { display: flex; gap: 4px; margin-bottom: 6px; }
+  .steps i { flex: 1; height: 4px; border-radius: 4px; background: var(--raised); }
+  .steps i.on { background: var(--accent); }
+  .steplbl { font-size: 11.5px; color: var(--muted); margin-bottom: 12px; }
+  .title { font-size: 21px; font-weight: 800; letter-spacing: -0.3px; line-height: 1.2; margin-bottom: 4px; }
+  .cap { font-size: 12px; color: var(--muted); line-height: 1.45; }
+  .card { background: var(--surface); border-radius: 16px; padding: 14px; margin-top: 12px; }
+  .ink { background: var(--ink); color: #fff; }
+  .ink .cap { color: #BDBDBD; }
+  .field { border: 1px solid #D5DBE2; border-radius: 10px; padding: 12px; color: var(--muted); margin-top: 10px; background: #fff; }
+  .btn { background: var(--accent); color: #fff; text-align: center; font-weight: 700; padding: 13px; border-radius: 999px; margin-top: 14px; }
+  .btn.ghost { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
+  .sec { font-size: 15px; font-weight: 800; margin-top: 18px; }
+  .dim { opacity: .45; }
+
+  .chk { display: flex; gap: 10px; padding: 11px 0; border-top: 1px solid #2B2B2B; }
+  .chk:first-of-type { border-top: 0; }
+  .dot { width: 22px; height: 22px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 12px; font-weight: 800; color: #fff; margin-top: 1px; }
+  .dot.bad { background: #E5483B; } .dot.watch { background: #E59A1F; } .dot.good { background: #17A383; } .dot.na { background: #555; }
+  .chk b { display: block; font-size: 13.5px; }
+  .chk .cap { margin-top: 2px; }
+  .tag { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; margin-top: 5px; }
+  .tag.bad { background: #3A1512; color: #FF8A7E; } .tag.watch { background: #3A2A0E; color: #FFC266; } .tag.good { background: #0E2E26; color: #5FD3B5; } .tag.na { background: #2B2B2B; color: #BDBDBD; }
+  .hero { display: flex; align-items: baseline; gap: 8px; }
+  .hero .n { font-size: 40px; font-weight: 800; color: var(--bright); line-height: 1; }
+  .ask { background: var(--soft); border-radius: 10px; padding: 9px 10px; margin-top: 8px; font-size: 12px; color: #7A2E07; line-height: 1.45; }
+  .verdict { display: flex; gap: 10px; align-items: center; }
+  .verdict .v { width: 40px; height: 40px; border-radius: 50%; background: #FDECEA; display: grid; place-items: center; font-size: 20px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .chip { font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 999px; }
+  .chip.bad { background: #FDECEA; color: var(--bad); } .chip.watch { background: #FDF3E3; color: var(--watch); } .chip.good { background: #E6F4F0; color: var(--good); }
+  .price { font-size: 22px; font-weight: 800; }
+  .rowx { display: flex; justify-content: space-between; padding: 6px 0; border-top: 1px solid var(--line); font-size: 12.5px; }
+  .rowx:first-child { border-top: 0; }
+  .callout { margin-top: 22px; border: 1px solid #E6E8EB; border-radius: 16px; padding: 18px 20px; font-size: 14.5px; line-height: 1.6; }
+  .callout b { display: block; font-size: 16px; margin-bottom: 6px; }
+  .callout ul { padding-left: 18px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Used car check: lead with what the seller might be hiding</h1>
+  <p class="lead">Today the scan's best findings (cleared codes, odometer, a warmed-up engine) appear only on the last step, below the price, where they look like extra detail. The new flow shows them straight after the scan, then puts them above the price in the report. Example car: a 2019 Hyundai Creta diesel, shown with sample findings.</p>
+
+  <div class="row">
+    <!-- TODAY -->
+    <div class="col today">
+      <h2>A · Today, right after the scan</h2>
+      <p class="note">The buyer lands on a form asking for the car number. The scan's findings aren't shown until step 4, after the price.</p>
+      <div class="phone"><div class="scr">
+        <div class="status"><span>4:12</span><span>●●● 5G</span></div>
+        <div class="steps"><i class="on"></i><i class="on"></i><i></i><i></i></div>
+        <div class="steplbl">Step 2 of 4 · Car number</div>
+        <div class="title">Car number</div>
+        <p class="cap">We fetch the car's official record from VAHAN: make and model, year, owners, insurance, PUC, loan and more.</p>
+        <div class="field">Registration number, e.g. MH12AB1234</div>
+        <div class="btn">Get RTO record</div>
+        <div class="field" style="margin-top:18px">Dashboard km</div>
+        <p class="cap" style="margin-top:6px">Read it off the dashboard. We compare it with the km stored in the car's computer.</p>
+        <div class="btn">Next</div>
+        <div class="sec dim">…step 3: Look around the car</div>
+        <div class="sec dim">…step 4: Verdict, Tentative price, then Red flags</div>
+      </div></div>
+    </div>
+
+    <!-- NEW 1 -->
+    <div class="col pick">
+      <h2>B · New, right after the scan</h2>
+      <p class="note">The scan's own discoveries come first, before any form. This is the moment the buyer sees something no other app can tell them.</p>
+      <div class="phone"><div class="scr">
+        <div class="status"><span>4:12</span><span>●●● 5G</span></div>
+        <div class="steps"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div>
+        <div class="steplbl">Step 2 of 5 · Seller check</div>
+        <div class="title">What the seller might be hiding</div>
+        <p class="cap">Read from the car's own computer. These can't be faked by washing or polishing the car.</p>
+
+        <div class="card ink">
+          <div class="hero"><span class="n">2</span><span style="font-weight:700">things to ask about</span></div>
+          <p class="cap" style="margin-top:4px">2 clear · 1 this car doesn't report</p>
+        </div>
+
+        <div class="card ink" style="padding-top:4px;padding-bottom:4px">
+          <div class="chk"><span class="dot bad">!</span><div>
+            <b>Fault codes cleared 38 km ago</b>
+            <p class="cap">The car's self-tests haven't finished, and it has had only 4 warm-ups since the codes were wiped.</p>
+            <span class="tag bad">Red flag</span>
+          </div></div>
+          <div class="chk"><span class="dot watch">?</span><div>
+            <b>Engine was warm before you started it</b>
+            <p class="cap">Coolant at 71°C 20 seconds after start. Cold-start problems can't be seen.</p>
+            <span class="tag watch">Ask the seller</span>
+          </div></div>
+          <div class="chk"><span class="dot good">✓</span><div>
+            <b>No faults building up</b>
+            <p class="cap">No pending codes the car is about to confirm.</p>
+          </div></div>
+          <div class="chk"><span class="dot good">✓</span><div>
+            <b>Warning light never driven on</b>
+            <p class="cap">0 km with the check-engine light on.</p>
+          </div></div>
+          <div class="chk"><span class="dot na">–</span><div>
+            <b>Odometer</b>
+            <p class="cap">This car doesn't store total km in its computer, so we can't compare. Check service records instead.</p>
+            <span class="tag na">Not available</span>
+          </div></div>
+        </div>
+
+        <div class="ask">💬 <b>Ask the seller:</b> "Was the check-engine light on recently? Who cleared it, and why?" Come back and start it cold tomorrow morning.</div>
+        <div class="btn">Next: car number</div>
+      </div></div>
+    </div>
+
+    <!-- NEW 2 -->
+    <div class="col pick">
+      <h2>C · New, top of the report</h2>
+      <p class="note">Same order in the final report and the PDF: verdict, then the seller check, then repairs and price. RTO details move below.</p>
+      <div class="phone"><div class="scr">
+        <div class="status"><span>4:19</span><span>●●● 5G</span></div>
+        <div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+        <div class="steplbl">Step 5 of 5 · Report</div>
+        <div class="card">
+          <div class="verdict"><span class="v" style="background:#FDF3E3">🟡</span><div>
+            <div class="title" style="font-size:19px;margin:0">Buy with caution</div>
+            <p class="cap">Codes were cleared just before the sale. Don't pay until the car is re-scanned after a few days' driving.</p>
+          </div></div>
+          <div class="chips"><span class="chip bad">1 red flag</span><span class="chip watch">1 to ask</span><span class="chip good">2 clear</span></div>
+        </div>
+
+        <div class="sec">What the seller might be hiding</div>
+        <div class="card ink" style="padding-top:4px;padding-bottom:4px">
+          <div class="chk"><span class="dot bad">!</span><div><b>Fault codes cleared 38 km ago</b></div></div>
+          <div class="chk"><span class="dot watch">?</span><div><b>Engine warm before you started it</b></div></div>
+          <div class="chk"><span class="dot good">✓</span><div><b>2 checks clear</b><p class="cap">No faults building up · Warning light never driven on</p></div></div>
+          <div class="chk"><span class="dot na">–</span><div><b>Odometer: not reported by this car</b></div></div>
+        </div>
+
+        <div class="sec">Repairs and price</div>
+        <div class="card">
+          <div class="rowx"><span>Repairs found</span><b>₹6,500 – ₹14,000</b></div>
+          <div class="rowx"><span>Tentative price</span><b>₹8.9 – 9.6 lakh</b></div>
+          <div class="rowx"><span>After repairs</span><b style="color:var(--accent)">₹8.8 – 9.5 lakh</b></div>
+        </div>
+
+        <div class="sec">RTO record</div>
+        <div class="card">
+          <div class="rowx"><span>Owners</span><b>2</b></div>
+          <div class="rowx"><span>Insurance</span><b>Valid to Mar 2027</b></div>
+          <div class="rowx"><span>Loan</span><b>None</b></div>
+        </div>
+        <div class="btn">Share PDF report</div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <b>What changes</b>
+    <ul>
+      <li>A new step straight after the scan: <b>Seller check</b>. It uses checks the app already does, so no new detection is needed.</li>
+      <li>Every check shows one of three results: red flag, ask the seller, or clear. "Not available" is shown openly when the car doesn't report it, never as a pass.</li>
+      <li>In the report and PDF, the seller check moves above the price. RTO moves below.</li>
+      <li>The start screen copy becomes: "Find out what the seller might be hiding: cleared fault codes, a rolled-back odometer, an engine warmed up before you arrived."</li>
+      <li>The same line can lead the used-car section of the website.</li>
+    </ul>
+  </div>
+</main>
+</body>
+</html>

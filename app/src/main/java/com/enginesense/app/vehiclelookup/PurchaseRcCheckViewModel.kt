@@ -83,6 +83,8 @@ class PurchaseRcCheckViewModel(application: Application) : AndroidViewModel(appl
             is VehicleLookupHttpException -> when (error.code) {
                 "invalid_registration", "lookup_failed", "rate_limited" -> error.serverMessage ?: "We couldn't look up that number."
                 "unauthorized" -> "Your sign-in has expired. Sign in again to check RTO records."
+                // The RTO data provider timing out or erroring on its side — not the buyer's number.
+                "upstream_error", "upstream_auth" -> "The RTO record service is busy right now. Try again in a minute, or skip it and carry on — you can add the car's details yourself."
                 else -> "Checking RTO records isn't working right now. Try again later."
             }
             else -> "Something went wrong checking RTO records. Try again later."

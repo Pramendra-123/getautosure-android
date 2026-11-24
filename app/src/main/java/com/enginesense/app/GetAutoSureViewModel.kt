@@ -91,6 +91,12 @@ import com.enginesense.app.owner.PaymentAiSort
 import com.enginesense.app.owner.PaymentAlertListener
 import com.enginesense.app.owner.PendingPayment
 import com.enginesense.app.owner.RemotePaymentSorter
+import com.enginesense.app.vehicle.pricing.AiPriceEstimate
+import com.enginesense.app.vehicle.CheckedCar
+import com.enginesense.app.vehicle.CheckedCarStore
+import com.enginesense.app.vehicle.PrePurchaseReport
+import com.enginesense.app.vehicle.pricing.AiPriceQuery
+import com.enginesense.app.vehicle.pricing.RemotePriceEstimator
 import com.enginesense.app.storage.GarageCar
 import com.enginesense.app.storage.GarageState
 import com.enginesense.app.storage.GarageStore
@@ -358,6 +364,67 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
 
     fun clearPrePurchaseCheck() {
         _scanIsPrePurchaseCheck.value = false
+        _aiPrice.value = AiPriceState.Idle
+    }
+
+    /** The Used Car Check report as the buyer last saw it, in plain lines for the AI Mechanic (see [PrePurchaseReport.aiSummaryLines]). */
+    @Volatile private var usedCarReportLines: List<String> = emptyList()
+
+    fun setUsedCarReport(lines: List<String>) {
+        usedCarReportLines = lines
+    }
+
+    private val checkedCarStore = CheckedCarStore(application)
+    private val _checkedCars = MutableStateFlow(checkedCarStore.load())
+    /** The last few Used Car Checks, newest first, kept after the app closes. */
+    val checkedCars: StateFlow<List<CheckedCar>> = _checkedCars.asStateFlow()
+
+    /** Saves (or updates) this check for the buyer's home screen, once they've reached the price. */
+    fun rememberCheckedCar(report: PrePurchaseReport, name: String?, scan: ScanResult) {
+        val car = CheckedCar.from(report, name, scan.timestampMillis, scan.health.score)
+        if (_checkedCars.value.firstOrNull { it.scanMillis == car.scanMillis } == car) return
+        viewModelScope.launch(Dispatchers.IO) { _checkedCars.value = checkedCarStore.save(car) }
+    }
+
+    /** The AI market price for the car in the Used Car Check; our formula is used whenever this isn't Ready. */
+    sealed interface AiPriceState {
+        data object Idle : AiPriceState
+        data class Loading(val query: AiPriceQuery) : AiPriceState
+        data class Ready(val query: AiPriceQuery, val estimate: AiPriceEstimate) : AiPriceState
+        data class Failed(val query: AiPriceQuery) : AiPriceState
+    }
+
+    private val _aiPrice = MutableStateFlow<AiPriceState>(AiPriceState.Idle)
+    val aiPrice: StateFlow<AiPriceState> = _aiPrice.asStateFlow()
+    private val priceEstimator = RemotePriceEstimator()
+    private var aiPriceJob: Job? = null
+
+    /**
+     * Asks for the AI market price as soon as the car is known (make, model, year), so it's usually
+     * ready by the time the buyer reaches the price. The same banded car isn't asked twice, and a
+     * changed car cancels the old request. Failure is quiet: the report just keeps our formula's price.
+     */
+    fun requestAiPrice(query: AiPriceQuery, uiContext: Context, force: Boolean = false) {
+        val q = query.banded()
+        val current = _aiPrice.value
+        val asked = when (current) {
+            is AiPriceState.Loading -> current.query
+            is AiPriceState.Ready -> current.query
+            is AiPriceState.Failed -> if (force) null else current.query
+            AiPriceState.Idle -> null
+        }
+        if (asked == q) return
+        aiPriceJob?.cancel()
+        _aiPrice.value = AiPriceState.Loading(q)
+        aiPriceJob = viewModelScope.launch {
+            _aiPrice.value = try {
+                AiPriceState.Ready(q, priceEstimator.estimate(q, tokenCache.get(uiContext)))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                AiPriceState.Failed(q)
+            }
+        }
     }
 
     /** Set right before a Dealer Sathi scan, so the result goes to [dealerResult] and the scan screen returns to the dealer flow. */
@@ -1284,7 +1351,8 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
     fun askAiMechanic(question: String, uiContext: Context, aboutUsedCar: Boolean = false) {
         val scan = if (aboutUsedCar) _prePurchaseResult.value else _latestResult.value
         val ownCar = if (aboutUsedCar) null else _garage.value.active?.profile
-        val context = (scan?.aiContext ?: AiVehicleContext.NO_SCAN).let { c ->
+        val usedCarLines = if (aboutUsedCar) usedCarReportLines else emptyList()
+        val context = (scan?.aiContext ?: AiVehicleContext.NO_SCAN).copy(usedCarCheck = usedCarLines).let { c ->
             ownCar?.let { p ->
                 c.copy(car = AiCarDetails(p.brand, p.model.ifBlank { null }, p.year, p.fuelType, p.odometerKm), vehicleBrand = p.brand ?: c.vehicleBrand)
             } ?: c

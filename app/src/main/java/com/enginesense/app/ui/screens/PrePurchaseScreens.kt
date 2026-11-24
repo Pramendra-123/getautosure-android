@@ -26,6 +26,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateMapOf
 import com.enginesense.app.vehicle.ExteriorDamage
+import com.enginesense.app.vehicle.pricing.AiPriceQuery
+import com.enginesense.app.vehicle.LookAround
+import com.enginesense.app.vehicle.PanelIssue
+import com.enginesense.app.vehicle.QuickAnswer
+import com.enginesense.app.vehicle.aiSummaryLines
 import com.enginesense.app.vehicle.pricing.ExShowroomPrices
 import com.enginesense.app.vehicle.pricing.Variant
 import com.enginesense.app.vehicle.pricing.priceFor
@@ -72,7 +77,7 @@ import kotlinx.coroutines.withContext
 import java.util.Calendar
 
 /** Used Car Check's four steps — the same shape as Dealer Saathi's flow. */
-private val BUYER_STEP_TITLES = listOf("Scan the car", "Car number", "Look around the car", "Price and report")
+private val BUYER_STEP_TITLES = listOf("Scan the car", "Seller check", "Car number", "Look around the car", "Price and report")
 
 /** Step 1 — starts a scan same as any other, just flagged as a pre-purchase check (see GetAutoSureViewModel.startPrePurchaseCheck). */
 @Composable
@@ -81,14 +86,15 @@ fun PrePurchaseCheckScreen(viewModel: GetAutoSureViewModel, onStartScan: () -> U
         StepHeader(0, BUYER_STEP_TITLES)
         Spacer(Modifier.height(8.dp))
         Text(
-            "Buying a car? Scan it before you pay. You get a clear answer — good buy, buy with caution, or avoid — and a tentative price.",
+            "Find out what the seller might be hiding: fault codes cleared before the sale, a rolled-back odometer, an engine warmed up before you arrived. Then a clear answer — good buy, buy with caution, or avoid — and a tentative price.",
             style = GetAutoSureType.Caption
         )
         Spacer(Modifier.height(16.dp))
         listOf(
             "Plug the scanner into the seller's car, engine on",
-            "Spot faults that were hidden or cleared before the sale",
-            "Check the odometer and the RTO (VAHAN) record"
+            "See what the seller might be hiding",
+            "Check the RTO (VAHAN) record and the odometer",
+            "Mark any damage on a picture of the car"
         ).forEach { line ->
             Row(modifier = Modifier.padding(vertical = 3.dp)) {
                 Text("•  ", style = GetAutoSureType.Body)
@@ -198,37 +204,6 @@ private fun PickerButton(label: String, value: String?, options: List<String>, o
     }
 }
 
-/** What the scan can't see: the buyer counts damage on the body, glass, tyres and cabin, and each adds a tentative repair cost. */
-@Composable
-private fun ExteriorCard(counts: Map<String, Int>, onCount: (String, Int) -> Unit) {
-    Card(colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Walk around the car and count anything you see. Each adds a tentative repair cost.", style = GetAutoSureType.Caption)
-            Spacer(Modifier.height(8.dp))
-            ExteriorDamage.items.forEach { item ->
-                val n = counts[item.id] ?: 0
-                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(item.label, style = GetAutoSureType.Body)
-                        Text("₹${"%,d".format(item.minInr)}–${"%,d".format(item.maxInr)} per ${item.unit}", style = GetAutoSureType.Caption)
-                    }
-                    TextButton(onClick = { onCount(item.id, (n - 1).coerceAtLeast(0)) }, enabled = n > 0) { Text("−") }
-                    Text("$n", style = GetAutoSureType.Body, modifier = Modifier.width(24.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                    TextButton(onClick = { onCount(item.id, (n + 1).coerceAtMost(9)) }) { Text("+") }
-                }
-            }
-            val lines = ExteriorDamage.lines(counts)
-            if (lines.isNotEmpty()) {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "Body and cabin repairs: ₹${"%,d".format(lines.sumOf { it.cost!!.minInr })}–${"%,d".format(lines.sumOf { it.cost!!.maxInr })}",
-                    style = GetAutoSureType.Body.copy(color = GetAutoSureColors.Watch)
-                )
-            }
-        }
-    }
-}
-
 private fun formatRupees(value: Double): String =
     if (value >= 100000) "%.2f L".format(value / 100000) else "%,.0f".format(value)
 
@@ -250,8 +225,9 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: (
     var make by remember { mutableStateOf<String?>(null) }
     var model by remember { mutableStateOf<String?>(null) }
     var variant by remember { mutableStateOf(Variant.MID) }
-    val exteriorCounts = remember { mutableStateMapOf<String, Int>() }
-    val ratings = remember { mutableStateMapOf<String, Int>() }
+    val panelMarks = remember { mutableStateMapOf<String, Set<PanelIssue>>() }
+    val quickAnswers = remember { mutableStateMapOf<String, QuickAnswer>() }
+    val accidentAnswers = remember { mutableStateMapOf<Int, Boolean>() }
     val scroll = rememberScrollState()
     LaunchedEffect(step) { scroll.scrollTo(0) }
 
@@ -278,38 +254,64 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: (
         val tableRange = ExShowroomPrices.lookup(make, model)
         val newPrice = tableRange?.priceFor(variant)
 
+        // Ask for the AI market price as soon as the car is known, so it's usually ready by the price step.
+        val context = LocalContext.current
+        val priceYear = yearInput.toIntOrNull() ?: autoYear
+        val priceQuery = if (make != null && model != null && priceYear != null) AiPriceQuery(
+            make = make!!, model = model!!, variant = variant, year = priceYear,
+            // A reading under 100 km is a half-typed number or a missing one, not a brand-new car.
+            fuel = rc?.fuelType, km = (dashboardInput.toDoubleOrNull() ?: insight.ecuOdometerKm)?.toInt()?.takeIf { it >= 100 },
+            city = rc?.registeredAt, owners = rc?.ownerCount, rcModel = rc?.model
+        ) else null
+        LaunchedEffect(priceQuery?.banded()) {
+            // Waits for the buyer to stop typing the km, so one check doesn't fire a request per keystroke.
+            kotlinx.coroutines.delay(1_500)
+            if (priceQuery != null) viewModel.requestAiPrice(priceQuery, context)
+        }
+        val aiState by viewModel.aiPrice.collectAsState()
+        val bandedQuery = priceQuery?.banded()
+        val aiReady = (aiState as? GetAutoSureViewModel.AiPriceState.Ready)?.takeIf { it.query == bandedQuery }?.estimate
+        val aiChecking = (aiState as? GetAutoSureViewModel.AiPriceState.Loading)?.query == bandedQuery && bandedQuery != null
+        val aiFailed = (aiState as? GetAutoSureViewModel.AiPriceState.Failed)?.query == bandedQuery && bandedQuery != null
+
         val report = PrePurchaseReportBuilder.build(
             findings = r.findings, healthScore = r.health.score, readiness = r.readiness, snapshot = r.snapshot,
             vin = r.vehicleId.vin, dashboardKm = dashboardInput.toDoubleOrNull(), rc = rc, registration = rc?.registrationNumber,
             exShowroomPriceInr = newPrice, buyerEnteredYear = yearInput.toIntOrNull() ?: autoYear,
             currentYear = currentYear,
-            exteriorCounts = exteriorCounts.toMap(),
-            make = make, fuelType = rc?.fuelType
+            exteriorCounts = LookAround.counts(panelMarks, quickAnswers),
+            make = make, fuelType = rc?.fuelType,
+            aiPrice = aiReady,
+            accidentSigns = LookAround.accidentFindings(accidentAnswers)
         )
+        val ratings = LookAround.ratings(quickAnswers)
+        val carName = com.enginesense.app.dealerreport.CarNameFormatter.carName(rc?.make, rc?.model, rc?.fuelType)
+            ?: listOfNotNull(make, model).joinToString(" ").ifBlank { null }
+
+        // The AI Mechanic answers from the report the buyer is looking at, and the home screen remembers the car.
+        LaunchedEffect(report, carName) {
+            viewModel.setUsedCarReport(report.aiSummaryLines(carName))
+            if (step >= 4) viewModel.rememberCheckedCar(report, carName, r)
+        }
 
         StepHeader(step, BUYER_STEP_TITLES)
         Spacer(Modifier.height(12.dp))
         when (step) {
-            1 -> BuyerCarNumberStep(
+            1 -> SellerCheckStep(insight, onNext = { step = 2 })
+            2 -> BuyerCarNumberStep(
                 plate = plate, onPlate = { plate = it },
                 rcViewModel = rcViewModel, rcState = rcState, isDemo = r.isDemo,
                 ecuKm = insight.ecuOdometerKm, dashboardInput = dashboardInput, onDashboard = { dashboardInput = it },
-                onNext = { step = 2 }
+                onNext = { step = 3 }
             )
-            2 -> {
-                Text("What the scan can't see. All optional — skip anything you can't check.", style = GetAutoSureType.Caption)
-                Spacer(Modifier.height(12.dp))
-                ExteriorCard(exteriorCounts) { id, n -> exteriorCounts[id] = n }
-                Spacer(Modifier.height(12.dp))
-                BuyerRatingsCard(ratings)
-                Spacer(Modifier.height(16.dp))
-                Button(onClick = { step = 3 }, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("Next: price and report") }
-            }
+            3 -> LookAroundStep(panelMarks, quickAnswers, accidentAnswers, onNext = { step = 4 })
             else -> BuyerPriceAndReportStep(
-                viewModel = viewModel, r = r, insight = insight, report = report, rc = rc, ratings = ratings.toMap(),
+                viewModel = viewModel, r = r, insight = insight, report = report, rc = rc, ratings = ratings,
                 make = make, onMake = { make = it; model = null }, model = model, onModel = { model = it },
                 variant = variant, onVariant = { variant = it },
                 yearInput = yearInput, onYear = { yearInput = it }, autoYear = autoYear, newPrice = newPrice,
+                aiChecking = aiChecking, aiFailed = aiFailed,
+                onRetryAi = { priceQuery?.let { viewModel.requestAiPrice(it, context, force = true) } },
                 onTalkToMechanic = onTalkToMechanic, onDone = onDone, onViewPdf = onViewPdf
             )
         }
@@ -394,34 +396,13 @@ private fun BuyerCarNumberStep(
     Button(onClick = onNext, enabled = found, modifier = Modifier.fillMaxWidth().height(52.dp)) {
         Text(if (found) "Next: look around the car" else "Get the RTO record to continue")
     }
-}
-
-/** Optional 1–5 stars for what a buyer can judge on a test drive; shown in the PDF as the buyer's own ratings. */
-@Composable
-private fun BuyerRatingsCard(ratings: MutableMap<String, Int>) {
-    Card(colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp)) {
-            Text("Your ratings", style = GetAutoSureType.Body)
-            Text("Tap 1–5 stars. Tap the same star again to clear.", style = GetAutoSureType.Caption)
-            Spacer(Modifier.height(8.dp))
-            BUYER_RATING_ITEMS.forEach { item ->
-                Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(item, style = GetAutoSureType.Body, modifier = Modifier.weight(1f))
-                    val current = ratings[item] ?: 0
-                    (1..5).forEach { n ->
-                        Text(
-                            if (n <= current) "★" else "☆",
-                            style = GetAutoSureType.SectionTitle.copy(color = if (n <= current) Color(0xFFF59E0B) else GetAutoSureColors.TextSecondary),
-                            modifier = Modifier.clickable { if (current == n) ratings.remove(item) else ratings[item] = n }.padding(horizontal = 3.dp)
-                        )
-                    }
-                }
-            }
+    // The RTO service can be down; the check mustn't stop there. Make, model and year can be picked on the price step.
+    if (!found && rcState is PurchaseRcState.Failed) {
+        TextButton(onClick = onNext, modifier = Modifier.fillMaxWidth()) {
+            Text("Skip the RTO record and carry on")
         }
     }
 }
-
-internal val BUYER_RATING_ITEMS = listOf("Tyres", "AC", "Interior and seats", "Test drive")
 
 /** Step 4: verdict, what to raise with the seller, the price with how it was worked out, and the report. */
 @Composable
@@ -431,6 +412,7 @@ private fun BuyerPriceAndReportStep(
     make: String?, onMake: (String) -> Unit, model: String?, onModel: (String) -> Unit,
     variant: Variant, onVariant: (Variant) -> Unit,
     yearInput: String, onYear: (String) -> Unit, autoYear: Int?, newPrice: Double?,
+    aiChecking: Boolean, aiFailed: Boolean, onRetryAi: () -> Unit,
     onTalkToMechanic: () -> Unit, onDone: () -> Unit, onViewPdf: (java.io.File) -> Unit
 ) {
     // The report's verdict also counts the buyer's own checks (odometer, RTO record), so the screen uses it too.
@@ -451,7 +433,7 @@ private fun BuyerPriceAndReportStep(
     )
 
     SectionHeader("Tentative price", "Worked out from this car's details")
-    PriceBasisCard(report, rc, make, model, variant, newPrice, yearInput.toIntOrNull() ?: autoYear)
+    PriceBasisCard(report, rc, make, model, variant, newPrice, yearInput.toIntOrNull() ?: autoYear, aiChecking, aiFailed, onRetryAi)
     var editing by remember { mutableStateOf(false) }
     Text(
         if (editing) "Hide details" else "Wrong model, variant or year? Change it →",
@@ -514,10 +496,31 @@ private fun BuyerPriceAndReportStep(
  * age and km, the depreciation, and the repairs taken off — so the buyer can see why it's that number.
  */
 @Composable
-private fun PriceBasisCard(report: PrePurchaseReport, rc: RcLookupResult?, make: String?, model: String?, variant: Variant, newPrice: Double?, year: Int?) {
+private fun PriceBasisCard(
+    report: PrePurchaseReport, rc: RcLookupResult?, make: String?, model: String?, variant: Variant, newPrice: Double?, year: Int?,
+    aiChecking: Boolean = false, aiFailed: Boolean = false, onRetryAi: () -> Unit = {}
+) {
     Card(colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             val value = report.value
+            val ai = value?.ai?.takeIf { value.basis == com.enginesense.app.vehicle.pricing.PriceBasis.AI_MARKET }
+            if (value != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (ai != null) {
+                        PriceBadge("✦ AI market check", GetAutoSureColors.AccentPurple, Color(0xFFEFEAFD))
+                        Spacer(Modifier.width(6.dp))
+                        val (label, fg, bg) = when (ai.confidence) {
+                            "high" -> Triple("High confidence", GetAutoSureColors.Good, Color(0xFFE6F4F0))
+                            "medium" -> Triple("Medium confidence", GetAutoSureColors.Watch, Color(0xFFFDF3E3))
+                            else -> Triple("Low confidence", GetAutoSureColors.TextSecondary, GetAutoSureColors.SurfaceRaised)
+                        }
+                        PriceBadge(label, fg, bg)
+                    } else {
+                        PriceBadge("Our estimate", GetAutoSureColors.TextSecondary, GetAutoSureColors.SurfaceRaised)
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+            }
             if (value == null) {
                 Text("No price yet", style = GetAutoSureType.Body)
                 Text(report.valueMissingReason ?: "Pick the model below to get a price.", style = GetAutoSureType.Caption)
@@ -527,8 +530,32 @@ private fun PriceBasisCard(report: PrePurchaseReport, rc: RcLookupResult?, make:
                     "₹${formatRupees(if (shownAfterRepairs) value.afterRepairsLow else value.fair.lowEstimate)} – ₹${formatRupees(if (shownAfterRepairs) value.afterRepairsHigh else value.fair.highEstimate)}",
                     style = GetAutoSureType.ScreenTitle.copy(color = GetAutoSureColors.Accent)
                 )
-                Text("A rough guide, not a valuation. Bargain from here.", style = GetAutoSureType.Caption)
+                Text(
+                    (if (shownAfterRepairs) "As it stands, after the repairs found. " else "") + "A rough guide, not a valuation. Bargain from here.",
+                    style = GetAutoSureType.Caption
+                )
+                if (ai != null && shownAfterRepairs) {
+                    Spacer(Modifier.height(10.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        PriceSplit("In good order", "₹${formatRupees(value.fair.lowEstimate)} – ${formatRupees(value.fair.highEstimate)}", Modifier.weight(1f))
+                        PriceSplit("Repairs taken off", "₹${formatRupees(report.repairMinInr.toDouble())} – ${formatRupees(report.repairMaxInr.toDouble())}", Modifier.weight(1f))
+                    }
+                }
             }
+            if (aiChecking && ai == null) {
+                Spacer(Modifier.height(10.dp))
+                PriceNote("Checking current listings for this car… usually 15–30 seconds.", Color(0xFF3F2A8C), Color(0xFFF3EFFE))
+            }
+            value?.note?.let {
+                Spacer(Modifier.height(10.dp))
+                PriceNote(it, Color(0xFF6B3E06), Color(0xFFFDF3E3))
+            }
+
+            if (ai != null) {
+                AiPriceExplanation(ai, value?.formula)
+                return@Column
+            }
+
             Spacer(Modifier.height(12.dp))
             Text("HOW WE GOT THIS", style = GetAutoSureType.Caption.copy(letterSpacing = 1.2.sp))
             Spacer(Modifier.height(4.dp))
@@ -550,8 +577,95 @@ private fun PriceBasisCard(report: PrePurchaseReport, rc: RcLookupResult?, make:
                     Text(v, style = GetAutoSureType.Body, modifier = Modifier.weight(1f))
                 }
             }
+            if (aiFailed) {
+                Text(
+                    "Try the market check again",
+                    style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Accent, fontWeight = FontWeight.SemiBold),
+                    modifier = Modifier.clickable { onRetryAi() }.padding(top = 10.dp)
+                )
+            }
         }
     }
+}
+
+/** The AI's working: its steps, the listings it compared, the sites it searched, and what our formula said. */
+@Composable
+private fun AiPriceExplanation(ai: com.enginesense.app.vehicle.pricing.AiPriceEstimate, formula: com.enginesense.app.vehicle.FairPriceEstimate?) {
+    val context = LocalContext.current
+    val label = GetAutoSureType.Caption.copy(letterSpacing = 1.2.sp)
+    Spacer(Modifier.height(14.dp))
+    Text("HOW THE AI GOT THIS", style = label)
+    ai.steps.forEachIndexed { i, step ->
+        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+            Text("${i + 1}", style = GetAutoSureType.Body.copy(color = GetAutoSureColors.AccentPurple, fontWeight = FontWeight.Bold), modifier = Modifier.width(18.dp))
+            Text(step, style = GetAutoSureType.Body, modifier = Modifier.weight(1f))
+        }
+    }
+    if (ai.comparables.isNotEmpty()) {
+        Spacer(Modifier.height(10.dp))
+        Text("LISTINGS IT COMPARED", style = label)
+        ai.comparables.forEach { c ->
+            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(c.description, style = GetAutoSureType.Body)
+                    if (c.site.isNotBlank()) Text(c.site, style = GetAutoSureType.Caption)
+                }
+                Text("₹${formatRupees(c.priceInr)}", style = GetAutoSureType.Body.copy(fontWeight = FontWeight.SemiBold))
+            }
+        }
+    }
+    if (ai.sources.isNotEmpty()) {
+        Spacer(Modifier.height(10.dp))
+        Text("SEARCHED", style = label)
+        Spacer(Modifier.height(4.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+            ai.sources.take(4).forEach { s ->
+                Text(
+                    s.title.ifBlank { "Source" },
+                    style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Accent),
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f, fill = false)
+                        .clip(RoundedCornerShape(50)).background(GetAutoSureColors.AccentSoft)
+                        .clickable { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(s.url))) } }
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                )
+            }
+        }
+    }
+    Spacer(Modifier.height(10.dp))
+    Text(
+        listOfNotNull(
+            "Prices found online, checked for this car" + (if (ai.pricedAt != null) " in the last week." else "."),
+            formula?.let { "Our own formula said ₹${formatRupees(it.lowEstimate)} – ${formatRupees(it.highEstimate)}." }
+        ).joinToString(" "),
+        style = GetAutoSureType.Caption
+    )
+}
+
+@Composable
+private fun PriceBadge(text: String, fg: Color, bg: Color) {
+    Text(
+        text,
+        style = GetAutoSureType.Caption.copy(color = fg, fontWeight = FontWeight.Bold),
+        modifier = Modifier.clip(RoundedCornerShape(50)).background(bg).padding(horizontal = 9.dp, vertical = 3.dp)
+    )
+}
+
+@Composable
+private fun PriceSplit(label: String, value: String, modifier: Modifier) {
+    Column(modifier.clip(RoundedCornerShape(12.dp)).background(GetAutoSureColors.SurfaceRaised).padding(horizontal = 10.dp, vertical = 8.dp)) {
+        Text(label, style = GetAutoSureType.Caption)
+        Text(value, style = GetAutoSureType.Body.copy(fontWeight = FontWeight.Bold))
+    }
+}
+
+@Composable
+private fun PriceNote(text: String, fg: Color, bg: Color) {
+    Text(
+        text,
+        style = GetAutoSureType.Caption.copy(color = fg),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(bg).padding(10.dp)
+    )
 }
 
 @Composable
@@ -603,6 +717,68 @@ internal fun SectionHeader(title: String, subtitle: String? = null) {
     Text(title, style = GetAutoSureType.SectionTitle)
     if (subtitle != null) Text(subtitle, style = GetAutoSureType.Caption)
     Spacer(Modifier.height(12.dp))
+}
+
+/**
+ * Step 2, straight after the scan: what the car's own computer says the seller might be hiding,
+ * before any form. Each check is a red flag, something to ask, clear, or not reported by this car.
+ */
+@Composable
+private fun SellerCheckStep(insight: com.enginesense.app.vehicle.PrePurchaseInsight, onNext: () -> Unit) {
+    val flags = insight.fraudRiskFlags
+    val asks = insight.cautionNotes
+    val clear = insight.checks.count { it.outcome == CheckOutcome.CLEAR }
+    val notReported = insight.checks.count { it.outcome == CheckOutcome.NOT_AVAILABLE }
+
+    Text("What the seller might be hiding", style = GetAutoSureType.ScreenTitle)
+    Text("Read from the car's own computer. Washing or polishing the car can't hide these.", style = GetAutoSureType.Caption)
+    Spacer(Modifier.height(12.dp))
+
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(GetAutoSureColors.Ink).padding(16.dp)
+    ) {
+        val total = flags.size + asks.size
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text("$total", color = GetAutoSureColors.AccentBright, fontSize = 40.sp, fontWeight = FontWeight.ExtraBold)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                when {
+                    total == 0 -> "nothing to ask about"
+                    flags.isEmpty() -> if (total == 1) "thing to ask about" else "things to ask about"
+                    else -> "${flags.size} red flag${if (flags.size == 1) "" else "s"}" + if (asks.isNotEmpty()) ", ${asks.size} to ask about" else ""
+                },
+                color = GetAutoSureColors.OnInk, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = 6.dp)
+            )
+        }
+        Text(
+            listOfNotNull(
+                "$clear clear",
+                if (notReported > 0) "$notReported this car doesn't report" else null
+            ).joinToString(" · "),
+            color = GetAutoSureColors.OnInkMuted, fontSize = 12.sp
+        )
+    }
+    Spacer(Modifier.height(12.dp))
+
+    if (insight.checks.isEmpty()) {
+        Text("The scan didn't read enough from this car to run these checks. Try scanning again with the engine running.", style = GetAutoSureType.Body)
+    }
+    flags.forEach { SignalCard(it.copy(title = "Red flag · ${it.title}"), GetAutoSureColors.Attention) }
+    asks.forEach { SignalCard(it.copy(title = "Ask the seller · ${it.title}"), GetAutoSureColors.Watch) }
+    if (insight.checks.isNotEmpty()) {
+        Text("Everything we checked", style = GetAutoSureType.SectionTitle)
+        Spacer(Modifier.height(8.dp))
+        ChecksCard(insight.checks)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            if (insight.ecuOdometerKm != null) "Odometer: the car's computer says ${"%,d".format(insight.ecuOdometerKm.toLong())} km. You'll compare it with the dashboard in the next step."
+            else "Odometer: this car doesn't share its total km, so we can't check the dashboard against it. Ask for service records instead.",
+            style = GetAutoSureType.Caption
+        )
+    }
+    Spacer(Modifier.height(16.dp))
+    Button(onClick = onNext, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("Next: car number") }
 }
 
 /** Title, then what the scan actually saw, then what to say to the seller — the order a buyer reads it in at the car. */

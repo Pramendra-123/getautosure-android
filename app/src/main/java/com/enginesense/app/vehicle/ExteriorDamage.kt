@@ -23,7 +23,9 @@ object ExteriorDamage {
         ExteriorItem("rust", "Rust spots", "spot", 2_000, 8_000),
         ExteriorItem("tyre", "Worn-out tyres", "tyre", 3_000, 9_000),
         ExteriorItem("wheel", "Scuffed or bent wheels", "wheel", 1_000, 3_000),
-        ExteriorItem("interior", "Torn seats or damaged trim", "area", 3_000, 15_000)
+        ExteriorItem("interior", "Torn seats or damaged trim", "area", 3_000, 15_000),
+        // Gas top-up at the low end, compressor at the top — same range as RepairCostReference's AC entry.
+        ExteriorItem("ac", "AC needs work", "AC", 2_000, 15_000)
     )
 
     /** The buyer's counts as report lines, each priced per piece; items they didn't mark are left out. */
