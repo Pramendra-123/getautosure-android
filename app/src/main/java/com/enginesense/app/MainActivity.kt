@@ -526,6 +526,7 @@ fun GetAutoSureApp(viewModel: GetAutoSureViewModel) {
                     if (route in GARAGE_CHIP_ROUTES) { garageChipRequest.value = route; navController.popBackStack() } else navController.navigate(route)
                 })
             }
+            composable("learning") { LearningScreen(viewModel) }
             composable("emissionsTrend") { EmissionsTrendScreen(viewModel) }
             composable("detailedDiagnosis") { DetailedDiagnosisScreen(viewModel) }
             composable("prePurchaseCheck") {

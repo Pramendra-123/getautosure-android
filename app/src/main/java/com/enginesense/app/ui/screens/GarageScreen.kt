@@ -156,6 +156,7 @@ fun GarageScreen(
     androidx.compose.runtime.LaunchedEffect(chipRequest) {
         chipRequest?.let { GARAGE_CHIP_ROUTES[it]?.let { c -> chip = c }; garageChipRequest.value = null }
     }
+    val context = LocalContext.current
     val attention = rememberAttention(viewModel)
     val fuel = rememberFuelIntel(viewModel, drives, owner)
     val open: (String) -> Unit = { route -> GARAGE_CHIP_ROUTES[route]?.let { chip = it } ?: onNavigate(route) }
@@ -175,9 +176,29 @@ fun GarageScreen(
                 )
             }
         }
-        item { AttentionCard(attention, open, onSeeAll = { onNavigate("attention") }) }
+        // One card, picked by where the owner is: no scan yet → the prompt; first scan → "Your car's
+        // first check-up"; something to act on → "Needs your attention"; otherwise → "Since your last check-up".
+        val unseenChanges = attention.changes?.changes?.isNotEmpty() == true && !attention.changesSeen
+        val showAttention = result == null || attention.needsAction || unseenChanges || attention.stale != null
+        item {
+            when {
+                result != null && attention.scanCount <= 1 && attention.checkup.isNotEmpty() -> FirstCheckupCard(
+                    attention, open,
+                    onServiceDate = { pickDate(context, null) { d -> saveLastService(viewModel, d, null, "Last service") } },
+                    onNewCar = {
+                        val registered = viewModel.vehicleRc.value?.registrationDate?.let { com.enginesense.app.vehiclelookup.RtoRecord.parseDate(it) }
+                        saveLastService(viewModel, registered ?: LocalDate.now(), 0, "New car, no service yet")
+                    },
+                    onServiceUnknown = { viewModel.updateOwnerData { it.copy(lastServiceQuestionSkipped = true) } }
+                )
+                showAttention -> AttentionCard(attention, open, onSeeAll = { onNavigate("attention") })
+                else -> SinceCheckupCard(attention, rememberMileageNews(viewModel, attention.mileageKmpl), open)
+            }
+        }
+        attention.learning?.takeIf { result != null }?.let { item { LearningLine(it) { onNavigate("learning") } } }
+        if (attention.scanCount >= 2) item { ComingUpCard(attention.comingUp, open) }
         item { CostLine(viewModel, owner, onNavigate) }
-        attention.changes?.takeIf { it.changes.isEmpty() || attention.changesSeen }?.let { c ->
+        if (showAttention && attention.scanCount >= 2) attention.changes?.takeIf { !unseenChanges }?.let { c ->
             item { SinceLastScanLine(c) { onNavigate("sinceLastScan") } }
         }
         item {
@@ -192,6 +213,29 @@ fun GarageScreen(
         }
     }
 }
+
+private fun saveLastService(viewModel: GetAutoSureViewModel, date: LocalDate, km: Int?, work: String) {
+    viewModel.updateOwnerData { it.copy(services = it.services + ServiceEntry(System.currentTimeMillis(), date.toString(), km, work, null)) }
+}
+
+/**
+ * The real mileage is news for a week after it first appears for this car; after that it lives in
+ * the Fuel tile, and only comes back to the home as a "costing you more" line if it drops.
+ */
+@Composable
+private fun rememberMileageNews(viewModel: GetAutoSureViewModel, kmpl: Double?): Boolean {
+    val context = LocalContext.current
+    val garage by viewModel.garage.collectAsState()
+    if (kmpl == null) return false
+    val prefs = context.getSharedPreferences("garage_news", android.content.Context.MODE_PRIVATE)
+    val key = "mileage_${garage.active?.id}"
+    val first = remember(key) {
+        prefs.getLong(key, 0L).takeIf { it > 0 } ?: System.currentTimeMillis().also { prefs.edit().putLong(key, it).apply() }
+    }
+    return System.currentTimeMillis() - first < MILEAGE_NEWS_MS
+}
+
+private const val MILEAGE_NEWS_MS = 7 * 86_400_000L
 
 /** A tile's one-line finding; [watch] colours it as something to keep an eye on. */
 private class TileLine(val text: String, val watch: Boolean = false)

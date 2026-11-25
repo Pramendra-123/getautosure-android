@@ -196,7 +196,7 @@ fun NothingChangedLine(c: ScanComparison) {
         Column {
             Text("Nothing changed since ${dayText(c.previousMillis)}", style = OwnerText.RowSub.copy(color = GetAutoSureColors.TextPrimary, fontWeight = FontWeight.SemiBold))
             c.same.filter { !it.startsWith("Battery") }.takeIf { it.isNotEmpty() }?.let {
-                Text(it.joinToString(", ") { s -> s.replaceFirstChar { ch -> ch.lowercase() } }.replaceFirstChar { ch -> ch.uppercase() }, style = OwnerText.RowSub.copy(fontSize = 13.sp))
+                Text(it.joinToString(", ") { s -> lowerFirst(s) }.replaceFirstChar { ch -> ch.uppercase() }, style = OwnerText.RowSub.copy(fontSize = 13.sp))
             }
         }
     }

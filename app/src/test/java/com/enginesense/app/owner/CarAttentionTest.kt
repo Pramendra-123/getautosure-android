@@ -24,7 +24,8 @@ class CarAttentionTest {
                 renewals = listOf(RenewalItem(RenewalKind.INSURANCE, today.plusDays(10), "", ValidityStatus.EXPIRES_SOON, 10, false))
             )
         )
-        assertEquals(listOf("2 fault codes stored", "1 pending fault code", "Service due in ~900 km", "Insurance renews 2 Dec"), items.map { it.title })
+        assertEquals(listOf("2 faults found in the engine", "1 fault caught early", "Service due in about 900 km", "Insurance expires 2 Dec"), items.map { it.title })
+        assertEquals("See what to do", items[0].action)
         assertTrue(items[0].now)
         assertFalse(items[2].now)
     }
@@ -47,8 +48,9 @@ class CarAttentionTest {
             )
         )
         assertEquals("PUC has expired", items.first().title)
-        val drop = items.first { it.title.startsWith("Mileage") }
-        assertEquals("More idling than usual · ≈₹1,200 a month", drop.detail)
+        val drop = items.first { it.title.startsWith("Costing") }
+        assertEquals("Costing you ≈₹1,200 more a month", drop.title)
+        assertEquals("Mileage down 14% for 2 weeks. Likely: more idling than usual.", drop.detail)
         assertTrue(drop.now)
     }
 
@@ -58,6 +60,7 @@ class CarAttentionTest {
         assertEquals(2, day1.doneCount)
         assertEquals(6, day1.steps.size)
         assertNull(CarAttention.learning(3, 5, 20, 1, today, today))
+        assertEquals("Leave the scanner plugged in. After 3 more drives you'll see your real mileage.", day1.nextNudge)
         assertNull("gone after two months even if a step can't finish", CarAttention.learning(1, 0, 0, 0, today.minusDays(61), today))
     }
 
