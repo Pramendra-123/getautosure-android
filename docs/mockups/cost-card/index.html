@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cost card + one-field fuel · mockup · GetAutoSure</title>
+<style>
+  :root{--bg:#F5F4F2;--surface:#FFFFFF;--raised:#EDEBE7;--border:#E3E8EE;--text:#111;--muted:#5B6675;--accent:#C2410C;--bright:#FF8A1F;--soft:#FFF1E6;--ink:#111;--onInkMuted:#BDBDBD;--good:#0B7A63;--watch:#A15C07;--bad:#B42318;--ai:#6D4AD9}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#E9E6E1;color:var(--text)}
+  header{max-width:1400px;margin:0 auto;padding:28px 24px 8px}
+  header h1{margin:0 0 6px;font-size:24px}
+  header p{margin:0;color:var(--muted);max-width:980px;line-height:1.5}
+  .row{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;padding:24px}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .cap{font-size:13px;color:var(--muted);max-width:310px;text-align:center;line-height:1.45}
+  .cap b{color:var(--text)}
+  .phone{width:320px;height:680px;background:var(--bg);border-radius:34px;border:10px solid #1b1b1b;overflow:hidden;display:flex;flex-direction:column}
+  .status{height:26px;display:flex;justify-content:space-between;align-items:center;padding:0 18px;font-size:11px;font-weight:600}
+  .bar{display:flex;align-items:center;gap:10px;padding:8px 16px 10px}
+  .bar h2{margin:0;font-size:19px}
+  .brand{font-weight:800;font-size:18px}.brand span{color:var(--bright)}
+  .scroll{flex:1;overflow:auto;padding:0 14px 16px}
+  .car{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:12px;display:flex;justify-content:space-between;align-items:center}
+  .car b{font-size:15px}.car small{display:block;color:var(--muted);font-size:11.5px}
+  .score{width:54px;height:54px;border-radius:50%;border:5px solid var(--good);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px}
+  .ink{background:var(--ink);color:#fff;border-radius:18px;padding:14px;margin-top:10px}
+  .ink .lbl{color:var(--bright);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700}
+  .ink h3{margin:6px 0 4px;font-size:19px;line-height:1.25}
+  .ink h3 em{font-style:normal;color:var(--bright)}
+  .ink p{margin:0;color:var(--onInkMuted);font-size:12.5px;line-height:1.45}
+  .why{margin:10px 0 0;padding:0;list-style:none}
+  .why li{font-size:12.5px;padding:5px 0;border-top:1px solid #2B2B2B;display:flex;gap:8px}
+  .why li:before{content:"•";color:var(--bright)}
+  .act{display:flex;gap:8px;margin-top:12px}
+  .pill{flex:1;text-align:center;font-size:12.5px;font-weight:700;border-radius:999px;padding:9px 6px}
+  .pill.o{background:var(--bright);color:#111}
+  .pill.g{background:#2B2B2B;color:#fff}
+  .sec{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 4px 8px}
+  .mini{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:11px 12px;margin-bottom:8px;font-size:12.5px;line-height:1.4}
+  .mini b{display:block;font-size:13.5px;margin-bottom:2px}
+  .mini .tag{display:inline-block;font-size:10.5px;font-weight:700;border-radius:999px;padding:2px 8px;margin-bottom:6px}
+  .tag.money{background:var(--soft);color:var(--accent)}
+  .tag.fault{background:#FDECEA;color:var(--bad)}
+  .tag.none{background:#E6F4F0;color:var(--good)}
+  .money-row{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-top:1px solid var(--border);font-size:13px}
+  .money-row:first-of-type{border-top:0}
+  .money-row small{display:block;color:var(--muted);font-size:11px;margin-top:2px;max-width:200px;line-height:1.35}
+  .money-row b{font-size:15px;white-space:nowrap}
+  .money-row b.o{color:var(--accent)}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:6px 13px;margin-bottom:8px}
+  .tip{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 12px;margin-bottom:8px;font-size:12.5px;line-height:1.45}
+  .tip b{display:block;font-size:13px;margin-bottom:2px}
+  .tip span{color:var(--muted)}
+  .ai{background:#F1ECFF;border-radius:14px;padding:11px 12px;font-size:12.5px;line-height:1.45}
+  .ai b{color:var(--ai)}
+  .field{background:var(--surface);border:2px solid var(--accent);border-radius:14px;padding:10px 12px;margin-bottom:8px}
+  .field small{display:block;color:var(--muted);font-size:11px;margin-bottom:2px}
+  .field .v{font-size:24px;font-weight:800}
+  .auto{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:8px;font-size:12.5px}
+  .auto small{display:block;color:var(--muted);font-size:11px;margin-top:2px;line-height:1.35}
+  .auto .tagA{font-size:10.5px;color:var(--good);font-weight:700;white-space:nowrap;margin-left:8px}
+  .edit{color:var(--accent);font-size:11.5px;font-weight:600;white-space:nowrap;margin-left:8px}
+  .btn{display:block;text-align:center;background:var(--accent);color:#fff;font-weight:700;border-radius:999px;padding:12px;margin-top:12px;font-size:14px}
+  .note{font-size:11.5px;color:var(--muted);line-height:1.45;padding:4px 4px 0}
+  .nav{height:58px;background:var(--surface);border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;font-size:10.5px;color:var(--muted)}
+  .nav .on{color:var(--accent);font-weight:700}
+  .rules{max-width:1180px;margin:0 auto 40px;background:#fff;border-radius:16px;padding:18px 22px;font-size:13.5px;line-height:1.6}
+  .rules h3{margin:0 0 6px;font-size:15px}
+  .rules ul{margin:0;padding-left:18px}
+</style>
+</head>
+<body>
+<header>
+  <h1>"Costing you more" card + one-field fuel · mockup for approval</h1>
+  <p>No trip list. One card on the Garage home screen appears only when the car starts costing more: what it costs in ₹ a month, why, and what to do. Tap it for where the fuel money goes. Adding fuel needs only the amount. Every number shown already exists in the app's drive data.</p>
+</header>
+
+<div class="row">
+
+  <!-- 1. Home with the card -->
+  <div class="col">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●● 5G ▮</span></div>
+      <div class="bar"><div class="brand">GetAuto<span>Sure</span></div></div>
+      <div class="scroll">
+        <div class="car"><div><b>Tata Nexon</b><small>Petrol · KA 05 MX 4321</small></div><div class="score">82</div></div>
+
+        <div class="ink">
+          <div class="lbl">Costing you more</div>
+          <h3>Your car is costing <em>about ₹900 more</em> a month on fuel</h3>
+          <p>Mileage down 12% since 10 Nov: 13.0 km/l now, 14.8 before.</p>
+          <ul class="why">
+            <li>The engine takes longer to warm up</li>
+            <li>The fuel mix is rising</li>
+          </ul>
+          <p style="margin-top:8px">Most likely: worn spark plugs or a dirty air filter (₹1,000–₹4,000).</p>
+          <div class="act"><span class="pill o">Ask AI Mechanic</span><span class="pill g">Where it goes</span></div>
+        </div>
+
+        <div class="sec">Other moments, same spot</div>
+        <div class="mini"><span class="tag money">Today's drive</span><b>22 min idling, about ₹30 of fuel</b>That's 1 in 3 minutes of the drive. Switch off at long signals.</div>
+        <div class="mini"><span class="tag fault">This morning</span><b>A fault appeared during your drive</b>P0300 engine misfire at 46 km/h. Drive gently; see what to do →</div>
+        <div class="mini"><span class="tag none">Nothing new</span><b>No card at all</b>When nothing changed, the Garage screen stays as it is today.</div>
+      </div>
+      <div class="nav"><span class="on">Garage</span><span>Wallet</span><span>Reports</span><span>Profile</span></div>
+    </div>
+    <div class="cap"><b>1. Garage (home).</b> The card sits under the car and only appears when something changed. The ₹ figure, the reasons and the drop come from the existing mileage-drop check. Below: the other two moments that can take the same spot (illustration only; one shows at a time).</div>
+  </div>
+
+  <!-- 2. Where your fuel money goes -->
+  <div class="col">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●● 5G ▮</span></div>
+      <div class="bar"><span>←</span><h2>Fuel this month</h2></div>
+      <div class="scroll">
+        <div class="ink" style="margin-top:0">
+          <div class="lbl">November so far</div>
+          <h3><em>₹4,180</em> on fuel · 612 km</h3>
+          <p>About ₹6.80 per km. Usual for your car: ₹6.00.</p>
+        </div>
+
+        <div class="sec">What you can change</div>
+        <div class="card">
+          <div class="money-row"><div>Idling<small>3 h 10 min with the engine on and the car still</small></div><b class="o">≈ ₹260</b></div>
+          <div class="money-row"><div>Mileage drop<small>Engine needing more fuel than your usual. Likely spark plugs.</small></div><b class="o">≈ ₹900/mo</b></div>
+        </div>
+
+        <div class="sec">Your driving, this month</div>
+        <div class="tip"><b>14 hard accelerations per 100 km</b><span>Usual for you: 6. Gentler starts from signals use less fuel.</span></div>
+        <div class="tip"><b>31% of drives under 5 km</b><span>The engine is cold for most of them, which is when it uses the most fuel.</span></div>
+        <div class="tip"><b>Time above 100 km/h: 4%</b><span>Fine. Mileage falls quickly above 90–100 km/h.</span></div>
+
+        <div class="ai"><b>AI Mechanic:</b> Fix the misfire first; that's the ₹900. Idling is the next biggest, mostly on your evening drive.</div>
+      </div>
+      <div class="nav"><span class="on">Garage</span><span>Wallet</span><span>Reports</span><span>Profile</span></div>
+    </div>
+    <div class="cap"><b>2. Where the money goes.</b> ₹ only where the app can measure it honestly (idling, mileage drop). Hard acceleration, short trips and high speed show as this owner's own numbers against their usual, without a made-up ₹ figure.</div>
+  </div>
+
+  <!-- 3. One-field Add fuel -->
+  <div class="col">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●● 5G ▮</span></div>
+      <div class="bar"><span>←</span><h2>Add fuel</h2></div>
+      <div class="scroll">
+        <div class="field"><small>Amount paid</small><div class="v">₹ 2,000</div></div>
+
+        <div class="sec" style="margin-top:6px">Worked out for you</div>
+        <div class="auto"><div>Petrol · ₹102.90 / L<small>Karnataka price, from your KA registration</small></div><span class="edit">Edit</span></div>
+        <div class="auto"><div>Litres · 19.4 L<small>₹2,000 ÷ ₹102.90</small></div><span class="tagA">AUTO</span></div>
+        <div class="auto"><div>Odometer · 42,318 km<small>From your drives since the last reading</small></div><span class="edit">Edit</span></div>
+        <div class="auto"><div>Full tank · Yes<small>Fuel gauge rose to 98% after you stopped</small></div><span class="tagA">AUTO</span></div>
+        <div class="auto"><div>Date · Today<small></small></div><span class="edit">Edit</span></div>
+
+        <div class="btn">Save</div>
+        <div class="note" style="margin-top:10px">Paid by UPI? Fuel payments in your Wallet are added here on their own, so most fill-ups need no typing at all.</div>
+        <div class="note">Typed the litres from the receipt? Tap Litres to enter it; the price for your state updates from it.</div>
+      </div>
+      <div class="nav"><span class="on">Garage</span><span>Wallet</span><span>Reports</span><span>Profile</span></div>
+    </div>
+    <div class="cap"><b>3. Add fuel, one field.</b> Today: amount, litres, odometer and a "full tank" tick. Now: only the amount. Price by registration state, litres from the price, odometer from drives, full tank from the fuel gauge. Every one can still be edited.</div>
+  </div>
+
+</div>
+
+<div class="rules">
+  <h3>Rules behind the card</h3>
+  <ul>
+    <li><b>Shows only when something changed:</b> mileage down 8%+ against the car's own usual, a long-idling drive, or a fault that appeared mid-drive. Otherwise no card.</li>
+    <li><b>One card at a time,</b> the costliest first. Dismissed cards don't come back until something new happens.</li>
+    <li><b>₹ only where measured:</b> the mileage-drop cost and idling (fuel rate from the car, or a standard idle rate when the car doesn't report it). No invented ₹ for driving style.</li>
+    <li><b>Fuel price:</b> by registration state, refreshed monthly; ₹103 petrol, ₹90 diesel, ₹80 CNG as the fallback. Litres typed from a receipt override it.</li>
+    <li><b>Needs the scanner left plugged in</b> with auto-record on. Without drive data, the card simply doesn't appear.</li>
+  </ul>
+</div>
+</body>
+</html>

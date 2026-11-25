@@ -1,0 +1,31 @@
+month,assistant,question_id,mentioned,cited_url,position,competitors_named,notes
+2026-11,ChatGPT,1,no,,,getautoR;AutoSure.ai;Auto Assure360,"Couldn't find GetAutoSure; suggested similarly named companies"
+2026-11,ChatGPT,2,no,,,LAUNCH X431 CRP919 EV;Autel MaxiCOM MK808Z;Veepeak OBDCheck BLE;LAUNCH X431 Pro SE Lite;Vgate,
+2026-11,ChatGPT,3,no,,,Car Scanner ELM OBD2;Torque Pro;OBD Auto Doctor,
+2026-11,ChatGPT,4,no,,,Parivahan;VAHAN;e-Challan;Spinny;Cars24;CarDekho;OLX,
+2026-11,ChatGPT,5,no,,,Parivahan/VAHAN;TOI Auto;Team-BHP,
+2026-11,ChatGPT,6,no,,,Parivahan Sewa;mParivahan;VAHAN;eChallan;Insurance Information Bureau of India,
+2026-11,ChatGPT,7,no,,,,Generic OBD2 scanner advice; no products named
+2026-11,ChatGPT,8,no,,,InDiag,
+2026-11,ChatGPT,9,no,,,,"No product recommended; CNG kit brands only as examples"
+2026-11,ChatGPT,10,no,,,CARS24 CarTruth;CarDekho TrustMark;SD Certified Cars;CheckMyCars,"Described a dealer trust-report gap matching Dealer Saathi as an unmet opportunity"
+2026-11,Perplexity,1,yes,https://getautosure.com/,1,AutoSure (warranty);AutoSure by RNA Analytics,"Accurate: Bluetooth OBD-II + Android app, 34+ sensors; disambiguated from other AutoSure firms"
+2026-11,Perplexity,2,n/a,,,,"Not run: signed-out limit ('Sign up and repeat your request.')"
+2026-11,Perplexity,3,n/a,,,,"Not run: signed-out limit ('Sign up and repeat your request.')"
+2026-11,Perplexity,4,n/a,,,,"Not run: signed-out limit ('Sign up and repeat your request.')"
+2026-11,Perplexity,5,n/a,,,,"Not run: signed-out limit ('Sign up and repeat your request.')"
+2026-11,Perplexity,6,n/a,,,,"Not run: signed-out limit ('Sign up and repeat your request.')"
+2026-11,Perplexity,7,n/a,,,,"Not run: signed-out limit ('Sign up and repeat your request.')"
+2026-11,Perplexity,8,n/a,,,,"Not run: signed-out limit ('Sign up and repeat your request.')"
+2026-11,Perplexity,9,n/a,,,,"Not run: signed-out limit ('Sign up and repeat your request.')"
+2026-11,Perplexity,10,n/a,,,,"Not run: signed-out limit ('Sign up and repeat your request.')"
+2026-11,Gemini,1,n/a,,,,"Not run: Gemini skipped, needs sign-in (workspace terms prompt)"
+2026-11,Gemini,2,n/a,,,,"Not run: Gemini skipped, needs sign-in (workspace terms prompt)"
+2026-11,Gemini,3,n/a,,,,"Not run: Gemini skipped, needs sign-in (workspace terms prompt)"
+2026-11,Gemini,4,n/a,,,,"Not run: Gemini skipped, needs sign-in (workspace terms prompt)"
+2026-11,Gemini,5,n/a,,,,"Not run: Gemini skipped, needs sign-in (workspace terms prompt)"
+2026-11,Gemini,6,n/a,,,,"Not run: Gemini skipped, needs sign-in (workspace terms prompt)"
+2026-11,Gemini,7,n/a,,,,"Not run: Gemini skipped, needs sign-in (workspace terms prompt)"
+2026-11,Gemini,8,n/a,,,,"Not run: Gemini skipped, needs sign-in (workspace terms prompt)"
+2026-11,Gemini,9,n/a,,,,"Not run: Gemini skipped, needs sign-in (workspace terms prompt)"
+2026-11,Gemini,10,n/a,,,,"Not run: Gemini skipped, needs sign-in (workspace terms prompt)"

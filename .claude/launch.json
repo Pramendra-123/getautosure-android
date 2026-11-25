@@ -6,6 +6,18 @@
       "runtimeExecutable": "cmd",
       "runtimeArgs": ["/c", "cd /d C:\\Users\\hp\\Desktop\\Code\\report-app && set REPORTS_FUNCTION_URL=http://localhost:4010 && npx next dev -p 3005"],
       "port": 3005
+    },
+    {
+      "name": "docs-mockups",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "http-server@14.1.1", "C:/Users/hp/Desktop/Code/obd2-app/docs/mockups", "-p", "3010", "-c-1"],
+      "port": 3010
+    },
+    {
+      "name": "report-site-blog-preview",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["C:/Users/hp/Desktop/Code/report-app/node_modules/next/dist/bin/next", "dev", "C:/Users/hp/Desktop/Code/report-app", "-p", "3006"],
+      "port": 3006
     }
   ]
 }

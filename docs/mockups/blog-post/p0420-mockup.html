@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup: P0420 blog post (new layout)</title>
+<style>
+  :root { --orange:#FF6B2C; --ink:#12151A; --grey:#6B7280; --line:#E6E8EB; --soft:#F8F9FB; --cream:#FFF8EC; --peach:#FFF1EA; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; color:var(--ink); background:#fff; line-height:1.6; }
+  .note { font: 600 11px/1.3 Inter, sans-serif; letter-spacing:.04em; text-transform:uppercase; color:#7C3AED; background:#F3EEFF; border:1px dashed #C4B5FD; border-radius:6px; padding:4px 8px; display:inline-block; margin:18px 0 6px; }
+  .banner { background:#7C3AED; color:#fff; text-align:center; font-size:13px; padding:8px 12px; }
+  header.site { display:flex; justify-content:space-between; align-items:center; padding:14px 20px; border-bottom:1px solid var(--line); }
+  header.site b { font-size:18px; } header.site b span { color:var(--orange); }
+  header.site a { font-size:14px; color:var(--ink); text-decoration:none; background:var(--orange); color:#fff; padding:8px 14px; border-radius:999px; font-weight:600; }
+  main { max-width:720px; margin:0 auto; padding:8px 20px 60px; }
+  .crumb { font-size:13px; color:var(--grey); margin-top:12px; } .crumb a { color:var(--grey); }
+  .tags { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 4px; }
+  .tag { font-size:12px; font-weight:600; padding:4px 10px; border-radius:999px; }
+  .tag.watch { color:#B45309; background:#FFFBEB; } .tag.cat { color:var(--ink); background:var(--soft); border:1px solid var(--line); }
+  h1 { font-size:30px; line-height:1.2; margin:8px 0 14px; letter-spacing:-.01em; }
+  .byline { display:flex; gap:12px; align-items:center; padding:12px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+  .avatar { width:44px; height:44px; border-radius:50%; background:var(--peach); color:var(--orange); display:grid; place-items:center; font-weight:700; flex:none; }
+  .byline .who { font-size:14px; } .byline .who b { display:block; } .byline .who span { color:var(--grey); font-size:13px; }
+  .quick { background:var(--cream); border-left:4px solid var(--orange); border-radius:10px; padding:16px 18px; margin:20px 0; }
+  .quick small { font-weight:700; color:var(--orange); text-transform:uppercase; letter-spacing:.05em; font-size:12px; }
+  .quick p { margin:6px 0 0; font-size:17px; }
+  h2 { font-size:22px; margin:34px 0 10px; }
+  table { width:100%; border-collapse:collapse; font-size:15px; margin:10px 0 6px; }
+  th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { background:var(--soft); font-size:13px; color:var(--grey); font-weight:600; }
+  td.r { white-space:nowrap; font-weight:600; }
+  .fine { font-size:13px; color:var(--grey); }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .box { border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .box h3 { margin:0 0 6px; font-size:16px; } .box ul { margin:0; padding-left:18px; font-size:15px; }
+  .fleet { background:var(--soft); border-radius:12px; padding:16px 18px; display:flex; gap:12px; margin:24px 0; }
+  .fleet .q { font-size:16px; font-style:italic; } .fleet .q i { color:#B45309; font-style:normal; }
+  .fleet .by { font-size:13px; color:var(--grey); margin-top:6px; }
+  .helps { border:2px solid var(--orange); border-radius:14px; padding:18px; margin:28px 0; }
+  .helps h2 { margin-top:0; } .helps a { color:var(--orange); font-weight:600; }
+  .limit { font-size:14px; color:var(--grey); border-top:1px dashed var(--line); padding-top:10px; margin-top:12px; }
+  details { border-bottom:1px solid var(--line); padding:12px 0; } summary { font-weight:600; cursor:pointer; }
+  details p { margin:8px 0 0; }
+  .cta { background:var(--ink); color:#fff; border-radius:16px; padding:22px; margin:36px 0 20px; }
+  .cta h3 { margin:0 0 6px; font-size:20px; } .cta p { margin:0 0 14px; color:#D3D7DC; }
+  .cta a { display:inline-block; background:var(--orange); color:#fff; text-decoration:none; font-weight:700; padding:11px 18px; border-radius:999px; }
+  .related { display:grid; gap:10px; } .related a { display:block; border:1px solid var(--line); border-radius:10px; padding:12px 14px; color:var(--ink); text-decoration:none; font-weight:600; }
+  .related a span { display:block; font-weight:400; font-size:13px; color:var(--grey); }
+  .authors { display:grid; gap:12px; margin-top:30px; }
+  .authors .box { display:flex; gap:12px; }
+  @media (max-width:560px){ .two{grid-template-columns:1fr;} h1{font-size:25px;} }
+</style>
+</head>
+<body>
+<div class="banner">MOCKUP for review: new blog post layout. Purple labels explain each part and won't appear on the site.</div>
+<header class="site"><b>Get<span>AutoSure</span></b><a href="#">Get notified</a></header>
+
+<main>
+  <div class="crumb"><a href="#">Blog</a> › <a href="#">Fault codes</a> › P0420</div>
+
+  <span class="note">① Urgency + category tags (as today)</span>
+  <div class="tags"><span class="tag watch">Get it checked soon</span><span class="tag cat">Fault codes</span><span class="tag cat">Emissions</span></div>
+
+  <h1>P0420 Code: What It Means, Repair Cost in India, and Is It Safe to Drive?</h1>
+
+  <span class="note">② NEW: real author + "reviewed by" + real updated date</span>
+  <div class="byline">
+    <div class="avatar">AB</div>
+    <div class="who"><b>Arun Bharath, Co-founder, CabX</b><span>Sells hundreds of used cars a month across India · ex-Cars24, Mahindra · Updated 24 Nov 2026 · 6 min read</span></div>
+  </div>
+
+  <span class="note">③ Quick answer: the 2–3 lines ChatGPT / Google AI quote</span>
+  <div class="quick">
+    <small>Quick answer</small>
+    <p><b>P0420 means the catalytic converter isn't cleaning the exhaust as well as it should.</b> It's usually safe to drive for a few weeks, but get it checked: often the cause is a ₹2,500–₹8,000 oxygen sensor or an exhaust leak, not the ₹25,000+ converter itself.</p>
+  </div>
+
+  <h2>What does P0420 mean?</h2>
+  <p>Your car has two oxygen sensors: one before the catalytic converter and one after it. The engine computer compares them. When the rear sensor starts looking almost the same as the front one, the converter isn't doing its job, and the computer stores <b>P0420 – Catalyst efficiency below threshold (Bank 1)</b> and turns on the check-engine light.</p>
+
+  <h2>What causes it?</h2>
+  <p>In rough order of how often we see it on Indian roads:</p>
+  <ol>
+    <li><b>Faulty rear oxygen sensor</b>: it misreads, and the converter is actually fine.</li>
+    <li><b>Exhaust leak</b> near the sensors, common after a rough speed-breaker hit.</li>
+    <li><b>Engine misfires or rich running</b> that overheat and damage the converter (fix these first, or a new converter will fail too).</li>
+    <li><b>Worn-out catalytic converter</b>: usual after 1–1.5 lakh km, sooner on CNG-converted cars.</li>
+  </ol>
+
+  <span class="note">④ NEW: India cost table in ₹ (tentative, clearly labelled)</span>
+  <h2>How much does it cost to fix P0420 in India?</h2>
+  <table>
+    <tr><th>Repair</th><th>Typical cost</th><th>When it's the answer</th></tr>
+    <tr><td>Exhaust leak weld / gasket</td><td class="r">₹500 – ₹2,000</td><td>Ticking or louder exhaust</td></tr>
+    <tr><td>Rear oxygen sensor</td><td class="r">₹2,500 – ₹8,000</td><td>Sensor reading looks erratic in live data</td></tr>
+    <tr><td>Catalytic converter, hatchback / sedan</td><td class="r">₹15,000 – ₹40,000</td><td>Both sensors read the same, no leak</td></tr>
+    <tr><td>Catalytic converter, SUV / diesel</td><td class="r">₹35,000 – ₹1,20,000</td><td>Same, larger engine</td></tr>
+  </table>
+  <p class="fine">Typical ranges for parts + labour, not quotes. Prices vary by city, brand, and genuine vs aftermarket parts. Always confirm with a workshop.</p>
+
+  <h2>Is it safe to drive with P0420?</h2>
+  <p>Usually yes, for a short while. The car won't break down from P0420 alone. But <b>don't ignore it</b>: you'll likely fail the PUC test, and if misfires are the cause, they'll keep damaging the new converter. If the check-engine light is <b>flashing</b>, that's a misfire: stop and get it checked now.</p>
+
+  <span class="note">⑤ Do-it-yourself vs needs a scan</span>
+  <div class="two">
+    <div class="box"><h3>You can check yourself</h3><ul><li>Rattle under the car at idle</li><li>Louder or ticking exhaust</li><li>Rotten-egg smell</li><li>Has fuel economy dropped?</li></ul></div>
+    <div class="box"><h3>Needs an OBD scan</h3><ul><li>Is the code stored or pending?</li><li>Front vs rear O2 sensor readings</li><li>Any misfire codes with it?</li><li>Was it cleared recently?</li></ul></div>
+  </div>
+
+  <span class="note">⑥ "From the used-car lot": Arun's own words, never written for him</span>
+  <div class="fleet">
+    <div class="avatar">AB</div>
+    <div><div style="font-size:12px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">From the used-car lot</div><div class="q">"<i>[Arun's real line goes here, e.g. how often P0420 shows up on the used cabs CabX buys, and whether it changes the price they offer]</i>"</div>
+    <div class="by">Arun Bharath, Co-founder, CabX</div></div>
+  </div>
+
+  <span class="note">⑦ How GetAutoSure helps: mid-post link, honest, real features only</span>
+  <div class="helps">
+    <h2>How GetAutoSure helps with P0420</h2>
+    <p>Plug the GetAutoSure scanner into the OBD port and the app shows whether P0420 is <b>stored or pending</b>, the <b>freeze frame</b> (what the engine was doing when the fault was saved), and any <b>misfire codes</b> alongside it. Then ask the <b>AI Mechanic</b>, which already knows your car, what to check first, with the typical repair cost.</p>
+    <p>Buying a used car? Used Car Check also flags if codes were <b>cleared just before the sale</b>. <a href="#">See how the OBD scanner works →</a></p>
+    <p class="limit">What it can't do: OBD can't measure the converter directly or see a physical crack; a workshop confirms the final diagnosis.</p>
+  </div>
+
+  <span class="note">⑧ FAQ: tagged so Google and AI tools read it as Q&amp;A</span>
+  <h2>Frequently asked questions</h2>
+  <details open><summary>Will clearing the P0420 code fix it?</summary><p>No. It hides the light until the computer re-tests, usually within a few drives. The cause is still there.</p></details>
+  <details><summary>Does P0420 fail the PUC test?</summary><p>Often yes, because a weak converter raises CO and HC readings.</p></details>
+  <details><summary>Is P0420 common on CNG cars?</summary><p>Yes. CNG burns hotter, which can age the converter faster, especially on retro-fitted kits.</p></details>
+  <details><summary>Can I just remove the catalytic converter?</summary><p>No. It's illegal for road use in India, fails PUC, and the check-engine light will stay on.</p></details>
+
+  <span class="note">⑨ End card matched to this post (scanner not on Amazon yet → WhatsApp notify)</span>
+  <div class="cta">
+    <h3>See your car's codes yourself</h3>
+    <p>GetAutoSure reads P0420 and 731 maker-specific codes, then the AI Mechanic explains them in plain words. The app is free.</p>
+    <a href="#">Get notified on WhatsApp</a>
+  </div>
+
+  <span class="note">⑩ Related posts: keeps readers moving toward a purchase</span>
+  <div class="related">
+    <a href="#">P0300: Engine misfire<span>The most common reason a new converter fails again</span></a>
+    <a href="#">How to know if a warning light was reset before a used-car sale<span>Used Car Check</span></a>
+    <a href="#">Check-engine light on a CNG car<span>India-specific</span></a>
+  </div>
+
+  <span class="note">⑪ About the authors (with LinkedIn) at the bottom</span>
+  <div class="authors">
+    <div class="box"><div class="avatar">AB</div><div><b>Arun Bharath</b> · Co-founder, CabX<br><span class="fine">Co-founder of CabX, one of India's biggest sellers of used yellow-board cabs, selling hundreds of cars a month through outlets across India. Earlier worked at Cars24 and Mahindra. · <a href="https://in.linkedin.com/in/arun-bharth-038a30150" style="color:var(--orange)">LinkedIn</a></span></div></div>
+    <div class="box"><div class="avatar">GA</div><div><b>[Your name]</b> · Founder, GetAutoSure<br><span class="fine">[2-line bio] · LinkedIn</span></div></div>
+  </div>
+</main>
+</body>
+</html>

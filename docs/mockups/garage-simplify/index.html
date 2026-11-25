@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Garage home: simpler attention + learning · mockup · GetAutoSure</title>
+<style>
+  :root{--bg:#F5F4F2;--surface:#FFFFFF;--border:#E3E8EE;--text:#111;--muted:#5B6675;--accent:#C2410C;--bright:#FF8A1F;--soft:#FFF1E6;--ink:#111;--onInkMuted:#BDBDBD;--good:#0B7A63;--watch:#A15C07;--bad:#B42318}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#E9E6E1;color:var(--text)}
+  header{max-width:1400px;margin:0 auto;padding:28px 24px 8px}
+  header h1{margin:0 0 6px;font-size:24px}
+  header p{margin:0;color:var(--muted);max-width:980px;line-height:1.5}
+  .row{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;padding:24px}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .tagline{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+  .tagline.before{color:var(--muted)}.tagline.after{color:var(--accent)}
+  .cap{font-size:13px;color:var(--muted);max-width:320px;text-align:center;line-height:1.45}
+  .cap b{color:var(--text)}
+  .phone{width:320px;height:690px;background:var(--bg);border-radius:34px;border:10px solid #1b1b1b;overflow:hidden;display:flex;flex-direction:column}
+  .status{height:26px;display:flex;justify-content:space-between;align-items:center;padding:0 18px;font-size:11px;font-weight:600}
+  .top{display:flex;justify-content:space-between;align-items:center;padding:6px 14px 8px}
+  .brand{font-weight:800;font-size:18px}.brand span{color:var(--accent)}
+  .carpick{font-size:12px;font-weight:700;background:#fff;border:1px solid var(--border);border-radius:999px;padding:5px 10px}
+  .scroll{flex:1;overflow:auto;padding:0 12px 14px}
+  .hero{background:var(--ink);color:#fff;border-radius:18px;padding:12px}
+  .hero .r{display:flex;gap:12px;align-items:center}
+  .ring{width:52px;height:52px;border-radius:50%;border:6px solid var(--bright);display:flex;align-items:center;justify-content:center;font-weight:800}
+  .hero small{color:var(--onInkMuted);font-size:11px}
+  .hero b{display:block;font-size:15px}
+  .hero a{color:var(--bright);font-size:11.5px;font-weight:700}
+  .scan{background:var(--bright);color:#111;font-weight:800;text-align:center;border-radius:999px;padding:9px;margin-top:10px;font-size:13.5px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px;margin-top:10px}
+  .card.urgent{border:1.5px solid var(--bright)}
+  .card h3{margin:0 0 6px;font-size:14.5px}
+  .grp{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin:8px 0 2px}
+  .line{display:flex;gap:8px;padding:5px 0;font-size:12.5px;line-height:1.35}
+  .dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:none}
+  .dot.w{background:var(--watch)}.dot.g{background:#7A828E}.dot.b{background:var(--bad)}
+  .line small{display:block;color:var(--muted);font-size:11px}
+  .learn{background:var(--soft);border-radius:12px;padding:10px;margin-top:8px;font-size:11.5px;line-height:1.5}
+  .learn b{font-size:12.5px}
+  .learn .s{color:var(--muted)}
+  .learn .d{color:var(--good)}
+  .chips{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .chip{background:#fff;border:1px solid var(--border);border-radius:14px;padding:9px 10px;font-size:12px}
+  .chip b{display:block;font-size:12.5px}.chip span{color:var(--watch);font-size:11px}
+  .money{background:#fff;border:1px solid var(--border);border-radius:14px;padding:10px 12px;margin-top:10px;font-size:12.5px}
+  .money b{font-size:14px}
+  .nav{height:54px;background:#fff;border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;font-size:10.5px;color:var(--muted)}
+  .nav .on{color:var(--accent);font-weight:700}
+  /* AFTER styles */
+  .item{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--border);align-items:flex-start}
+  .item:first-of-type{border-top:0}
+  .ic{width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;flex:none}
+  .ic.w{background:#FFF4E0}.ic.g{background:#EEF0F3}.ic.b{background:#FDECEA}
+  .item .t{flex:1;font-size:13px;line-height:1.35}
+  .item .t b{display:block;font-size:13px}
+  .item .t small{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}
+  .item .t .do{display:inline-block;margin-top:4px;color:var(--accent);font-weight:700;font-size:11.5px}
+  .item .rs{font-weight:800;font-size:13px;color:var(--accent);white-space:nowrap}
+  .when{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:10px 0 0}
+  .progress{background:#fff;border:1px solid var(--border);border-radius:14px;padding:10px 12px;margin-top:10px;font-size:12px}
+  .progress .top2{display:flex;justify-content:space-between;align-items:center}
+  .progress b{font-size:12.5px}
+  .bar{height:6px;background:#EDEBE7;border-radius:3px;margin:7px 0 6px;overflow:hidden}
+  .bar i{display:block;height:100%;width:33%;background:var(--bright)}
+  .progress small{color:var(--muted);font-size:11px;line-height:1.4;display:block}
+  .changes{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:1100px;margin:0 auto 40px;padding:0 24px}
+  .changes div{background:#fff;border-radius:16px;padding:16px 18px;font-size:13.5px;line-height:1.55}
+  .changes h3{margin:0 0 6px;font-size:15px}
+  .changes ul{margin:0;padding-left:18px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Garage home: before and after</h1>
+  <p>No new card. The money is already in "Needs your attention". The fix is to make that card and "Getting to know your car" easy to read: each line says what, why it matters, and what to do, and "Getting to know your car" becomes one short progress line that disappears once it's done.</p>
+</header>
+
+<div class="row">
+
+  <!-- BEFORE -->
+  <div class="col">
+    <div class="tagline before">Before (today)</div>
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>▮</span></div>
+      <div class="top"><div class="brand">GetAuto<span>Sure</span></div><div class="carpick">Harrier ▾</div></div>
+      <div class="scroll">
+        <div class="hero"><div class="r"><div class="ring">78</div><div><small>Your car health</small><b>Watch · 2 things</b><a>See breakdown →</a></div></div><div class="scan">Scan my car</div></div>
+
+        <div class="card urgent">
+          <h3>Needs your attention</h3>
+          <div class="grp">Now</div>
+          <div class="line"><span class="dot w"></span><div>Charging voltage slowly dropping<small>13.6 V → 13.1 V over your last 3 scans</small></div></div>
+          <div class="line"><span class="dot w"></span><div>Mileage down 8% for 2 weeks<small>Fuel mix running lean · ≈ ₹900 a month</small></div></div>
+          <div class="grp">Coming up</div>
+          <div class="line"><span class="dot g"></span><div>PUC renews 30 Nov</div></div>
+          <div class="line"><span class="dot g"></span><div>Service due in ~600 km</div></div>
+          <div class="learn">
+            <b>Getting to know your car · 2 of 6</b><br>
+            <span class="d">✓ First health check</span><br>
+            <span class="d">✓ Baseline saved</span><br>
+            <span class="s">○ Real mileage: after 3 drives with the scanner plugged in</span><br>
+            <span class="s">○ What changed since last scan: at your next scan</span><br>
+            <span class="s">○ Early warnings and trends: after 3 scans or 2 weeks of drives</span><br>
+            <span class="s">○ Fuel quality per tank: after 3 fill-ups</span>
+          </div>
+        </div>
+
+        <div class="chips">
+          <div class="chip"><b>Health insights</b><span>2 to watch of 6</span></div>
+          <div class="chip"><b>Fuel &amp; mileage</b><span>14.8 km/l · ↓ 8%</span></div>
+        </div>
+        <div class="money"><b>This month ₹4,820</b><br><span style="color:var(--good)">₹610 less than last month</span></div>
+      </div>
+      <div class="nav"><span class="on">Garage</span><span>Wallet</span><span>Reports</span><span>Profile</span></div>
+    </div>
+    <div class="cap"><b>Why it's confusing:</b> lines like "Charging voltage slowly dropping" and "Fuel mix running lean" don't say if it's serious or what to do. The ₹900 is hidden in grey small print. And a 6-step technical checklist sits inside the warnings card, so it reads like 6 more problems.</div>
+  </div>
+
+  <!-- AFTER -->
+  <div class="col">
+    <div class="tagline after">After</div>
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>▮</span></div>
+      <div class="top"><div class="brand">GetAuto<span>Sure</span></div><div class="carpick">Harrier ▾</div></div>
+      <div class="scroll">
+        <div class="hero"><div class="r"><div class="ring">78</div><div><small>Your car health</small><b>Watch · 2 things</b><a>See breakdown →</a></div></div><div class="scan">Scan my car</div></div>
+
+        <div class="progress">
+          <div class="top2"><b>Still learning your car · 2 of 6</b><span style="color:var(--accent);font-weight:700;font-size:11.5px">What's next ›</span></div>
+          <div class="bar"><i></i></div>
+          <small>Keep the scanner plugged in. After 3 more drives you'll see your real mileage.</small>
+        </div>
+
+        <div class="card urgent">
+          <h3>Needs your attention</h3>
+          <div class="item">
+            <div class="ic w">⛽</div>
+            <div class="t"><b>Costing you ≈ ₹900 more a month</b><small>Mileage down 8% in 2 weeks. The engine is getting too much air or too little fuel.</small><span class="do">See why and what to do ›</span></div>
+          </div>
+          <div class="item">
+            <div class="ic w">🔋</div>
+            <div class="t"><b>Battery may not be charging fully</b><small>Charging voltage has dropped from 13.6 V to 13.1 V over 3 scans. Not urgent; get it tested at your next service.</small><span class="do">What to check ›</span></div>
+          </div>
+          <div class="when">Coming up</div>
+          <div class="item">
+            <div class="ic g">📄</div>
+            <div class="t"><b>PUC expires 30 Nov</b><small>Renew before then to avoid a fine.</small></div>
+          </div>
+          <div class="item">
+            <div class="ic g">🔧</div>
+            <div class="t"><b>Service due in about 600 km</b></div>
+          </div>
+        </div>
+
+        <div class="chips">
+          <div class="chip"><b>Health insights</b><span>2 to watch of 6</span></div>
+          <div class="chip"><b>Fuel &amp; mileage</b><span>14.8 km/l · ↓ 8%</span></div>
+        </div>
+        <div class="money"><b>This month ₹4,820</b><br><span style="color:var(--good)">₹610 less than last month</span></div>
+      </div>
+      <div class="nav"><span class="on">Garage</span><span>Wallet</span><span>Reports</span><span>Profile</span></div>
+    </div>
+    <div class="cap"><b>What changed:</b> every line leads with what it means for the owner (₹ or risk), then why in plain words, then one action. "Getting to know your car" is one progress line with only the next step, outside the warnings card, and it goes away when done.</div>
+  </div>
+
+  <!-- Learning expanded -->
+  <div class="col">
+    <div class="tagline after">After · tap "What's next"</div>
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>▮</span></div>
+      <div class="top"><div class="brand" style="font-size:16px">← Learning your car</div></div>
+      <div class="scroll">
+        <div class="progress" style="margin-top:0">
+          <b>2 of 6 done</b>
+          <div class="bar"><i></i></div>
+          <small>The app gets smarter about your car the more you drive with the scanner plugged in.</small>
+        </div>
+        <div class="card">
+          <div class="item"><div class="ic" style="background:#E6F4F0">✓</div><div class="t"><b>Health check</b><small>Done. Your first scan is saved.</small></div></div>
+          <div class="item"><div class="ic" style="background:#E6F4F0">✓</div><div class="t"><b>Starting point saved</b><small>Done. Every next scan is compared with it.</small></div></div>
+          <div class="item"><div class="ic" style="background:var(--soft)">3</div><div class="t"><b>Your real mileage</b><small>Drive 3 times with the scanner plugged in. 1 of 3 so far.</small></div></div>
+          <div class="item"><div class="ic g">4</div><div class="t"><b>What changed since last time</b><small>Scan again any day.</small></div></div>
+          <div class="item"><div class="ic g">5</div><div class="t"><b>Early warnings</b><small>After 3 scans or 2 weeks of driving, we spot problems before a warning light.</small></div></div>
+          <div class="item"><div class="ic g">6</div><div class="t"><b>Fuel quality check</b><small>After 3 fill-ups, we can tell if a pump's fuel was poor.</small></div></div>
+        </div>
+      </div>
+      <div class="nav"><span class="on">Garage</span><span>Wallet</span><span>Reports</span><span>Profile</span></div>
+    </div>
+    <div class="cap"><b>The full list, only if they want it.</b> Each step says what the owner gets and what they need to do, in plain words ("Starting point saved", not "Baseline saved").</div>
+  </div>
+
+</div>
+
+<div class="changes">
+  <div>
+    <h3>"Needs your attention"</h3>
+    <ul>
+      <li>Headline = what it means for the owner: ₹ a month, or the risk.</li>
+      <li>Second line = why, in plain words ("too much air or too little fuel", not "fuel mix running lean").</li>
+      <li>One action per line ("See why and what to do").</li>
+      <li>The costliest or most urgent first. "Coming up" stays short.</li>
+    </ul>
+  </div>
+  <div>
+    <h3>"Getting to know your car"</h3>
+    <ul>
+      <li>Moved out of the warnings card, so it isn't read as problems.</li>
+      <li>Renamed "Still learning your car", with a progress bar and only the next step.</li>
+      <li>Full list behind "What's next", in plain words.</li>
+      <li>Disappears once all steps are done (or after 60 days, as today).</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

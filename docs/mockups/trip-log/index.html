@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trip log mockup · GetAutoSure</title>
+<style>
+  :root{--bg:#F5F4F2;--surface:#FFFFFF;--raised:#EDEBE7;--border:#E3E8EE;--text:#111;--muted:#5B6675;--accent:#C2410C;--bright:#FF8A1F;--soft:#FFF1E6;--ink:#111;--inkRaised:#2B2B2B;--onInkMuted:#BDBDBD;--good:#0B7A63;--watch:#A15C07;--bad:#B42318}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#E9E6E1;color:var(--text)}
+  header{max-width:1400px;margin:0 auto;padding:28px 24px 8px}
+  header h1{margin:0 0 6px;font-size:24px}
+  header p{margin:0;color:var(--muted);max-width:900px;line-height:1.5}
+  .row{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;padding:24px}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .cap{font-size:13px;color:var(--muted);max-width:300px;text-align:center;line-height:1.45}
+  .cap b{color:var(--text)}
+  .phone{width:320px;height:680px;background:var(--bg);border-radius:34px;border:10px solid #1b1b1b;overflow:hidden;position:relative;display:flex;flex-direction:column}
+  .status{height:26px;display:flex;justify-content:space-between;align-items:center;padding:0 18px;font-size:11px;font-weight:600}
+  .bar{display:flex;align-items:center;gap:10px;padding:8px 16px 10px}
+  .bar h2{margin:0;font-size:19px}
+  .back{font-size:20px;color:var(--text)}
+  .scroll{flex:1;overflow:auto;padding:0 14px 16px}
+  .ink{background:var(--ink);color:#fff;border-radius:18px;padding:14px}
+  .ink .lbl{color:var(--onInkMuted);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+  .stats div{font-size:10.5px;color:var(--onInkMuted)}
+  .stats b{display:block;color:#fff;font-size:16px}
+  .stats b.o{color:var(--bright)}
+  .sec{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 4px 8px}
+  .card{background:var(--surface);border-radius:16px;padding:12px 13px;margin-bottom:8px;border:1px solid var(--border)}
+  .trip-top{display:flex;justify-content:space-between;align-items:baseline}
+  .trip-top b{font-size:14px}
+  .trip-top span{font-size:11.5px;color:var(--muted)}
+  .trip-nums{display:flex;gap:12px;margin-top:6px;font-size:12px;color:var(--muted)}
+  .trip-nums b{color:var(--text)}
+  .flag{display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:999px}
+  .flag.bad{background:#FDECEA;color:var(--bad)}
+  .flag.watch{background:#FFF4E0;color:var(--watch)}
+  .flag.ok{background:#E6F4F0;color:var(--good)}
+  .chip{display:inline-block;font-size:11px;background:var(--soft);color:var(--accent);padding:3px 8px;border-radius:999px;font-weight:600}
+  .chart{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px;margin-bottom:8px}
+  .chart h4{margin:0 0 6px;font-size:12.5px}
+  .kv{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .kv .card{margin:0}
+  .kv small{display:block;color:var(--muted);font-size:11px}
+  .kv b{font-size:16px}
+  .ai{background:#F1ECFF;border-radius:14px;padding:11px 12px;font-size:12.5px;line-height:1.45;margin-top:8px}
+  .ai b{color:#6D4AD9}
+  .field{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 12px;margin-bottom:8px}
+  .field small{display:block;color:var(--muted);font-size:11px;margin-bottom:2px}
+  .field .v{font-size:20px;font-weight:700}
+  .auto{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:8px;font-size:12.5px}
+  .auto small{display:block;color:var(--muted);font-size:11px;margin-top:2px;line-height:1.35}
+  .auto .tag{font-size:10.5px;color:var(--good);font-weight:700;white-space:nowrap;margin-left:8px}
+  .edit{color:var(--accent);font-size:11.5px;font-weight:600}
+  .btn{display:block;text-align:center;background:var(--accent);color:#fff;font-weight:700;border-radius:999px;padding:12px;margin-top:12px;font-size:14px}
+  .toggle{width:40px;height:24px;border-radius:12px;background:var(--accent);position:relative;flex:none;margin-left:10px}
+  .toggle:after{content:"";position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff}
+  .toggle.off{background:#C9C6C0}
+  .toggle.off:after{right:auto;left:3px}
+  .note{font-size:11.5px;color:var(--muted);line-height:1.45;padding:4px 4px 0}
+  .nav{height:58px;background:var(--surface);border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;font-size:10.5px;color:var(--muted)}
+  .nav .on{color:var(--accent);font-weight:700}
+  svg{display:block}
+</style>
+</head>
+<body>
+<header>
+  <h1>Trip log · mockup for approval</h1>
+  <p>Drives record by themselves when the scanner powers on with the car. Each drive becomes a card with distance, time, mileage, fuel cost in ₹ and anything that went wrong during it. No location permission is needed. Fill-ups need only the amount; the price, litres, odometer and "full tank" are worked out for you.</p>
+</header>
+
+<div class="row">
+
+  <!-- 1. Trips list -->
+  <div class="col">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●● 5G ▮</span></div>
+      <div class="bar"><span class="back">←</span><h2>Drives</h2></div>
+      <div class="scroll">
+        <div class="ink">
+          <div class="lbl">This week · Nexon</div>
+          <div class="stats">
+            <div><b>6</b>drives</div>
+            <div><b>142</b>km</div>
+            <div><b class="o">₹1,040</b>fuel</div>
+            <div><b>14.1</b>km/l</div>
+          </div>
+        </div>
+
+        <div class="sec">Today</div>
+        <div class="card">
+          <div class="trip-top"><b>6:10 – 6:52 pm</b><span>42 min</span></div>
+          <div class="trip-nums"><span><b>21.4</b> km</span><span><b>12.9</b> km/l</span><span><b>₹171</b></span></div>
+          <div class="flag bad">● Check-engine light came on · P0300</div>
+        </div>
+        <div class="card">
+          <div class="trip-top"><b>9:05 – 9:40 am</b><span>35 min</span></div>
+          <div class="trip-nums"><span><b>19.8</b> km</span><span><b>14.6</b> km/l</span><span><b>₹140</b></span></div>
+          <div class="flag ok">✓ Smooth drive, nothing to report</div>
+        </div>
+
+        <div class="sec">Yesterday</div>
+        <div class="card">
+          <div class="trip-top"><b>7:30 – 8:25 pm</b><span>55 min</span></div>
+          <div class="trip-nums"><span><b>18.2</b> km</span><span><b>10.4</b> km/l</span><span><b>₹181</b></span></div>
+          <div class="flag watch">● 22 min idling in traffic</div>
+        </div>
+        <div class="card">
+          <div class="trip-top"><b>8:50 – 9:20 am</b><span>30 min</span></div>
+          <div class="trip-nums"><span><b>19.1</b> km</span><span><b>14.9</b> km/l</span><span><b>₹132</b></span></div>
+          <div class="flag watch">● Battery 11.9 V at start</div>
+        </div>
+      </div>
+      <div class="nav"><span>Home</span><span class="on">Garage</span><span>AI Mechanic</span><span>Wallet</span><span>You</span></div>
+    </div>
+    <div class="cap"><b>1. Drives list.</b> Opened from Garage. The week at a glance, then each drive. The coloured line shows the one thing worth knowing: a fault, long idling, a weak battery, or "nothing to report".</div>
+  </div>
+
+  <!-- 2. Trip detail -->
+  <div class="col">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●● 5G ▮</span></div>
+      <div class="bar"><span class="back">←</span><h2>Today, 6:10 pm</h2></div>
+      <div class="scroll">
+        <div class="kv">
+          <div class="card"><small>Distance</small><b>21.4 km</b></div>
+          <div class="card"><small>Time</small><b>42 min</b></div>
+          <div class="card"><small>Mileage</small><b>12.9 km/l</b></div>
+          <div class="card"><small>Fuel cost</small><b>₹171</b></div>
+        </div>
+
+        <div class="chart" style="margin-top:8px">
+          <h4>Speed</h4>
+          <svg viewBox="0 0 270 70" width="100%" height="70">
+            <polyline fill="none" stroke="#FF8A1F" stroke-width="2.2" points="0,68 12,50 24,40 36,46 48,30 60,34 72,22 84,26 96,40 108,60 120,64 132,44 144,30 156,18 168,14 180,20 192,32 204,48 216,38 228,52 240,60 252,66 270,68"/>
+          </svg>
+          <div class="note" style="padding:4px 0 0">Top speed 78 km/h · average 31 km/h · 9 min idling</div>
+        </div>
+
+        <div class="chart">
+          <h4>Engine temperature</h4>
+          <svg viewBox="0 0 270 50" width="100%" height="50">
+            <line x1="0" y1="14" x2="270" y2="14" stroke="#E3E8EE" stroke-dasharray="4 4"/>
+            <polyline fill="none" stroke="#0B7A63" stroke-width="2.2" points="0,46 30,34 60,24 90,20 120,19 150,19 180,18 210,19 240,19 270,19"/>
+          </svg>
+          <div class="note" style="padding:4px 0 0">Warmed up in 7 min, stayed normal (90 °C)</div>
+        </div>
+
+        <div class="card">
+          <div class="flag bad" style="margin-top:0">● P0300 · engine misfire, stored at 6:38 pm</div>
+          <div class="note">At 46 km/h, engine warm, light load (freeze frame).</div>
+        </div>
+        <div class="ai"><b>AI Mechanic:</b> The misfire started on this drive and mileage was 12% below your usual. Most likely worn spark plugs (₹1,000–₹4,000). Drive gently and get them checked this week. <span class="edit">Ask more →</span></div>
+      </div>
+      <div class="nav"><span>Home</span><span class="on">Garage</span><span>AI Mechanic</span><span>Wallet</span><span>You</span></div>
+    </div>
+    <div class="cap"><b>2. One drive.</b> Speed and engine temperature from the car itself, the fault with when and how it happened, and the AI Mechanic tying it together. No map, so no location needed.</div>
+  </div>
+
+  <!-- 3. Add fuel, simplified -->
+  <div class="col">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●● 5G ▮</span></div>
+      <div class="bar"><span class="back">←</span><h2>Add fuel</h2></div>
+      <div class="scroll">
+        <div class="field"><small>Amount paid</small><div class="v">₹ 2,000</div></div>
+
+        <div class="sec" style="margin-top:6px">Worked out for you</div>
+        <div class="auto"><div>Petrol price · ₹102.90 / L<small>Karnataka today, from your KA registration</small></div><span class="edit">Edit</span></div>
+        <div class="auto"><div>Litres · 19.4 L<small>₹2,000 ÷ ₹102.90</small></div><span class="tag">AUTO</span></div>
+        <div class="auto"><div>Odometer · 42,318 km<small>From your drives since the last reading</small></div><span class="edit">Edit</span></div>
+        <div class="auto"><div>Full tank · Yes<small>Fuel gauge rose to 98% after you stopped</small></div><span class="tag">AUTO</span></div>
+
+        <div class="btn">Save</div>
+        <div class="note" style="margin-top:10px">Paid by UPI? We spot fuel payments in your Wallet and add them here, so most fill-ups need no typing at all.</div>
+      </div>
+      <div class="nav"><span>Home</span><span class="on">Garage</span><span>AI Mechanic</span><span>Wallet</span><span>You</span></div>
+    </div>
+    <div class="cap"><b>3. Add fuel, one field.</b> Today it asks for amount, litres and odometer, plus a "full tank" tick. Now only the amount: the price comes from your state, the litres from the price, the odometer from your drives, and "full tank" from the fuel gauge.</div>
+  </div>
+
+  <!-- 4. Auto-record setting -->
+  <div class="col">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●● 5G ▮</span></div>
+      <div class="bar"><span class="back">←</span><h2>Drives</h2></div>
+      <div class="scroll">
+        <div class="auto" style="padding:12px"><div><b>Record drives automatically</b><small>Starts when your scanner powers on with the car, even if the app is closed. No location needed.</small></div><span class="toggle"></span></div>
+        <div class="auto" style="padding:12px"><div><b>Route maps</b><small>Draw each drive on a map. Needs location while driving. Off by default.</small></div><span class="toggle off"></span></div>
+        <div class="auto" style="padding:12px"><div><b>Keep screen on while recording</b><small>Handy when the phone is in a mount.</small></div><span class="toggle off"></span></div>
+
+        <div class="sec">Fuel price</div>
+        <div class="auto" style="padding:12px"><div><b>Automatic</b> · ₹102.90 / L<small>Petrol in Karnataka, updated monthly. Changes when you add a fill-up with litres.</small></div><span class="edit">Change</span></div>
+
+        <div class="sec">Your data</div>
+        <div class="auto" style="padding:12px"><div><b>Back up drives and scans</b><small>Signed in with Google · keeps them when you change phones</small></div><span class="toggle"></span></div>
+        <div class="note">Drives stay on your phone unless backup is on.</div>
+      </div>
+      <div class="nav"><span>Home</span><span class="on">Garage</span><span>AI Mechanic</span><span>Wallet</span><span>You</span></div>
+    </div>
+    <div class="cap"><b>4. Settings.</b> Auto-record on by default once the scanner is paired. Route maps are opt-in. Fuel price is automatic. Backup is optional (a separate decision; see notes).</div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>First scan on the Garage home · mockup · GetAutoSure</title>
+<style>
+  :root{--bg:#F5F4F2;--surface:#FFFFFF;--border:#E3E8EE;--text:#111;--muted:#5B6675;--accent:#C2410C;--bright:#FF8A1F;--soft:#FFF1E6;--ink:#111;--onInkMuted:#BDBDBD;--good:#0B7A63;--goodSoft:#E6F4F0;--watch:#A15C07;--watchSoft:#FFF4E0;--bad:#B42318;--badSoft:#FDECEA}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#E9E6E1;color:var(--text)}
+  header{max-width:1400px;margin:0 auto;padding:28px 24px 8px}
+  header h1{margin:0 0 6px;font-size:24px}
+  header p{margin:0;color:var(--muted);max-width:1000px;line-height:1.5}
+  .row{display:flex;gap:26px;flex-wrap:wrap;justify-content:center;padding:24px}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .tagline{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+  .cap{font-size:13px;color:var(--muted);max-width:320px;text-align:center;line-height:1.45}
+  .cap b{color:var(--text)}
+  .phone{width:320px;height:700px;background:var(--bg);border-radius:34px;border:10px solid #1b1b1b;overflow:hidden;display:flex;flex-direction:column}
+  .status{height:26px;display:flex;justify-content:space-between;align-items:center;padding:0 18px;font-size:11px;font-weight:600}
+  .top{display:flex;justify-content:space-between;align-items:center;padding:6px 14px 8px}
+  .brand{font-weight:800;font-size:18px}.brand span{color:var(--accent)}
+  .carpick{font-size:12px;font-weight:700;background:#fff;border:1px solid var(--border);border-radius:999px;padding:5px 10px}
+  .scroll{flex:1;overflow:auto;padding:0 12px 14px}
+  .hero{background:var(--ink);color:#fff;border-radius:18px;padding:12px}
+  .hero .r{display:flex;gap:12px;align-items:center}
+  .ring{width:52px;height:52px;border-radius:50%;border:6px solid #2FBF8F;display:flex;align-items:center;justify-content:center;font-weight:800}
+  .ring.w{border-color:var(--bright)}
+  .hero small{color:var(--onInkMuted);font-size:11px}
+  .hero b{display:block;font-size:15px}
+  .hero a{color:var(--bright);font-size:11.5px;font-weight:700}
+  .scan{background:#2B2B2B;color:#fff;font-weight:700;text-align:center;border-radius:999px;padding:8px;margin-top:10px;font-size:12.5px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px;margin-top:10px}
+  .card.urgent{border:1.5px solid var(--bright)}
+  .card h3{margin:0 0 2px;font-size:14.5px}
+  .card .sub{color:var(--muted);font-size:11.5px;margin-bottom:4px}
+  .item{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--border);align-items:flex-start}
+  .item:first-of-type{border-top:0}
+  .ic{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex:none;font-weight:800}
+  .ic.ok{background:var(--goodSoft);color:var(--good)}
+  .ic.w{background:var(--watchSoft);color:var(--watch)}
+  .ic.b{background:var(--badSoft);color:var(--bad)}
+  .ic.q{background:var(--soft);color:var(--accent)}
+  .t{flex:1;font-size:12.5px;line-height:1.35}
+  .t b{display:block;font-size:13px}
+  .t small{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}
+  .t .do{display:inline-block;margin-top:4px;color:var(--accent);font-weight:700;font-size:11.5px}
+  .btns{display:flex;gap:6px;margin-top:6px}
+  .b2{font-size:11px;font-weight:700;border:1px solid var(--border);border-radius:999px;padding:4px 9px;background:#fff}
+  .foot{background:var(--soft);border-radius:12px;padding:9px 11px;margin-top:8px;font-size:11.5px;line-height:1.45}
+  .foot b{color:var(--accent)}
+  .progress{background:#fff;border:1px solid var(--border);border-radius:14px;padding:10px 12px;margin-top:10px;font-size:12px}
+  .progress .top2{display:flex;justify-content:space-between;align-items:center}
+  .progress b{font-size:12.5px}
+  .bar{height:6px;background:#EDEBE7;border-radius:3px;margin:7px 0 6px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--bright)}
+  .progress small{color:var(--muted);font-size:11px;line-height:1.4;display:block}
+  .chips{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .chip{background:#fff;border:1px solid var(--border);border-radius:14px;padding:9px 10px;font-size:12px}
+  .chip b{display:block;font-size:12.5px}.chip span{color:var(--muted);font-size:11px}
+  .nav{height:54px;background:#fff;border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;font-size:10.5px;color:var(--muted)}
+  .nav .on{color:var(--accent);font-weight:700}
+  .notes{max-width:1150px;margin:0 auto 40px;padding:0 24px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .notes div{background:#fff;border-radius:16px;padding:16px 18px;font-size:13.5px;line-height:1.55}
+  .notes h3{margin:0 0 6px;font-size:15px}
+  .notes ul{margin:0;padding-left:18px}
+</style>
+</head>
+<body>
+<header>
+  <h1>The first scan, on the Garage home</h1>
+  <p>On day 1 there's no mileage trend and often nothing wrong, so a big "Needs your attention" card would be empty. Instead, the first scan shows a <b>check-up card</b>: what was checked and found, the papers from the RTO record (with dates even when nothing is due), and one question we can't answer ourselves. The big attention card only appears when something actually needs attention.</p>
+</header>
+
+<div class="row">
+
+  <!-- 1. First owner, first scan -->
+  <div class="col">
+    <div class="tagline">First owner · first scan</div>
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>▮</span></div>
+      <div class="top"><div class="brand">GetAuto<span>Sure</span></div><div class="carpick">Nexon ▾</div></div>
+      <div class="scroll">
+        <div class="hero"><div class="r"><div class="ring">94</div><div><small>Your car health</small><b>Healthy</b><a>See breakdown →</a></div></div><div class="scan">Scan again</div></div>
+
+        <div class="card">
+          <h3>Your car's first check-up</h3>
+          <div class="sub">Today · 38 checks on the engine, battery and emissions</div>
+          <div class="item"><div class="ic ok">✓</div><div class="t"><b>Engine: no faults</b><small>No stored or pending fault codes. Warning light off.</small></div></div>
+          <div class="item"><div class="ic ok">✓</div><div class="t"><b>Battery: good</b><small>12.6 V parked, charging at 14.1 V.</small></div></div>
+          <div class="item"><div class="ic ok">✓</div><div class="t"><b>Papers in order</b><small>Insurance till 14 Mar 2027 · PUC till 2 Feb 2027. We'll remind you 30 days before.</small></div></div>
+          <div class="item"><div class="ic q">?</div><div class="t"><b>When was the last service?</b><small>So we can tell you when the next one is due.</small><div class="btns"><span class="b2">Pick date</span><span class="b2">New car, none yet</span><span class="b2">Skip</span></div></div></div>
+          <div class="foot"><b>Starting point saved.</b> From your next scan, we'll show what changed, and catch problems before a warning light comes on.</div>
+        </div>
+
+        <div class="progress">
+          <div class="top2"><b>Still learning your car · 2 of 6</b><span style="color:var(--accent);font-weight:700;font-size:11.5px">What's next ›</span></div>
+          <div class="bar"><i style="width:33%"></i></div>
+          <small>Leave the scanner plugged in. After 3 drives you'll see your real mileage.</small>
+        </div>
+
+        <div class="chips">
+          <div class="chip"><b>Health insights</b><span>6 systems checked</span></div>
+          <div class="chip"><b>Fuel &amp; mileage</b><span>After 3 drives</span></div>
+        </div>
+      </div>
+      <div class="nav"><span class="on">Garage</span><span>Wallet</span><span>Reports</span><span>Profile</span></div>
+    </div>
+    <div class="cap"><b>Value on day 1:</b> "My car is fine, here's proof", the paper dates without hunting for them, and one question that unlocks service reminders. No empty warnings card.</div>
+  </div>
+
+  <!-- 2. Second-hand owner, first scan -->
+  <div class="col">
+    <div class="tagline">Second-hand owner · first scan</div>
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>▮</span></div>
+      <div class="top"><div class="brand">GetAuto<span>Sure</span></div><div class="carpick">City ▾</div></div>
+      <div class="scroll">
+        <div class="hero"><div class="r"><div class="ring w">81</div><div><small>Your car health</small><b>Watch · 2 things</b><a>See breakdown →</a></div></div><div class="scan">Scan again</div></div>
+
+        <div class="card urgent">
+          <h3>Your car's first check-up</h3>
+          <div class="sub">Today · 38 checks · 2nd owner per RTO</div>
+          <div class="item"><div class="ic w">!</div><div class="t"><b>Warning codes were cleared recently</b><small>Only 46 km and 3 engine starts since. Often done just before a sale. If a problem was hidden, it usually comes back within a week.</small><span class="do">Scan again after a few drives ›</span></div></div>
+          <div class="item"><div class="ic w">!</div><div class="t"><b>1 fault caught early</b><small>P0171: engine getting too much air. Not on the dashboard yet. Usually a cracked hose (₹500–₹4,000).</small><span class="do">See what to do ›</span></div></div>
+          <div class="item"><div class="ic b">!</div><div class="t"><b>PUC has expired</b><small>Expired 8 Oct 2026. Renew to avoid a fine.</small></div></div>
+          <div class="item"><div class="ic ok">✓</div><div class="t"><b>Insurance till 20 Jun 2027 · no loan on the RC</b><small>Ownership is in your name.</small></div></div>
+          <div class="item"><div class="ic q">?</div><div class="t"><b>When was the last service?</b><small>Check the service book from the seller.</small><div class="btns"><span class="b2">Pick date</span><span class="b2">Don't know</span></div></div></div>
+        </div>
+
+        <div class="progress">
+          <div class="top2"><b>Still learning your car · 2 of 6</b><span style="color:var(--accent);font-weight:700;font-size:11.5px">What's next ›</span></div>
+          <div class="bar"><i style="width:33%"></i></div>
+          <small>Your next scan shows whether the cleared codes came back.</small>
+        </div>
+      </div>
+      <div class="nav"><span class="on">Garage</span><span>Wallet</span><span>Reports</span><span>Profile</span></div>
+    </div>
+    <div class="cap"><b>Value on day 1, and it's big:</b> a used-car owner learns what the seller may not have said: codes cleared just before the sale, a fault not yet on the dashboard, an expired PUC. Problems go first, good news after.</div>
+  </div>
+
+  <!-- 3. Second visit, a week later -->
+  <div class="col">
+    <div class="tagline">Second scan · a week later</div>
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>▮</span></div>
+      <div class="top"><div class="brand">GetAuto<span>Sure</span></div><div class="carpick">Nexon ▾</div></div>
+      <div class="scroll">
+        <div class="hero"><div class="r"><div class="ring">94</div><div><small>Your car health</small><b>Healthy</b><a>See breakdown →</a></div></div><div class="scan">Scan again</div></div>
+
+        <div class="card">
+          <h3>Since your first check-up</h3>
+          <div class="sub">7 days · 6 drives · 184 km</div>
+          <div class="item"><div class="ic ok">✓</div><div class="t"><b>Nothing new on the engine</b><small>Same as last week. No faults, nothing cleared.</small></div></div>
+          <div class="item"><div class="ic ok">✓</div><div class="t"><b>Your real mileage: 14.6 km/l</b><small>From your 6 drives. Company figure is 17.4; real-world driving is usually about 15% lower, so you're right where you should be.</small></div></div>
+          <div class="item"><div class="ic ok">✓</div><div class="t"><b>Battery steady</b><small>Starts strong every morning.</small></div></div>
+        </div>
+
+        <div class="card">
+          <h3 style="font-size:13px;color:var(--muted);font-weight:700">Coming up</h3>
+          <div class="item"><div class="ic q">📄</div><div class="t"><b>PUC renews 2 Feb</b><small>We'll remind you on 3 Jan.</small></div></div>
+          <div class="item"><div class="ic q">🔧</div><div class="t"><b>First service around 12 Mar</b><small>Or at 10,000 km, whichever comes first.</small></div></div>
+        </div>
+
+        <div class="progress">
+          <div class="top2"><b>Still learning your car · 4 of 6</b><span style="color:var(--accent);font-weight:700;font-size:11.5px">What's next ›</span></div>
+          <div class="bar"><i style="width:66%"></i></div>
+          <small>One more week of drives and we start spotting problems early.</small>
+        </div>
+      </div>
+      <div class="nav"><span class="on">Garage</span><span>Wallet</span><span>Reports</span><span>Profile</span></div>
+    </div>
+    <div class="cap"><b>Week 2:</b> the reason to come back is "what changed" plus the real mileage, said once here as news. After that, mileage lives in the Fuel chip and only comes back to the home as a "costing you more" line if it drops.</div>
+  </div>
+
+</div>
+
+<div class="notes">
+  <div>
+    <h3>How the home decides what to show</h3>
+    <ul>
+      <li><b>First scan:</b> "Your car's first check-up" (always, so day 1 is never empty).</li>
+      <li><b>Something needs action:</b> "Needs your attention", problems first, with an orange border.</li>
+      <li><b>Scans after that, nothing wrong:</b> "Since your last check-up", a short "what changed" card.</li>
+      <li><b>Coming up</b> (papers, service) is a small separate list, never mixed into the warnings.</li>
+    </ul>
+  </div>
+  <div>
+    <h3>No duplication</h3>
+    <ul>
+      <li>Mileage is shown on the home only twice: once as news ("your real mileage") and later only if it drops ("costing you ≈ ₹900 more").</li>
+      <li>Everything else about fuel stays in the Fuel chip and Wallet.</li>
+      <li>Papers show dates even when not due, because on day 1 that's useful to know. After that, only when due within 30 days.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>
