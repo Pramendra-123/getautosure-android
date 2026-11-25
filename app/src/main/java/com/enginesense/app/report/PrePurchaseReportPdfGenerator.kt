@@ -85,6 +85,7 @@ object PrePurchaseReportPdfGenerator {
         if (extras != null && (extras.photos.isNotEmpty() || extras.condition != null)) drawPhotosPage(b, extras, dealerProfile?.name)
         drawFraudPage(b, report, today)
         drawCostPage(b, report, result)
+        drawTestDrive(b, report)
         drawBuyerRatings(b, buyerRatings)
         drawBeforeYouPay(b, result)
         b.finish()
@@ -147,7 +148,7 @@ object PrePurchaseReportPdfGenerator {
         )
         val right = listOf(
             "Engine computer" to ecuKmText(report),
-            "Dashboard (entered at the car)" to (odo.dashboardKm?.let { km(it) } ?: "Not entered"),
+            "Dashboard (entered at the car)" to (odo.enteredText ?: "Not entered"),
             "Codes last cleared" to (odo.kmSinceCodesCleared?.let { "${km(it)} ago" } ?: "Not reported")
         )
         for (i in left.indices) {
@@ -253,14 +254,16 @@ object PrePurchaseReportPdfGenerator {
 
         sectionTitle(b, "Odometer history checks", "What the car's own computer says about its distance and when its fault memory was last cleared.", PAGE_FRAUD)
         val odo = report.odometer
-        val rows = listOf(
+        val rows = listOfNotNull(
             "Engine computer odometer" to ecuKmText(report),
-            "Dashboard odometer (entered at the car)" to (odo.dashboardKm?.let { km(it) } ?: "Not entered"),
+            "Dashboard odometer (entered at the car)" to (odo.enteredText ?: "Not entered"),
             "Dashboard vs computer" to when (odo.match) {
                 OdometerMatch.MATCHES -> "Match"
+                OdometerMatch.SMALL_GAP -> "Small gap — ${km(kotlin.math.abs((odo.ecuKm ?: 0.0) - (odo.dashboardKm ?: 0.0)))} apart, worth asking"
                 OdometerMatch.MISMATCH -> "Mismatch — ${km(kotlin.math.abs((odo.ecuKm ?: 0.0) - (odo.dashboardKm ?: 0.0)))} apart"
-                null -> "Couldn't compare"
+                null -> if (odo.sellerRange != null) "Not checked — dashboard not readable" else "Couldn't compare"
             },
+            odo.perYear?.let { "Km a year for its age" to "About ${"%,d".format(it.kmPerYear)} (usual is 12–15,000)" },
             "Distance since fault codes were cleared" to (odo.kmSinceCodesCleared?.let { km(it) } ?: "Not reported"),
             "Engine warm-ups since codes were cleared" to (odo.warmUpsSinceCodesCleared?.toInt()?.toString() ?: "Not reported"),
             "Engine running time since codes were cleared" to (odo.minutesSinceCodesCleared?.let { "${it.toInt()} min" } ?: "Not reported"),
@@ -270,6 +273,7 @@ object PrePurchaseReportPdfGenerator {
             when {
                 key == "Dashboard vs computer" && value.startsWith("Mismatch") -> ATTENTION
                 key == "Dashboard vs computer" && value == "Match" -> GOOD
+                key == "Dashboard vs computer" && value.startsWith("Small gap") -> ORANGE
                 value.startsWith("Not") || value.startsWith("Couldn't") -> GRAY
                 else -> INK
             }
@@ -393,7 +397,7 @@ object PrePurchaseReportPdfGenerator {
                 }
             } else {
                 val basis = "${value.fair.depreciationPercent}% depreciation over ${value.fair.ageYears} year${if (value.fair.ageYears == 1) "" else "s"}" +
-                    (report.odometer.dashboardKm ?: report.odometer.ecuKm)?.let { ", adjusted for ${km(it)}" }.orEmpty() + "." +
+                    report.odometer.priceKm?.let { ", adjusted for ${km(it)}" + (if (report.odometer.sellerRange != null) " (middle of the seller's range)" else "") }.orEmpty() + "." +
                     (if (value.fair.beyondPublishedSchedule) " Cars over 10 years old vary a lot, so treat this as a loose guide." else "")
                 b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, basis, textPaint(GRAY, 8f))
                 value.note?.let { b.y += 3f; b.y += drawWrapped(b.canvas, MARGIN, b.y, CONTENT_RIGHT - MARGIN, it, textPaint(WATCH, 8f)) }
@@ -498,6 +502,29 @@ object PrePurchaseReportPdfGenerator {
             }
             b.y += tileH + captionH + gap
         }
+    }
+
+    // ---------- test drive ----------
+
+    /** The guided test drive: score, what each check found, and what the buyer heard. Nothing drawn without a drive. */
+    private fun drawTestDrive(b: ReportBuilder, report: PrePurchaseReport) {
+        val d = report.drive ?: return
+        val page = "How it drove"
+        b.ensure(80f + d.findings.size * 24f, page)
+        sectionTitle(
+            b, "How it drove",
+            "Guided test drive: ${d.durationS / 60} min, ${"%.1f".format(d.distanceKm)} km, ${d.legsDone} of 5 legs. Read live from the car; noises are what you heard.",
+            page
+        )
+        b.ensure(30f, page)
+        b.canvas.drawText("${d.score}/5  ${d.headline}", MARGIN + 4f, b.y + 14f, textPaint(INK, 10.5f, bold = true))
+        b.y += 24f
+        val rows = d.findings.map { f ->
+            f.title to (if (f.check == com.enginesense.app.vehicle.DriveCheck.GOOD) "OK" else "Check") + " — " + f.detail +
+                (f.cost?.let { " (${rupees(it.minInr.toDouble())}–${rupees(it.maxInr.toDouble(), symbol = false)})" } ?: "")
+        }
+        drawKeyValueRows(b, rows, page) { _, value -> if (value.startsWith("OK")) GOOD else WATCH }
+        b.y += 14f
     }
 
     // ---------- before you pay ----------
@@ -623,6 +650,7 @@ object PrePurchaseReportPdfGenerator {
         FaultKind.HIDDEN_PERMANENT -> "Hidden (cleared)" to ATTENTION
         FaultKind.PENDING -> "Developing" to WATCH
         FaultKind.EXTERIOR -> "Body / cabin" to GRAY
+        FaultKind.DRIVE -> "Test drive" to WATCH
     }
 
     private fun ecuKmText(report: PrePurchaseReport): String = report.odometer.ecuKm?.let { km(it) } ?: when (report.odometer.ecuSupported) {

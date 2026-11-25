@@ -365,6 +365,9 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
     fun clearPrePurchaseCheck() {
         _scanIsPrePurchaseCheck.value = false
         _aiPrice.value = AiPriceState.Idle
+        _driveResult.value = null
+        cancelTestDrive()
+        clearCoaching()
     }
 
     /** The Used Car Check report as the buyer last saw it, in plain lines for the AI Mechanic (see [PrePurchaseReport.aiSummaryLines]). */
@@ -425,6 +428,45 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
                 AiPriceState.Failed(q)
             }
         }
+    }
+
+    // ---------- Used Car Check: negotiation words ----------
+
+    sealed interface CoachState {
+        data object Idle : CoachState
+        data object Writing : CoachState
+        data class Ready(val coaching: com.enginesense.app.vehicle.Coaching) : CoachState
+    }
+
+    private val negotiationCoach = com.enginesense.app.vehicle.NegotiationCoach()
+    private val _coaching = MutableStateFlow<CoachState>(CoachState.Idle)
+    val coaching: StateFlow<CoachState> = _coaching.asStateFlow()
+    private var coachJob: Job? = null
+
+    /** AI writes the message and the lines for the car; if it can't, the plain-English version from the same numbers. */
+    fun requestCoaching(
+        plan: com.enginesense.app.vehicle.NegotiationPlan, car: String?, sellerName: String,
+        language: com.enginesense.app.vehicle.CoachLanguage, tone: com.enginesense.app.vehicle.CoachTone,
+        notes: List<String>, uiContext: Context
+    ) {
+        coachJob?.cancel()
+        _coaching.value = CoachState.Writing
+        coachJob = viewModelScope.launch {
+            _coaching.value = CoachState.Ready(
+                try {
+                    negotiationCoach.coach(plan, car, sellerName, language, tone, notes, tokenCache.get(uiContext))
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    com.enginesense.app.vehicle.NegotiationCoach.offline(plan, car, sellerName, tone)
+                }
+            )
+        }
+    }
+
+    fun clearCoaching() {
+        coachJob?.cancel()
+        _coaching.value = CoachState.Idle
     }
 
     /** Set right before a Dealer Sathi scan, so the result goes to [dealerResult] and the scan screen returns to the dealer flow. */
@@ -916,6 +958,7 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         // isn't "in flight" though — retrying after a failed scan must still be allowed.
         val current = _connectionState.value
         if (current is ConnectionFlowState.Connecting || current is ConnectionFlowState.Scanning) return
+        if (!isDemo) lastScanTransport = makeTransport
 
         viewModelScope.launch {
             _connectionState.update { ConnectionFlowState.Connecting }
@@ -1163,6 +1206,166 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         _liveReadings.update { emptyMap() }
         _liveDerived.update { LiveDerived() }
         _liveHistory.update { LiveHistorySnapshot() }
+    }
+
+    // ---------- Used Car Check: guided test drive ----------
+
+    /** What the drive screen shows. [line] is the co-driver's latest instruction or call-out, in English and Hindi. */
+    sealed interface TestDriveState {
+        data object Idle : TestDriveState
+        data object Connecting : TestDriveState
+        data class Running(
+            val leg: com.enginesense.app.vehicle.DriveLeg,
+            val legIndex: Int,
+            val elapsedS: Int,
+            val speedKmh: Double?,
+            val rpm: Double?,
+            val coolantC: Double?,
+            val events: List<com.enginesense.app.vehicle.DriveEvent>,
+            val line: String,
+            val lineHi: String,
+            val heard: Set<com.enginesense.app.vehicle.HeardNoise>
+        ) : TestDriveState
+        data class Error(val message: String) : TestDriveState
+    }
+
+    private val _testDrive = MutableStateFlow<TestDriveState>(TestDriveState.Idle)
+    val testDrive: StateFlow<TestDriveState> = _testDrive.asStateFlow()
+    private val _driveResult = MutableStateFlow<com.enginesense.app.vehicle.DriveResult?>(null)
+    val driveResult: StateFlow<com.enginesense.app.vehicle.DriveResult?> = _driveResult.asStateFlow()
+    private var driveJob: Job? = null
+    private var driveAnalyzer: com.enginesense.app.vehicle.DriveAnalyzer? = null
+    @Volatile private var driveLegIndex = 0
+    @Volatile private var driveLegStartMs = 0L
+
+    /** How the last scan reached the car, so the test drive talks to the same dongle. */
+    @Volatile private var lastScanTransport: (() -> ObdTransport)? = null
+
+    /**
+     * Starts the guided drive on the dongle the scan used (a simulated car for the demo). Reads the
+     * pedal PIDs every cycle and the slow ones every 5th, like Live Data, and feeds [DriveAnalyzer].
+     * Legs move on by themselves when the car does what the leg asks, or when the buyer taps Next.
+     */
+    fun startTestDrive(rcModel: String?) {
+        stopTestDriveLoop()
+        val makeTransport = lastScanTransport ?: { SimulatedObdTransport(SimulatedProfile.HEALTHY) }
+        val analyzer = com.enginesense.app.vehicle.DriveAnalyzer(com.enginesense.app.vehicle.DriveAnalyzer.isAutomatic(rcModel))
+        driveAnalyzer = analyzer
+        driveLegIndex = 0
+        _driveResult.value = null
+        driveJob = viewModelScope.launch {
+            _testDrive.value = TestDriveState.Connecting
+            try {
+                val t = withContext(Dispatchers.IO) { makeTransport().also { it.connect() } }
+                transport?.close()
+                transport = t
+                val reader = PidReader(t)
+                val unsupported = mutableSetOf<PidId>()
+                val latest = mutableMapOf<PidId, PidReading>()
+                val start = System.currentTimeMillis()
+                driveLegStartMs = 0L
+                val events = mutableListOf<com.enginesense.app.vehicle.DriveEvent>()
+                val legs = com.enginesense.app.vehicle.DriveLeg.entries
+                var line = legs[0].instruction
+                var lineHi = legs[0].instructionHi
+                var shownLeg = 0
+                var sawSlow = false
+                var hardPress = false
+                var cruiseMs = 0L
+                var lastT = 0L
+                var cycle = 0
+                while (isActive) {
+                    val toRead = DRIVE_PIDS.filter { it !in unsupported && (it in DRIVE_FAST_PIDS || cycle % LIVE_SLOW_EVERY == 0) }
+                    val fresh = withContext(Dispatchers.IO) { toRead.associateWith { reader.read(it) } }
+                    fresh.forEach { (pid, r) -> if (r.status == PidStatus.UNSUPPORTED) unsupported += pid; latest[pid] = r }
+                    val tMs = System.currentTimeMillis() - start
+                    fun v(p: PidId) = LiveDerivedCalculator.value(latest, p)
+                    val speed = v(PidId.SPEED_KMH)
+                    val throttle = v(PidId.ACCELERATOR_PEDAL_POSITION_D) ?: v(PidId.THROTTLE_POSITION)
+                    val sample = com.enginesense.app.vehicle.DriveSample(
+                        tMs = tMs, speedKmh = speed, rpm = v(PidId.RPM), coolantC = v(PidId.COOLANT_TEMP_C),
+                        shortTrim = v(PidId.SHORT_TERM_FUEL_TRIM_1), longTrim = v(PidId.LONG_TERM_FUEL_TRIM_1),
+                        loadPct = v(PidId.ENGINE_LOAD), throttlePct = throttle, volts = v(PidId.CONTROL_MODULE_VOLTAGE)
+                    )
+                    val fresher = analyzer.add(sample)
+                    events.addAll(0, fresher.reversed())
+                    fresher.lastOrNull()?.let { line = it.text; lineHi = it.textHi }
+
+                    // Each leg moves on by itself once the car has done what it asks.
+                    val legMs = tMs - driveLegStartMs
+                    val s = speed ?: 0.0
+                    if (s <= 25) sawSlow = true
+                    if ((throttle ?: 0.0) >= 70 || (sample.loadPct ?: 0.0) >= 90) hardPress = true
+                    if (s >= 55) cruiseMs += (tMs - lastT).coerceIn(0, 2_000)
+                    lastT = tMs
+                    val legDone = when (legs[driveLegIndex]) {
+                        com.enginesense.app.vehicle.DriveLeg.TRAFFIC -> legMs >= 180_000
+                        com.enginesense.app.vehicle.DriveLeg.GENTLE_PULL -> sawSlow && s >= 55
+                        com.enginesense.app.vehicle.DriveLeg.HARD_PULL -> hardPress && s >= 45
+                        com.enginesense.app.vehicle.DriveLeg.CRUISE -> cruiseMs >= 45_000
+                        com.enginesense.app.vehicle.DriveLeg.LISTEN -> false
+                    }
+                    if (legDone) advanceDriveLeg(tMs)
+                    if (driveLegIndex != shownLeg) {
+                        shownLeg = driveLegIndex
+                        sawSlow = false; hardPress = false; cruiseMs = 0L
+                        line = legs[shownLeg].instruction
+                        lineHi = legs[shownLeg].instructionHi
+                    }
+                    val current = _testDrive.value as? TestDriveState.Running
+                    _testDrive.value = TestDriveState.Running(
+                        leg = legs[shownLeg], legIndex = shownLeg, elapsedS = (tMs / 1000).toInt(),
+                        speedKmh = speed, rpm = sample.rpm, coolantC = v(PidId.COOLANT_TEMP_C),
+                        events = events.take(30), line = line, lineHi = lineHi, heard = current?.heard ?: emptySet()
+                    )
+                    cycle++
+                    delay(LIVE_LOOP_PAUSE_MS)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _testDrive.value = TestDriveState.Error(e.message ?: "Couldn't read the car during the drive.")
+            }
+        }
+    }
+
+    private fun advanceDriveLeg(tMs: Long) {
+        val analyzer = driveAnalyzer ?: return
+        analyzer.legDone(driveLegIndex + 1)
+        if (driveLegIndex < com.enginesense.app.vehicle.DriveLeg.entries.size - 1) {
+            driveLegIndex++
+            driveLegStartMs = tMs
+        }
+    }
+
+    /** The buyer taps "Next" — move on even if the car hasn't done the leg yet. */
+    fun nextDriveLeg() {
+        val running = _testDrive.value as? TestDriveState.Running ?: return
+        advanceDriveLeg(running.elapsedS * 1000L)
+    }
+
+    fun markHeard(noise: com.enginesense.app.vehicle.HeardNoise) {
+        driveAnalyzer?.heard(noise)
+        (_testDrive.value as? TestDriveState.Running)?.let { _testDrive.value = it.copy(heard = it.heard + noise) }
+    }
+
+    /** Ends the drive and keeps whatever it measured — a short drive still says what it saw. */
+    fun endTestDrive() {
+        val analyzer = driveAnalyzer
+        if ((_testDrive.value as? TestDriveState.Running)?.leg == com.enginesense.app.vehicle.DriveLeg.LISTEN) analyzer?.legDone(5)
+        stopTestDriveLoop()
+        _driveResult.value = analyzer?.result()
+        _testDrive.value = TestDriveState.Idle
+    }
+
+    fun cancelTestDrive() {
+        stopTestDriveLoop()
+        _testDrive.value = TestDriveState.Idle
+    }
+
+    private fun stopTestDriveLoop() {
+        driveJob?.cancel()
+        driveJob = null
     }
 
     /** From the Live Data screen when mileage needs details onboarding didn't collect (e.g. onboarding was skipped). */
@@ -1457,5 +1660,12 @@ class GetAutoSureViewModel(application: Application) : AndroidViewModel(applicat
         const val LIVE_SLOW_EVERY = 5
 
         private const val LIVE_LOOP_PAUSE_MS = 50L
+
+        /** What the test drive reads: the pedal and speed every cycle, the rest every [LIVE_SLOW_EVERY]th. */
+        val DRIVE_PIDS = listOf(
+            PidId.RPM, PidId.SPEED_KMH, PidId.ACCELERATOR_PEDAL_POSITION_D, PidId.THROTTLE_POSITION, PidId.ENGINE_LOAD,
+            PidId.COOLANT_TEMP_C, PidId.SHORT_TERM_FUEL_TRIM_1, PidId.LONG_TERM_FUEL_TRIM_1, PidId.CONTROL_MODULE_VOLTAGE
+        )
+        val DRIVE_FAST_PIDS = setOf(PidId.RPM, PidId.SPEED_KMH, PidId.ACCELERATOR_PEDAL_POSITION_D, PidId.THROTTLE_POSITION, PidId.ENGINE_LOAD)
     }
 }

@@ -15,8 +15,8 @@ import com.enginesense.app.vehiclelookup.ValidityLine
 import com.enginesense.app.vehiclelookup.ValidityStatus
 import java.time.LocalDate
 
-/** Where a fault in the report came from — [STORED] codes are findings, the next two come from the car's code lists, and [EXTERIOR] is what the buyer saw on the body or cabin. */
-enum class FaultKind { STORED, HIDDEN_PERMANENT, PENDING, EXTERIOR }
+/** Where a fault in the report came from — [STORED] codes are findings, the next two come from the car's code lists, [EXTERIOR] is what the buyer saw on the body or cabin, and [DRIVE] what the test drive found. */
+enum class FaultKind { STORED, HIDDEN_PERMANENT, PENDING, EXTERIOR, DRIVE }
 
 /** One row of "Major faults & estimated repair cost". [cost] is null when no tentative range fits — shown as "needs a workshop quote", never guessed. */
 data class FaultCostLine(
@@ -40,8 +40,19 @@ data class OdometerEvidence(
     val kmSinceCodesCleared: Double?,
     val warmUpsSinceCodesCleared: Double?,
     val minutesSinceCodesCleared: Double?,
-    val kmWithWarningLightOn: Double?
-)
+    val kmWithWarningLightOn: Double?,
+    /** The seller's range when the dashboard couldn't be read — priced at its middle, never checked. */
+    val sellerRange: KmRange? = null,
+    /** Km a year from a real reading (dashboard, else the car's computer) and the car's age. */
+    val perYear: KmPerYear? = null
+) {
+    /** The km the price used. */
+    val priceKm: Double? get() = dashboardKm ?: sellerRange?.midKm?.toDouble() ?: ecuKm
+
+    /** What the buyer gave, in words: the exact reading or the seller's range. */
+    val enteredText: String? get() = dashboardKm?.let { "%,d km".format(it.toLong()) }
+        ?: sellerRange?.let { "${it.label} km (seller's word, not checked)" }
+}
 
 /**
  * [fair] is the price before repairs: the AI market price when [basis] is AI_MARKET, else our own
@@ -115,7 +126,9 @@ data class PrePurchaseReport(
     /** The RC's insurance/PUC/fitness/tax dates and what they mean today; empty without an RTO check. */
     val validity: List<ValidityLine> = emptyList(),
     /** Set only on a dealer's report, when the dealer entered their own price. */
-    val dealerPrice: DealerPrice? = null
+    val dealerPrice: DealerPrice? = null,
+    /** The guided test drive, when the buyer did one. */
+    val drive: DriveResult? = null
 )
 
 object PrePurchaseReportBuilder {
@@ -141,11 +154,27 @@ object PrePurchaseReportBuilder {
         /** The AI market price for this car, when the price-estimate function answered; our formula is the backup. */
         aiPrice: AiPriceEstimate? = null,
         /** Accident-repair signs the buyer saw on the look-around, in plain words; any one is a red flag. */
-        accidentSigns: List<String> = emptyList()
+        accidentSigns: List<String> = emptyList(),
+        /** The buyer's range when the dashboard can't be read; ignored when [dashboardKm] is given. */
+        kmRange: KmRange? = null,
+        /** The guided test drive, when the buyer did one. */
+        drive: DriveResult? = null
     ): PrePurchaseReport {
+        val driveWatch = drive?.findings.orEmpty().filter { it.check == DriveCheck.WATCH }
+        val driveNotes = driveWatch.map { f ->
+            BuyerSignal(
+                title = "Test drive: " + f.title.replaceFirstChar { it.lowercase() },
+                evidence = f.detail,
+                advice = if (f.cost != null) "Get it checked before you pay, or take the repair cost off the price." else "Drive it again for longer before you decide."
+            )
+        }
         val insight = PrePurchaseAnalyzer.analyze(findings, healthScore, readiness, snapshot)
+        val manufactureYear = rc?.manufacturingMonth?.take(4)?.toIntOrNull() ?: buyerEnteredYear
+        val sellerRange = kmRange.takeIf { dashboardKm == null }
 
         val ecuKm = insight.ecuOdometerKm
+        val carAge = OdometerReading.ageYears(RtoRecord.parseDate(rc?.registrationDate), manufactureYear, today)
+        val perYear = (dashboardKm ?: ecuKm)?.takeIf { it >= 100 }?.let { km -> carAge?.let { OdometerReading.perYear(km, it) } }
         val odometerMatch = if (ecuKm != null && dashboardKm != null) PrePurchaseAnalyzer.compareOdometer(ecuKm, dashboardKm) else null
         val odometer = OdometerEvidence(
             ecuKm = ecuKm,
@@ -155,7 +184,42 @@ object PrePurchaseReportBuilder {
             kmSinceCodesCleared = snapshot?.verifiedValue(PidId.DISTANCE_SINCE_CODES_CLEARED),
             warmUpsSinceCodesCleared = snapshot?.verifiedValue(PidId.WARM_UPS_SINCE_CODES_CLEARED),
             minutesSinceCodesCleared = snapshot?.verifiedValue(PidId.TIME_SINCE_CODES_CLEARED),
-            kmWithWarningLightOn = snapshot?.verifiedValue(PidId.DISTANCE_WITH_MIL_ON)
+            kmWithWarningLightOn = snapshot?.verifiedValue(PidId.DISTANCE_WITH_MIL_ON),
+            sellerRange = sellerRange,
+            perYear = perYear
+        )
+        val kmNotes = listOfNotNull(
+            if (odometerMatch == OdometerMatch.SMALL_GAP && ecuKm != null && dashboardKm != null) BuyerSignal(
+                title = "Small gap between the dashboard and the car's computer",
+                evidence = "Dashboard ${"%,d".format(dashboardKm.toLong())} km, engine computer ${"%,d".format(ecuKm.toLong())} km: " +
+                    "${"%,d".format(kotlin.math.abs(ecuKm - dashboardKm).toLong())} km apart. That's often a typo or a cluster replaced and set close to the old reading. A rolled-back odometer is usually much further off.",
+                advice = "Read the dashboard again. If the gap is real, ask whether the cluster was ever replaced, and check the service book."
+            ) else null,
+            sellerRange?.let { range ->
+                BuyerSignal(
+                    title = "Odometer not checked",
+                    evidence = "The dashboard couldn't be read, so the km (${range.label}) is the seller's word. A dead or replaced instrument cluster is one way the km gets reset." +
+                        (ecuKm?.let { e ->
+                            if (range.contains(e)) " The car's computer says ${"%,d".format(e.toLong())} km, which fits."
+                            else " The car's computer says ${"%,d".format(e.toLong())} km, which doesn't fit."
+                        } ?: ""),
+                    advice = "Ask why the dashboard doesn't work, and check the km on the last service bill."
+                )
+            },
+            perYear?.takeIf { it.pace == KmPace.SUSPICIOUSLY_LOW }?.let { p ->
+                BuyerSignal(
+                    title = "Very low km for its age",
+                    evidence = "About ${"%,d".format(p.kmPerYear)} km a year over ${"%.1f".format(p.ageYears)} years, far under the usual 12–15,000. Very low km is a common sign of a rolled-back odometer.",
+                    advice = "Check the service book: each service should show more km than the one before."
+                )
+            },
+            perYear?.takeIf { it.pace == KmPace.HIGH }?.let { p ->
+                BuyerSignal(
+                    title = "Driven a lot: about ${"%,d".format(p.kmPerYear)} km a year",
+                    evidence = "That's above the usual 12–15,000 km a year, so expect more wear and a lower price. The price already counts the km.",
+                    advice = "Look closely at the clutch, suspension and tyres, and ask for the service history."
+                )
+            }
         )
 
         val odometerFlag = if (odometerMatch == OdometerMatch.MISMATCH && ecuKm != null && dashboardKm != null) BuyerSignal(
@@ -204,8 +268,17 @@ object PrePurchaseReportBuilder {
                 "Odometer: dashboard vs computer",
                 when (odometerMatch) {
                     OdometerMatch.MATCHES -> CheckOutcome.CLEAR
+                    OdometerMatch.SMALL_GAP -> CheckOutcome.WORTH_ASKING
                     OdometerMatch.MISMATCH -> CheckOutcome.FLAGGED
                     null -> CheckOutcome.NOT_AVAILABLE
+                }
+            ),
+            PurchaseCheck(
+                "Test drive",
+                when {
+                    drive == null || drive.findings.isEmpty() -> CheckOutcome.NOT_AVAILABLE
+                    driveWatch.isNotEmpty() -> CheckOutcome.WORTH_ASKING
+                    else -> CheckOutcome.CLEAR
                 }
             )
         ) + if (rc?.hasDealerDetails != true) emptyList() else listOf(
@@ -228,9 +301,13 @@ object PrePurchaseReportBuilder {
         val avoidForFlags = insight.verdict != PurchaseVerdict.AVOID &&
             (seriousFlags.isNotEmpty() || insight.fraudRiskFlags.size >= 2)
         val capped = !avoidForFlags && insight.verdict == PurchaseVerdict.GOOD_BUY && redFlags.isNotEmpty()
+        // A gearbox that slips or an engine that runs hot on the drive isn't a red flag — nobody hid it —
+        // but it's not a good buy until it's checked.
+        val driveSerious = driveWatch.firstOrNull { it.serious }
+        val cappedByDrive = !avoidForFlags && !capped && insight.verdict == PurchaseVerdict.GOOD_BUY && driveSerious != null
         val verdict = when {
             avoidForFlags -> PurchaseVerdict.AVOID
-            capped -> PurchaseVerdict.BUY_WITH_CAUTION
+            capped || cappedByDrive -> PurchaseVerdict.BUY_WITH_CAUTION
             else -> insight.verdict
         }
         val headline = when {
@@ -241,6 +318,7 @@ object PrePurchaseReportBuilder {
                 "No serious faults found, but ask the seller about this before you buy: ${redFlags.first().title.replaceFirstChar { it.lowercase() }}."
             capped -> "No serious faults found, but ask the seller about these ${redFlags.size} red flags before you buy: " +
                 redFlags.joinToString("; ") { it.title.replaceFirstChar { c -> c.lowercase() } } + "."
+            cappedByDrive -> "No serious faults in the scan, but the test drive found this: ${driveSerious!!.title.replaceFirstChar { it.lowercase() }}. Get it checked before you buy."
             else -> insight.headline
         }
 
@@ -254,13 +332,13 @@ object PrePurchaseReportBuilder {
                 )
             }
 
-        val faults = faultLines(findings, snapshot, CarSize.fromExShowroom(exShowroomPriceInr)) + ExteriorDamage.lines(exteriorCounts)
+        val faults = faultLines(findings, snapshot, CarSize.fromExShowroom(exShowroomPriceInr)) + ExteriorDamage.lines(exteriorCounts) +
+            driveWatch.filter { it.cost != null }.map { FaultCostLine(null, it.title, FaultKind.DRIVE, null, it.cost, countedInTotal = true) }
         val priced = faults.filter { it.countedInTotal }.mapNotNull { it.cost }.distinctBy { it.category }
         val repairMin = priced.sumOf { it.minInr }
         val repairMax = priced.sumOf { it.maxInr }
 
-        val manufactureYear = rc?.manufacturingMonth?.take(4)?.toIntOrNull() ?: buyerEnteredYear
-        val km = (dashboardKm ?: ecuKm)?.toInt()
+        val km = odometer.priceKm?.toInt()
         val age = manufactureYear?.let { (currentYear - it).toDouble().coerceAtLeast(0.5) }
         val formula = if (age != null && exShowroomPriceInr != null && exShowroomPriceInr > 0)
             FairPriceEstimator.estimate(exShowroomPriceInr, age, km, make, fuelType) else null
@@ -298,7 +376,8 @@ object PrePurchaseReportBuilder {
             verdict = verdict,
             headline = headline,
             redFlags = redFlags,
-            worthAsking = insight.cautionNotes + validityNotes + listOfNotNull(loanNote),
+            worthAsking = insight.cautionNotes + kmNotes + driveNotes + validityNotes + listOfNotNull(loanNote),
+            drive = drive,
             checks = checks,
             odometer = odometer,
             rc = rc,
@@ -368,6 +447,15 @@ fun PrePurchaseReport.aiSummaryLines(carName: String?): List<String> = buildList
     redFlags.forEach { add("Red flag — ${it.title}: ${it.evidence} What to do: ${it.advice}") }
     worthAsking.forEach { add("Worth asking (not a red flag) — ${it.title}: ${it.evidence} What to do: ${it.advice}") }
     checks.forEach { add("Check — ${it.label}: ${it.outcome.name.lowercase().replace('_', ' ')}") }
+    listOfNotNull(
+        odometer.enteredText?.let { "dashboard $it" },
+        odometer.ecuKm?.let { "car's computer ${"%,d".format(it.toLong())} km" },
+        odometer.perYear?.let { "about ${"%,d".format(it.kmPerYear)} km a year" }
+    ).takeIf { it.isNotEmpty() }?.let { add("Odometer: " + it.joinToString(", ") + ".") }
+    drive?.let { d ->
+        add("Test drive: ${d.score}/5, ${d.durationS / 60} min, ${"%.1f".format(d.distanceKm)} km, ${d.legsDone} of 5 legs. ${d.headline}")
+        d.findings.forEach { f -> add("Test drive ${if (f.check == DriveCheck.WATCH) "issue" else "ok"} — ${f.title}: ${f.detail}") }
+    } ?: add("Test drive: not done yet, so the gearbox, brakes and suspension aren't checked.")
     rc?.let { r ->
         val rto = listOfNotNull(
             r.model?.let { "model on RC $it" },

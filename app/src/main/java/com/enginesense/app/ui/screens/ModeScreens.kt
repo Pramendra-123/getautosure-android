@@ -162,7 +162,7 @@ fun BuyerHomeScreen(
             listOf(
                 "Plug in the scanner, engine on",
                 "See what the seller might be hiding",
-                "Car number: RTO record, owners, loan",
+                "Odometer and car number: km, RTO record, owners, loan",
                 "Look around: body, tyres, accident signs",
                 "Verdict, repair costs and fair price"
             ).forEachIndexed { i, step ->

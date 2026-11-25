@@ -297,6 +297,16 @@ class PrePurchaseAnalyzerTest {
     }
 
     @Test
+    fun `a gap between 2 and 10 percent is a small gap, not a red flag`() {
+        // 48,190 on the computer: up to ~964 km is a match, up to ~4,819 km a small gap.
+        assertEquals(OdometerMatch.MATCHES, PrePurchaseAnalyzer.compareOdometer(48_190.0, 48_550.0))
+        assertEquals(OdometerMatch.SMALL_GAP, PrePurchaseAnalyzer.compareOdometer(48_190.0, 49_250.0))
+        assertEquals(OdometerMatch.SMALL_GAP, PrePurchaseAnalyzer.compareOdometer(48_190.0, 46_190.0))
+        assertEquals(OdometerMatch.SMALL_GAP, PrePurchaseAnalyzer.compareOdometer(48_190.0, 45_000.0))
+        assertEquals(OdometerMatch.MISMATCH, PrePurchaseAnalyzer.compareOdometer(48_190.0, 43_000.0))
+    }
+
+    @Test
     fun `no fraud flag when all supported monitors are ready`() {
         val readiness = ReadinessStatus(
             milOn = false,

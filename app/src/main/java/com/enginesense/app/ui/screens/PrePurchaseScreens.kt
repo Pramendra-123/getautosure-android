@@ -77,7 +77,9 @@ import kotlinx.coroutines.withContext
 import java.util.Calendar
 
 /** Used Car Check's four steps — the same shape as Dealer Saathi's flow. */
-private val BUYER_STEP_TITLES = listOf("Scan the car", "Seller check", "Car number", "Look around the car", "Price and report")
+private enum class DriveView { NONE, INTRO, SUMMARY }
+
+private val BUYER_STEP_TITLES = listOf("Scan the car", "Seller check", "Odometer and car number", "Look around the car", "Price and report")
 
 /** Step 1 — starts a scan same as any other, just flagged as a pre-purchase check (see GetAutoSureViewModel.startPrePurchaseCheck). */
 @Composable
@@ -221,6 +223,8 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: (
     var step by remember { mutableStateOf(1) }
     var plate by remember { mutableStateOf("") }
     var dashboardInput by remember { mutableStateOf("") }
+    var kmByRange by remember { mutableStateOf(false) }
+    var kmRangeChoice by remember { mutableStateOf<com.enginesense.app.vehicle.KmRange?>(null) }
     var yearInput by remember { mutableStateOf("") }
     var make by remember { mutableStateOf<String?>(null) }
     var model by remember { mutableStateOf<String?>(null) }
@@ -228,8 +232,30 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: (
     val panelMarks = remember { mutableStateMapOf<String, Set<PanelIssue>>() }
     val quickAnswers = remember { mutableStateMapOf<String, QuickAnswer>() }
     val accidentAnswers = remember { mutableStateMapOf<Int, Boolean>() }
+    var askingInput by remember { mutableStateOf("") }
     val scroll = rememberScrollState()
     LaunchedEffect(step) { scroll.scrollTo(0) }
+
+    // The test drive is an add-on after the price: its own screens, then back to step 5 with the report updated.
+    val driveState by viewModel.testDrive.collectAsState()
+    val driveResult by viewModel.driveResult.collectAsState()
+    var driveView by remember { mutableStateOf(DriveView.NONE) }
+    LaunchedEffect(driveResult) { if (driveResult != null && driveView == DriveView.INTRO) driveView = DriveView.SUMMARY }
+    if (driveState != GetAutoSureViewModel.TestDriveState.Idle) {
+        TestDriveLive(viewModel, driveState)
+        return
+    }
+    when (driveView) {
+        DriveView.INTRO -> {
+            TestDriveIntro(viewModel, (rcState as? PurchaseRcState.Found)?.result?.model, onBack = { driveView = DriveView.NONE })
+            return
+        }
+        DriveView.SUMMARY -> driveResult?.let {
+            DriveSummary(it, onBack = { driveView = DriveView.NONE })
+            return
+        }
+        DriveView.NONE -> Unit
+    }
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(scroll).padding(20.dp)) {
         if (r == null) {
@@ -257,10 +283,17 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: (
         // Ask for the AI market price as soon as the car is known, so it's usually ready by the price step.
         val context = LocalContext.current
         val priceYear = yearInput.toIntOrNull() ?: autoYear
-        val priceQuery = if (make != null && model != null && priceYear != null) AiPriceQuery(
+        // The km is required: the exact dashboard reading, or the seller's range when the dashboard is dead.
+        // Demo mode fills one in, so the demo still reaches a price.
+        LaunchedEffect(r.isDemo) {
+            if (r.isDemo && dashboardInput.isEmpty()) dashboardInput = (insight.ecuOdometerKm?.toLong() ?: 42_000L).toString()
+        }
+        val exactKm = if (kmByRange) null else com.enginesense.app.vehicle.OdometerReading.exactKm(dashboardInput)
+        val kmRange = if (kmByRange) kmRangeChoice else null
+        val priceKm = com.enginesense.app.vehicle.OdometerReading.kmForPrice(exactKm, kmRange)
+        val priceQuery = if (make != null && model != null && priceYear != null && priceKm != null) AiPriceQuery(
             make = make!!, model = model!!, variant = variant, year = priceYear,
-            // A reading under 100 km is a half-typed number or a missing one, not a brand-new car.
-            fuel = rc?.fuelType, km = (dashboardInput.toDoubleOrNull() ?: insight.ecuOdometerKm)?.toInt()?.takeIf { it >= 100 },
+            fuel = rc?.fuelType, km = priceKm,
             city = rc?.registeredAt, owners = rc?.ownerCount, rcModel = rc?.model
         ) else null
         LaunchedEffect(priceQuery?.banded()) {
@@ -276,14 +309,16 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: (
 
         val report = PrePurchaseReportBuilder.build(
             findings = r.findings, healthScore = r.health.score, readiness = r.readiness, snapshot = r.snapshot,
-            vin = r.vehicleId.vin, dashboardKm = dashboardInput.toDoubleOrNull(), rc = rc, registration = rc?.registrationNumber,
+            vin = r.vehicleId.vin, dashboardKm = exactKm, kmRange = kmRange, rc = rc, registration = rc?.registrationNumber,
             exShowroomPriceInr = newPrice, buyerEnteredYear = yearInput.toIntOrNull() ?: autoYear,
             currentYear = currentYear,
             exteriorCounts = LookAround.counts(panelMarks, quickAnswers),
             make = make, fuelType = rc?.fuelType,
             aiPrice = aiReady,
-            accidentSigns = LookAround.accidentFindings(accidentAnswers)
+            accidentSigns = LookAround.accidentFindings(accidentAnswers),
+            drive = driveResult
         )
+        val negotiation = com.enginesense.app.vehicle.NegotiationPlanner.plan(report, askingInput.toDoubleOrNull())
         val ratings = LookAround.ratings(quickAnswers)
         val carName = com.enginesense.app.dealerreport.CarNameFormatter.carName(rc?.make, rc?.model, rc?.fuelType)
             ?: listOfNotNull(make, model).joinToString(" ").ifBlank { null }
@@ -302,6 +337,12 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: (
                 plate = plate, onPlate = { plate = it },
                 rcViewModel = rcViewModel, rcState = rcState, isDemo = r.isDemo,
                 ecuKm = insight.ecuOdometerKm, dashboardInput = dashboardInput, onDashboard = { dashboardInput = it },
+                kmByRange = kmByRange, onKmByRange = { kmByRange = it },
+                kmRange = kmRangeChoice, onKmRange = { kmRangeChoice = it },
+                ageYears = com.enginesense.app.vehicle.OdometerReading.ageYears(
+                    com.enginesense.app.vehiclelookup.RtoRecord.parseDate(rc?.registrationDate), report.manufactureYear, java.time.LocalDate.now()
+                ),
+                kmReady = priceKm != null,
                 onNext = { step = 3 }
             )
             3 -> LookAroundStep(panelMarks, quickAnswers, accidentAnswers, onNext = { step = 4 })
@@ -312,7 +353,10 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: (
                 yearInput = yearInput, onYear = { yearInput = it }, autoYear = autoYear, newPrice = newPrice,
                 aiChecking = aiChecking, aiFailed = aiFailed,
                 onRetryAi = { priceQuery?.let { viewModel.requestAiPrice(it, context, force = true) } },
-                onTalkToMechanic = onTalkToMechanic, onDone = onDone, onViewPdf = onViewPdf
+                onTalkToMechanic = onTalkToMechanic, onDone = onDone, onViewPdf = onViewPdf,
+                negotiation = negotiation, carName = carName, askingInput = askingInput, onAsking = { askingInput = it },
+                drive = driveResult,
+                onStartDrive = { driveView = DriveView.INTRO }, onViewDrive = { driveView = DriveView.SUMMARY }
             )
         }
         if (step > 1) {
@@ -323,12 +367,15 @@ fun PrePurchaseResultScreen(viewModel: GetAutoSureViewModel, onTalkToMechanic: (
     }
 }
 
-/** Step 2: the RTO (VAHAN) record is required — it names the car and feeds the price — and the dashboard km for the odometer check. */
+/** Step 2: the km (required — exact, or a range when the dashboard is dead) and the RTO (VAHAN) record. Both feed the price. */
 @Composable
 private fun BuyerCarNumberStep(
     plate: String, onPlate: (String) -> Unit,
     rcViewModel: PurchaseRcCheckViewModel, rcState: PurchaseRcState, isDemo: Boolean,
     ecuKm: Double?, dashboardInput: String, onDashboard: (String) -> Unit,
+    kmByRange: Boolean, onKmByRange: (Boolean) -> Unit,
+    kmRange: com.enginesense.app.vehicle.KmRange?, onKmRange: (com.enginesense.app.vehicle.KmRange) -> Unit,
+    ageYears: Double?, kmReady: Boolean,
     onNext: () -> Unit
 ) {
     val context = LocalContext.current
@@ -339,8 +386,19 @@ private fun BuyerCarNumberStep(
         if (rcState is PurchaseRcState.Found) { focus.clearFocus(); keyboard?.hide() }
     }
 
-    Text("We fetch the car's official record from VAHAN: make and model, year, owners, insurance, PUC, loan and more.", style = GetAutoSureType.Caption)
+    Text("Both decide the price. We check the km against the car's computer and its age.", style = GetAutoSureType.Caption)
     Spacer(Modifier.height(12.dp))
+    OdometerEntry(
+        input = dashboardInput, onInput = onDashboard,
+        byRange = kmByRange, onByRange = onKmByRange,
+        range = kmRange, onRange = onKmRange,
+        ecuKm = ecuKm, ageYears = ageYears
+    )
+
+    Spacer(Modifier.height(12.dp))
+    Text("Registration number", style = GetAutoSureType.SectionTitle)
+    Text("We fetch the car's official record from VAHAN: make and model, year, owners, insurance, PUC, loan and more.", style = GetAutoSureType.Caption)
+    Spacer(Modifier.height(8.dp))
     OutlinedTextField(
         value = plate,
         onValueChange = { onPlate(it.uppercase().take(13)) },
@@ -370,35 +428,19 @@ private fun BuyerCarNumberStep(
     }
 
     Spacer(Modifier.height(16.dp))
-    OutlinedTextField(
-        value = dashboardInput,
-        onValueChange = { onDashboard(it.filter(Char::isDigit).take(7)) },
-        label = { Text("Dashboard km") },
-        supportingText = { Text("Read it off the dashboard. We compare it with the km stored in the car's computer to check the odometer hasn't been rolled back.") },
-        singleLine = true,
-        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
-        modifier = Modifier.fillMaxWidth()
-    )
-    val dashboardKm = dashboardInput.toDoubleOrNull()
-    if (ecuKm != null && dashboardKm != null) {
-        Spacer(Modifier.height(4.dp))
-        when (PrePurchaseAnalyzer.compareOdometer(ecuKm, dashboardKm)) {
-            OdometerMatch.MATCHES -> Text("🟢 Matches the car's computer (${"%,d".format(ecuKm.toLong())} km). No odometer red flags from OBD.", style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Good))
-            OdometerMatch.MISMATCH -> Text(
-                "🔴 The car's computer says ${"%,d".format(ecuKm.toLong())} km — ${"%,d".format(kotlin.math.abs(ecuKm - dashboardKm).toLong())} km different. Ask the seller why, and for the service records.",
-                style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Attention)
-            )
-        }
-    }
-
-    Spacer(Modifier.height(16.dp))
     val found = rcState is PurchaseRcState.Found || isDemo
-    Button(onClick = onNext, enabled = found, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-        Text(if (found) "Next: look around the car" else "Get the RTO record to continue")
+    Button(onClick = onNext, enabled = found && kmReady, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+        Text(
+            when {
+                !kmReady -> "Enter the km to continue"
+                found -> "Next: look around the car"
+                else -> "Get the RTO record to continue"
+            }
+        )
     }
     // The RTO service can be down; the check mustn't stop there. Make, model and year can be picked on the price step.
     if (!found && rcState is PurchaseRcState.Failed) {
-        TextButton(onClick = onNext, modifier = Modifier.fillMaxWidth()) {
+        TextButton(onClick = onNext, enabled = kmReady, modifier = Modifier.fillMaxWidth()) {
             Text("Skip the RTO record and carry on")
         }
     }
@@ -413,8 +455,12 @@ private fun BuyerPriceAndReportStep(
     variant: Variant, onVariant: (Variant) -> Unit,
     yearInput: String, onYear: (String) -> Unit, autoYear: Int?, newPrice: Double?,
     aiChecking: Boolean, aiFailed: Boolean, onRetryAi: () -> Unit,
-    onTalkToMechanic: () -> Unit, onDone: () -> Unit, onViewPdf: (java.io.File) -> Unit
+    onTalkToMechanic: () -> Unit, onDone: () -> Unit, onViewPdf: (java.io.File) -> Unit,
+    negotiation: com.enginesense.app.vehicle.NegotiationPlan?, carName: String?,
+    askingInput: String, onAsking: (String) -> Unit,
+    drive: com.enginesense.app.vehicle.DriveResult?, onStartDrive: () -> Unit, onViewDrive: () -> Unit
 ) {
+    val context = LocalContext.current
     // The report's verdict also counts the buyer's own checks (odometer, RTO record), so the screen uses it too.
     val (color, emoji) = when (report.verdict) {
         PurchaseVerdict.GOOD_BUY -> GetAutoSureColors.Good to "🟢"
@@ -449,11 +495,18 @@ private fun BuyerPriceAndReportStep(
         )
     }
 
-    // Before paying for a car with red flags, a buyer wants a second pair of eyes.
-    if (report.redFlags.isNotEmpty() || report.worthAsking.isNotEmpty()) {
-        Spacer(Modifier.height(16.dp))
-        TalkToMechanicCard("Unsure about this car? Go through the results with a mechanic before you pay.", onTalkToMechanic)
-    }
+    NegotiationCard(
+        viewModel, report, negotiation, carName, askingInput, onAsking,
+        onSharePdf = {
+            withContext(Dispatchers.IO) {
+                com.enginesense.app.report.PrePurchaseReportPdfGenerator.generate(context, r, report, null, null)
+            }
+        }
+    )
+
+    // Optional add-ons: they never block the report, and both feed back into it.
+    StrongerCheckCards(drive, onStartDrive, onViewDrive, onExpert = onTalkToMechanic)
+
     if (report.redFlags.isNotEmpty()) {
         SectionHeader("Red flags", "Signs something may have been hidden from you")
         report.redFlags.forEach { SignalCard(it, GetAutoSureColors.Attention) }
@@ -465,21 +518,6 @@ private fun BuyerPriceAndReportStep(
     if (insight.checks.isNotEmpty()) {
         SectionHeader("What we checked")
         ChecksCard(report.checks)
-    }
-
-    SectionHeader("Negotiation")
-    Card(colors = CardDefaults.cardColors(containerColor = GetAutoSureColors.Surface), modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-            Text(
-                if (insight.negotiationPoints.isEmpty()) "Nothing to raise beyond the points above" else "${insight.negotiationPoints.size} thing${if (insight.negotiationPoints.size == 1) "" else "s"} worth raising with the seller",
-                style = GetAutoSureType.Body
-            )
-            insight.negotiationPoints.forEach { point ->
-                Spacer(Modifier.height(8.dp))
-                Text("• ${point.title}", style = GetAutoSureType.Body)
-                Text(point.recommendedAction, style = GetAutoSureType.Caption, modifier = Modifier.padding(start = 12.dp))
-            }
-        }
     }
 
     SectionHeader("Pre-purchase report", "A PDF of everything above — red flags, odometer, RTO record, repair costs and price")
@@ -560,13 +598,14 @@ private fun PriceBasisCard(
             Text("HOW WE GOT THIS", style = GetAutoSureType.Caption.copy(letterSpacing = 1.2.sp))
             Spacer(Modifier.height(4.dp))
             val car = com.enginesense.app.dealerreport.CarNameFormatter.carName(rc?.make, rc?.model, rc?.fuelType) ?: listOfNotNull(make, model).joinToString(" ").ifBlank { null }
-            val km = report.odometer.dashboardKm ?: report.odometer.ecuKm
+            val km = report.odometer.priceKm
+            val kmText = report.odometer.enteredText ?: km?.let { "%,d km (car's computer)".format(it.toLong()) }
             val lines = listOfNotNull(
                 "Car" to (car?.let { "$it${if (rc != null) " (VAHAN)" else ""}" } ?: "Not known"),
                 "Year" to (year?.toString() ?: "Not known"),
                 rc?.fuelType?.let { "Fuel" to it.lowercase().replaceFirstChar { c -> c.uppercase() } },
                 rc?.ownerCount?.let { "Owners" to com.enginesense.app.dealerreport.DealerSaleSummaryBuilder.ordinalOwner(it) },
-                "Km driven" to (km?.let { "%,d km".format(it.toLong()) + " (average is ~15,000 km a year)" } ?: "Not entered"),
+                "Km driven" to (kmText?.let { it + (report.odometer.perYear?.let { p -> ", about ${"%,d".format(p.kmPerYear)} a year" } ?: "") } ?: "Not entered"),
                 "New price (ex-showroom)" to (newPrice?.let { "₹${formatRupees(it)}, ${variant.label.lowercase()} variant — tentative" } ?: "Not in our price list"),
                 report.value?.fair?.let { "Age and km" to "−${it.depreciationPercent}% after ${it.ageYears} year${if (it.ageYears == 1) "" else "s"}" },
                 (if (report.repairMaxInr > 0) "Repairs taken off" to "₹${formatRupees(report.repairMinInr.toDouble())} – ₹${formatRupees(report.repairMaxInr.toDouble())}" else null)
@@ -921,6 +960,10 @@ internal fun OdometerCheckCard(ecuKm: Double?, supported: Boolean?, dashboardInp
                             "🟢 The dashboard matches the car's computer. No odometer red flags from OBD.",
                             style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Good)
                         )
+                        OdometerMatch.SMALL_GAP -> Text(
+                            "🟠 A small gap of ${"%,d".format(kotlin.math.abs(ecuKm - dashboardKm).toLong())} km from the car's computer. Often a typo or a replaced cluster: read the dashboard again, and ask the seller if it's real.",
+                            style = GetAutoSureType.Caption.copy(color = GetAutoSureColors.Watch)
+                        )
                         OdometerMatch.MISMATCH -> Text(
                             "🔴 The dashboard and the car's computer differ by ${"%,d".format(kotlin.math.abs(ecuKm - dashboardKm).toLong())} km. " +
                                 "Ask the seller why — it can mean the odometer was changed, or that the instrument cluster or engine computer was replaced. Ask for the service records.",
@@ -937,7 +980,7 @@ internal fun OdometerCheckCard(ecuKm: Double?, supported: Boolean?, dashboardInp
 /**
  * Makes the pre-purchase PDF, then offers View and Share. Regenerated whenever [report] changes
  * (the buyer typed a dashboard km or price, or the RTO check came back), so a shared PDF always
- * matches the screen. A saved dealer profile brands it, same as the advanced report.
+ * matches the screen. In dealer mode the saved dealer profile brands it; otherwise it's unbranded.
  */
 @Composable
 private fun PrePurchaseReportActions(result: com.enginesense.app.ScanResult, report: PrePurchaseReport, ratings: Map<String, Int>, onViewPdf: (java.io.File) -> Unit) {
@@ -958,8 +1001,11 @@ private fun PrePurchaseReportActions(result: com.enginesense.app.ScanResult, rep
                 scope.launch {
                     try {
                         file = withContext(Dispatchers.IO) {
+                            // Dealer branding only in dealer mode, same as the owner report: a dealer
+                            // profile saved on this phone must never brand a buyer's own check.
                             val dealerStore = com.enginesense.app.storage.DealerProfileStore(context)
-                            val dealerProfile = dealerStore.load()
+                            val dealerMode = com.enginesense.app.storage.AppModePrefs.get(context) == com.enginesense.app.storage.AppMode.DEALER
+                            val dealerProfile = if (dealerMode) dealerStore.load() else null
                             val dealerLogo = if (dealerProfile != null && dealerStore.hasLogo()) {
                                 android.graphics.BitmapFactory.decodeFile(dealerStore.logoFile.absolutePath)
                             } else null

@@ -87,6 +87,7 @@ object DealerFindings {
 
         when (report.odometer.match) {
             OdometerMatch.MATCHES -> good += KeyFinding("Odometer: dashboard matches the engine computer", true)
+            OdometerMatch.SMALL_GAP -> problems += KeyFinding("Odometer: small gap between the dashboard and engine computer", false)
             OdometerMatch.MISMATCH -> problems += KeyFinding("Odometer: dashboard and engine computer differ", false)
             null -> Unit
         }

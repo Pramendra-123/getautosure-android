@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Negotiate and Test Drive</title>
+<style>
+  :root {
+    --bg: #F5F4F2; --surface: #fff; --raised: #EDEBE7; --line: #E3E8EE;
+    --ink: #111; --inkr: #2B2B2B; --muted: #5B6675; --accent: #C2410C; --bright: #FF8A1F; --soft: #FFF1E6;
+    --good: #0B7A63; --watch: #A15C07; --bad: #B42318; --ai: #6D4AD9; --aisoft: #F1ECFF;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif; background: #fff; color: var(--ink); padding: 32px 16px 64px; }
+  main { max-width: 1180px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
+  h1.part { margin-top: 56px; padding-top: 28px; border-top: 1px solid var(--line); }
+  .lead { color: var(--muted); font-size: 15.5px; line-height: 1.6; max-width: 860px; margin-bottom: 28px; }
+  .row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; align-items: start; }
+  @media (max-width: 1000px) { .row { grid-template-columns: 1fr; justify-items: center; } }
+  .col h2 { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
+  .col p.note { font-size: 13.5px; color: var(--muted); line-height: 1.5; margin-bottom: 14px; min-height: 60px; }
+
+  .phone { width: 340px; max-width: 100%; height: 720px; background: var(--bg); border: 10px solid #111; border-radius: 42px; overflow: hidden; position: relative; }
+  .phone.dark { background: #0B0B0B; color: #fff; }
+  .scr { height: 100%; overflow-y: auto; padding: 18px 16px 24px; font-size: 13.5px; }
+  .scr::-webkit-scrollbar { width: 0; }
+  .status { display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 600; margin-bottom: 12px; }
+  .title { font-size: 21px; font-weight: 800; letter-spacing: -0.3px; line-height: 1.2; margin-bottom: 4px; }
+  .cap { font-size: 12px; color: var(--muted); line-height: 1.45; }
+  .dark .cap { color: #9A9A9A; }
+  .card { background: var(--surface); border-radius: 16px; padding: 14px; margin-top: 12px; }
+  .btn { background: var(--accent); color: #fff; text-align: center; font-weight: 700; padding: 13px; border-radius: 999px; margin-top: 14px; }
+  .btn.wa { background: #1FA855; }
+  .btn.ghost { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); padding: 10px; font-size: 13px; }
+  .sec { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: var(--muted); margin-top: 18px; text-transform: uppercase; }
+  .pill { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+  .pill.ai { color: var(--ai); background: var(--aisoft); }
+
+  /* negotiation */
+  .ask { background: var(--ink); color: #fff; border-radius: 18px; padding: 16px; margin-top: 12px; }
+  .ask small { color: #BDBDBD; font-size: 11.5px; }
+  .ask .big { font-size: 30px; font-weight: 800; color: var(--bright); letter-spacing: -0.5px; margin: 2px 0; }
+  .ask .sub { font-size: 12px; color: #D6D6D6; }
+  .ladder { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 12px; }
+  .ladder div { background: var(--inkr); border-radius: 12px; padding: 9px 8px; }
+  .ladder b { display: block; font-size: 13px; white-space: nowrap; }
+  .ladder span { font-size: 10.5px; color: #BDBDBD; }
+  .ladder .open b { color: #fff; } .ladder .fair b { color: var(--bright); } .ladder .walk b { color: #FF7A6B; }
+  .why { display: flex; justify-content: space-between; gap: 8px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 12.5px; }
+  .why:first-child { border-top: 0; padding-top: 0; }
+  .why b { font-weight: 600; display: block; }
+  .why small { color: var(--muted); font-size: 11px; }
+  .why .amt { font-weight: 700; white-space: nowrap; color: var(--accent); }
+  .tot { display: flex; justify-content: space-between; font-weight: 800; padding-top: 9px; border-top: 1.5px solid var(--ink); margin-top: 2px; }
+  .tip { background: var(--aisoft); border-radius: 12px; padding: 10px 12px; margin-top: 10px; font-size: 12px; line-height: 1.45; color: #2E2163; }
+
+  .lang { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .lang span { font-size: 11.5px; font-weight: 600; padding: 6px 11px; border-radius: 999px; border: 1.5px solid var(--line); background: #fff; }
+  .lang span.on { border-color: var(--bright); background: var(--soft); }
+  .tone { display: flex; gap: 6px; margin-top: 8px; }
+  .tone span { flex: 1; text-align: center; font-size: 11.5px; font-weight: 600; padding: 7px 0; border-radius: 999px; border: 1.5px solid var(--line); background: #fff; color: var(--muted); }
+  .tone span.on { border-color: var(--ink); color: var(--ink); }
+  .bubble { background: #DCF8C6; border-radius: 12px 12px 2px 12px; padding: 10px 12px; margin-top: 12px; font-size: 12.5px; line-height: 1.5; color: #1A1A1A; box-shadow: 0 1px 0 rgba(0,0,0,.08); }
+  .bubble .t { display: block; text-align: right; font-size: 10px; color: #6A7A6A; margin-top: 4px; }
+  .say { border-left: 3px solid var(--ai); padding: 4px 0 4px 10px; margin-top: 8px; font-size: 12.5px; line-height: 1.45; }
+  .say small { display: block; color: var(--muted); font-size: 11px; }
+
+  /* test drive */
+  .route { margin-top: 6px; }
+  .leg { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--line); font-size: 12.5px; line-height: 1.4; }
+  .leg:first-child { border-top: 0; padding-top: 0; }
+  .num { width: 22px; height: 22px; border-radius: 50%; background: var(--raised); font-size: 11px; font-weight: 700; display: grid; place-items: center; flex: none; }
+  .leg small { color: var(--muted); display: block; font-size: 11px; }
+  .cold { display: flex; gap: 8px; margin-top: 10px; }
+  .cold div { flex: 1; background: var(--surface); border-radius: 12px; padding: 10px; }
+  .cold b { display: block; font-size: 16px; }
+  .cold span { font-size: 10.5px; color: var(--muted); }
+  .cold i { font-style: normal; font-size: 10.5px; font-weight: 700; color: var(--good); }
+
+  .gauges { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 4px; }
+  .gauges div { background: #1A1A1A; border-radius: 12px; padding: 9px 4px; text-align: center; }
+  .gauges b { display: block; font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .gauges span { font-size: 9.5px; color: #9A9A9A; letter-spacing: .5px; }
+  .gauges .hot b { color: #FFB86B; }
+  .leglive { display: flex; justify-content: space-between; align-items: center; background: #1A1A1A; border-radius: 12px; padding: 10px 12px; margin-top: 10px; font-size: 12px; }
+  .leglive b { color: var(--bright); }
+  .prog { height: 4px; background: #2B2B2B; border-radius: 4px; margin-top: 6px; overflow: hidden; }
+  .prog i { display: block; height: 100%; width: 55%; background: var(--bright); }
+  .co { background: #22183F; border: 1px solid #3A2B6B; border-radius: 16px 16px 16px 4px; padding: 12px; margin-top: 12px; font-size: 13px; line-height: 1.45; }
+  .co .who { font-size: 10.5px; font-weight: 700; color: #B9A6FF; letter-spacing: .6px; margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .log { margin-top: 12px; }
+  .ev { display: flex; gap: 8px; padding: 7px 0; border-top: 1px solid #222; font-size: 12px; line-height: 1.4; color: #DADADA; }
+  .ev:first-child { border-top: 0; }
+  .ev .tm { color: #777; font-size: 10.5px; width: 34px; flex: none; padding-top: 1px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; margin-top: 4px; }
+  .dot.g { background: #22B38F; } .dot.o { background: #F0A43A; } .dot.b { background: #FF6B5B; } .dot.n { background: #666; }
+  .heard { display: flex; gap: 6px; margin-top: 12px; }
+  .heard span { flex: 1; text-align: center; font-size: 11px; font-weight: 600; padding: 8px 0; border-radius: 999px; background: #1A1A1A; border: 1px solid #333; color: #DADADA; }
+
+  .verdict { display: flex; gap: 10px; align-items: center; background: var(--ink); color: #fff; border-radius: 16px; padding: 14px; margin-top: 12px; }
+  .verdict .score { font-size: 26px; font-weight: 800; color: var(--bright); }
+  .verdict small { color: #BDBDBD; font-size: 11.5px; display: block; }
+  .res { display: flex; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 12.5px; line-height: 1.4; }
+  .res:first-child { border-top: 0; padding-top: 0; }
+  .res b { font-weight: 700; }
+  .res small { display: block; color: var(--muted); font-size: 11px; }
+
+  .facts { margin-top: 32px; max-width: 920px; }
+  .facts h3 { font-size: 17px; font-weight: 800; margin-bottom: 8px; }
+  .facts ul { padding-left: 20px; color: #333; font-size: 14.5px; line-height: 1.7; }
+  .facts table { border-collapse: collapse; font-size: 13.5px; margin-top: 8px; width: 100%; }
+  .facts td, .facts th { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .facts th { font-size: 12px; color: var(--muted); font-weight: 700; }
+</style>
+</head>
+<body>
+<main>
+
+  <h1>1 · Negotiation sheet</h1>
+  <p class="lead">This is a new card at the top of "Price and report". It turns what the check found into a number the buyer can ask for, with the reason for each rupee. AI writes the message to the seller in the buyer's language and coaches what to say face to face. The numbers come from our report, not from AI; AI only writes the words.</p>
+
+  <div class="row">
+    <div class="col">
+      <h2>What to ask for</h2>
+      <p class="note">The seller is asking ₹11.5 lakh. The buyer sees three numbers: what to open with, a fair deal, and the price to walk away at. Every rupee off is a finding from this check.</p>
+      <div class="phone"><div class="scr">
+        <div class="status"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="title">Negotiate</div>
+        <p class="cap">2024 Skoda Slavia 1.0 TSI AT · KA01MX4821</p>
+
+        <div class="ask">
+          <small>Seller is asking ₹11,50,000. Ask for</small>
+          <div class="big">₹45,000 off</div>
+          <div class="sub">Every rupee below is something this check found.</div>
+          <div class="ladder">
+            <div class="open"><span>Open with</span><b>₹10.15 L</b></div>
+            <div class="fair"><span>Fair deal</span><b>₹11.05 L</b></div>
+            <div class="walk"><span>Walk away over</span><b>₹11.35 L</b></div>
+          </div>
+        </div>
+
+        <div class="sec">Why ₹45,000</div>
+        <div class="card">
+          <div class="why"><div><b>Two front tyres worn</b><small>Look-around · tyres</small></div><span class="amt">₹12–16k</span></div>
+          <div class="why"><div><b>Rear bumper scratched and dented</b><small>Look-around · tap the car</small></div><span class="amt">₹4–10k</span></div>
+          <div class="why"><div><b>P0171 engine running lean</b><small>OBD scan · developing fault</small></div><span class="amt">₹3–8k</span></div>
+          <div class="why"><div><b>Priced above the market</b><small>Asking is ₹15k over the AI market check middle</small></div><span class="amt">₹15k</span></div>
+          <div class="tot"><span>Total</span><span>₹34–49k</span></div>
+        </div>
+        <div class="tip"><b>✦ Lead with the tyres.</b> They're easy to see, so the seller can't argue. Keep the price point for last.</div>
+        <div class="btn">Write a message to the seller</div>
+      </div></div>
+    </div>
+
+    <div class="col">
+      <h2>AI writes the message</h2>
+      <p class="note">The buyer picks a language and how firm to be. AI writes a polite WhatsApp message from the findings. It's never rude, never claims more than the check showed, and the PDF report is attached.</p>
+      <div class="phone"><div class="scr">
+        <div class="status"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="title">Message to the seller</div>
+        <p class="cap">Edit anything before you send it.</p>
+        <div class="lang"><span>English</span><span class="on">हिन्दी</span><span>ಕನ್ನಡ</span><span>தமிழ்</span><span>मराठी</span></div>
+        <div class="tone"><span>Gentle</span><span class="on">Firm</span><span>Final offer</span></div>
+
+        <div class="bubble">
+          नमस्ते रमेश जी, आज Slavia दिखाने के लिए धन्यवाद। गाड़ी अच्छी है, पर चेक में कुछ चीज़ें मिलीं:<br><br>
+          • आगे के दोनों टायर घिसे हैं (₹12–16 हज़ार)<br>
+          • पीछे का बम्पर ठीक करवाना होगा (₹4–10 हज़ार)<br>
+          • इंजन में एक कोड है, P0171 (₹3–8 हज़ार)<br><br>
+          इन सबको देखते हुए मैं ₹10,15,000 दे सकता हूँ। पूरी रिपोर्ट साथ में भेज रहा हूँ।
+          <span class="t">📎 Used-car-report.pdf · 9:41</span>
+        </div>
+        <div class="btn wa">Send on WhatsApp</div>
+        <div class="btn ghost">Copy text</div>
+      </div></div>
+    </div>
+
+    <div class="col">
+      <h2>Face to face: what to say</h2>
+      <p class="note">Most deals are made at the car, not on WhatsApp. AI gives the buyer three lines to say and answers to the seller's usual replies, built from this car's findings.</p>
+      <div class="phone"><div class="scr">
+        <div class="status"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="title">At the car</div>
+        <p class="cap"><span class="pill ai">✦ AI coach</span> Built from this car's check</p>
+
+        <div class="card">
+          <b style="font-size:13px">Say this</b>
+          <div class="say">"I like the car. The tyres need replacing soon, that's ₹12–16 thousand on day one."</div>
+          <div class="say">"There's also an engine code the scan found. Can you show me when it was last serviced?"</div>
+          <div class="say">"Based on all of this, ₹10.15 lakh is what I can do."</div>
+        </div>
+
+        <div class="card">
+          <b style="font-size:13px">If the seller says…</b>
+          <div class="say"><small>"Tyres are fine, they'll run another year."</small>Show the photo. Tread under 2 mm isn't safe in the rain; ask for ₹8k off at least.</div>
+          <div class="say"><small>"Other buyers are coming tomorrow."</small>That's fine. Your offer stands till tonight. Don't go over ₹11.35 L.</div>
+          <div class="say"><small>"The code is nothing, we'll clear it."</small>Clearing hides it, it doesn't fix it. A week after you buy, the re-scan will show whether it's back.</div>
+        </div>
+        <div class="btn ghost">Ask AI Mechanic something else</div>
+      </div></div>
+    </div>
+  </div>
+
+  <h1 class="part">2 · Guided test drive with an AI co-driver</h1>
+  <p class="lead">This is a new step between "Look around the car" and "Price and report". The dongle stays plugged in while the buyer drives. The co-driver tells them what to do next, watches the engine and gearbox live, and speaks up when something's off. Only GetAutoSure can do this, because it needs our dongle. What it finds goes into the report and the negotiation sheet.</p>
+
+  <div class="row">
+    <div class="col">
+      <h2>Before you drive</h2>
+      <p class="note">This captures the cold start (if the engine is still cold), then shows a short route. Each leg tests one thing. The co-driver can speak in the buyer's language, so they keep their eyes on the road.</p>
+      <div class="phone"><div class="scr">
+        <div class="status"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="title">Test drive</div>
+        <p class="cap">About 15 minutes. Keep the dongle plugged in and the phone in a holder.</p>
+
+        <div class="sec">Cold start</div>
+        <div class="cold">
+          <div><span>Engine at start</span><b>31 °C</b><i>Cold ✓</i></div>
+          <div><span>Battery while cranking</span><b>10.4 V</b><i>Healthy</i></div>
+          <div><span>Idle when cold</span><b>±40 rpm</b><i>Steady</i></div>
+        </div>
+
+        <div class="sec">Your route</div>
+        <div class="card route">
+          <div class="leg"><span class="num">1</span><div><b>Slow traffic, 5 min</b><small>Engine heat, idle, AC under load</small></div></div>
+          <div class="leg"><span class="num">2</span><div><b>Gentle pull from 20 to 60</b><small>Gear changes, gearbox slip</small></div></div>
+          <div class="leg"><span class="num">3</span><div><b>One hard acceleration</b><small>Misfires, power, turbo</small></div></div>
+          <div class="leg"><span class="num">4</span><div><b>Steady at 60–80</b><small>Fuel trims, engine temperature</small></div></div>
+          <div class="leg"><span class="num">5</span><div><b>Firm stop, full-lock U-turn, reverse</b><small>You listen: brakes, steering, suspension</small></div></div>
+        </div>
+        <div class="lang"><span>Voice: off</span><span class="on">हिन्दी</span><span>English</span></div>
+        <div class="btn">Start the drive</div>
+      </div></div>
+    </div>
+
+    <div class="col">
+      <h2>Driving: the co-driver talks</h2>
+      <p class="note">This screen is big, dark and simple, so it can be read at a glance. The co-driver gives the next instruction and calls out problems as they happen. For noises the dongle can't hear, the buyer taps one button.</p>
+      <div class="phone dark"><div class="scr">
+        <div class="status"><span>9:47</span><span>● REC 6:12</span></div>
+        <div class="gauges">
+          <div><b>42</b><span>KM/H</span></div>
+          <div><b>2,350</b><span>RPM</span></div>
+          <div><b>3</b><span>GEAR</span></div>
+          <div class="hot"><b>94°</b><span>ENGINE</span></div>
+        </div>
+        <div class="leglive"><span>Leg 2 of 5 · <b>Gentle pull from 20 to 60</b></span><span>●</span></div>
+        <div class="prog"><i></i></div>
+
+        <div class="co">
+          <div class="who"><span>✦ CO-DRIVER</span><span>🔊</span></div>
+          RPM jumped 650 without the car speeding up on the 2→3 change. That can be the gearbox slipping. When it's safe, slow to 20 and do this pull once more so I can check.
+        </div>
+
+        <div class="log">
+          <div class="ev"><span class="tm">6:08</span><span class="dot o"></span><span>2→3 change: RPM flare of 650, once</span></div>
+          <div class="ev"><span class="tm">5:40</span><span class="dot g"></span><span>1→2 change smooth</span></div>
+          <div class="ev"><span class="tm">4:15</span><span class="dot g"></span><span>AC on in traffic: engine held 94 °C, idle steady</span></div>
+          <div class="ev"><span class="tm">1:02</span><span class="dot g"></span><span>No misfires so far</span></div>
+          <div class="ev"><span class="tm">0:00</span><span class="dot g"></span><span>Cold start healthy</span></div>
+        </div>
+
+        <div class="cap" style="margin-top:12px">Heard something?</div>
+        <div class="heard"><span>Brake noise</span><span>Knock / clunk</span><span>Steering noise</span></div>
+        <div class="btn" style="background:#2B2B2B">End the drive</div>
+      </div></div>
+    </div>
+
+    <div class="col">
+      <h2>How it drove</h2>
+      <p class="note">One summary that goes into the report, the AI Mechanic and the negotiation sheet. Anything the drive confirmed comes with a cost, and the asking amount updates.</p>
+      <div class="phone"><div class="scr">
+        <div class="status"><span>10:03</span><span>●●● 5G</span></div>
+        <div class="title">How it drove</div>
+        <p class="cap">14 min · 9.2 km · all 5 legs done</p>
+
+        <div class="verdict">
+          <div class="score">4/5</div>
+          <div><b>Drives well, check the gearbox</b><small>One gear change slipped, and it happened again on the repeat pull.</small></div>
+        </div>
+
+        <div class="card">
+          <div class="res"><span class="dot g"></span><div><b>Engine: no misfires, steady power</b><small>Including the hard acceleration</small></div></div>
+          <div class="res"><span class="dot g"></span><div><b>Cooling: held 92–96 °C with the AC on</b><small>No overheating in traffic</small></div></div>
+          <div class="res"><span class="dot o"></span><div><b>Gearbox: 2→3 slips, twice</b><small>RPM jumped 650 without speed. Common on worn DSG clutches. Get it checked: ₹25–60k if the clutch pack is due.</small></div></div>
+          <div class="res"><span class="dot o"></span><div><b>Running lean at steady speed</b><small>Fuel trim +14%. It matches the P0171 code from the scan, often a vacuum leak (₹3–8k).</small></div></div>
+          <div class="res"><span class="dot n"></span><div><b>You heard: brake noise</b><small>Marked at 11:20. Pads usually ₹2–4k.</small></div></div>
+        </div>
+        <div class="tip"><b>✦ Negotiation updated:</b> ask for <b>₹70,000 off</b>, up from ₹45,000. Or ask the seller to get the gearbox checked at a Skoda workshop before you pay.</div>
+        <div class="btn">See the negotiation sheet</div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="facts">
+    <h3>What's real and what isn't</h3>
+    <table>
+      <tr><th>Check</th><th>How</th><th>Honest limit</th></tr>
+      <tr><td>Gearbox slip</td><td>RPM against speed in each gear; a sudden RPM rise without speed is a slip</td><td>Works on most automatics and manuals. Some cars don't report the gear, so we infer it from the ratio.</td></tr>
+      <tr><td>Misfires</td><td>Mode 6 misfire counters and RPM wobble under load</td><td>Mode 6 support varies by car; RPM wobble works on all of them</td></tr>
+      <tr><td>Overheating</td><td>Coolant temperature in traffic with the AC on</td><td>Reliable</td></tr>
+      <tr><td>Lean or rich running</td><td>Fuel trims at steady speed</td><td>Reliable; points to a cause but doesn't name the part</td></tr>
+      <tr><td>Battery and starting</td><td>Voltage dip while cranking</td><td>Only when the engine starts with the dongle already in</td></tr>
+      <tr><td>Brakes, suspension, steering noise</td><td>The buyer taps a button</td><td>OBD can't hear. We only record what the buyer heard.</td></tr>
+    </table>
+    <ul style="margin-top:14px">
+      <li>The co-driver uses Gemini for the words. The checks themselves are our own rules on live data, so the same drive gives the same result.</li>
+      <li>Speech needs no network: it uses the phone's built-in text-to-speech. Instructions only change between legs or when something's found.</li>
+      <li>Negotiation numbers: opening offer = market low − repairs high; fair = market middle − repairs middle; walk away = market middle. Repairs come from our fixed cost table, as now.</li>
+    </ul>
+  </div>
+</main>
+</body>
+</html>

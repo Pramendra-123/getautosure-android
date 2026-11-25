@@ -36,6 +36,7 @@ fun saleHealthSummaryJson(result: ScanResult, report: PrePurchaseReport, summary
                     FaultKind.HIDDEN_PERMANENT -> "Hidden"
                     FaultKind.PENDING -> "Developing"
                     FaultKind.EXTERIOR -> "Body / cabin"
+                    FaultKind.DRIVE -> "Test drive"
                 })
                 put("costMin", line.cost?.minInr ?: JSONObject.NULL)
                 put("costMax", line.cost?.maxInr ?: JSONObject.NULL)

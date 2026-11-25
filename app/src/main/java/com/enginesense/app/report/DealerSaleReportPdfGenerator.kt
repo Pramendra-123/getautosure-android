@@ -358,6 +358,7 @@ object DealerSaleReportPdfGenerator {
                     FaultKind.HIDDEN_PERMANENT -> "Hidden" to RED
                     FaultKind.PENDING -> "Developing" to AMBER
                     FaultKind.EXTERIOR -> "Body / cabin" to GRAY
+                    FaultKind.DRIVE -> "Test drive" to AMBER
                 }
                 c.drawText(type, cols[2], y + 13f, textPaint(color, 9.5f, bold = true))
                 val cost = line.cost?.let { "${rupees(it.minInr.toDouble())}–${rupees(it.maxInr.toDouble(), symbol = false)}" } ?: "Workshop quote"
@@ -386,6 +387,7 @@ object DealerSaleReportPdfGenerator {
             "Engine computer" to (odo.ecuKm?.let { km(it) } ?: if (odo.ecuSupported == false) "Not reported" else "No reading"),
             "Dashboard vs computer" to when (odo.match) {
                 OdometerMatch.MATCHES -> "Match"
+                OdometerMatch.SMALL_GAP -> "Small gap: ${km(kotlin.math.abs((odo.ecuKm ?: 0.0) - (odo.dashboardKm ?: 0.0)))}"
                 OdometerMatch.MISMATCH -> "Differ by ${km(kotlin.math.abs((odo.ecuKm ?: 0.0) - (odo.dashboardKm ?: 0.0)))}"
                 null -> "Couldn't compare"
             },

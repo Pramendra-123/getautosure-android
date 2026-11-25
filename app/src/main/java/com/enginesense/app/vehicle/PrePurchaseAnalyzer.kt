@@ -33,7 +33,8 @@ data class PrePurchaseInsight(
     val odometerSupported: Boolean? = null
 )
 
-enum class OdometerMatch { MATCHES, MISMATCH }
+/** MATCHES within normal drift; SMALL_GAP is worth a second look (typo, swapped cluster); MISMATCH is a red flag. */
+enum class OdometerMatch { MATCHES, SMALL_GAP, MISMATCH }
 
 /**
  * "Should I buy this car?" — the exact same scan/findings pipeline as checking a car you
@@ -64,6 +65,9 @@ object PrePurchaseAnalyzer {
     // and recalibrated), so only a clear gap counts.
     private const val ODOMETER_TOLERANCE_KM = 500.0
     private const val ODOMETER_TOLERANCE_FRACTION = 0.02
+    // Between the tolerance and this, the gap is small enough to be a typo or a recalibrated cluster:
+    // worth asking, not a reason to walk away. Real rollbacks are usually far bigger.
+    private const val ODOMETER_SMALL_GAP_FRACTION = 0.10
 
     // Below this it's a short hop to the garage, not neglect.
     private const val MIL_DISTANCE_NOTE_KM = 50.0
@@ -75,7 +79,12 @@ object PrePurchaseAnalyzer {
 
     fun compareOdometer(ecuKm: Double, dashboardKm: Double): OdometerMatch {
         val tolerance = maxOf(ODOMETER_TOLERANCE_KM, ecuKm * ODOMETER_TOLERANCE_FRACTION)
-        return if (kotlin.math.abs(ecuKm - dashboardKm) <= tolerance) OdometerMatch.MATCHES else OdometerMatch.MISMATCH
+        val gap = kotlin.math.abs(ecuKm - dashboardKm)
+        return when {
+            gap <= tolerance -> OdometerMatch.MATCHES
+            gap <= ecuKm * ODOMETER_SMALL_GAP_FRACTION -> OdometerMatch.SMALL_GAP
+            else -> OdometerMatch.MISMATCH
+        }
     }
 
     fun analyze(
